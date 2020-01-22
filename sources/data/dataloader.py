@@ -14,6 +14,10 @@ def window_dataset(dataset):
     return windows
 
 
+def with_categoric_labels(features, label):
+    return features, 0 if label > 5 else 1
+
+
 class Dataloader(object):
 
     def __init__(self, path, window_size, features, label):
@@ -29,6 +33,7 @@ class Dataloader(object):
         else:
             self.label = label
 
+        self.excluded_label = tf.cast(5, tf.float32)
         self.train_num = range(1, 27)
         self.eval_num = [27]
         self.test_num = range(28, 31)
@@ -62,7 +67,7 @@ class Dataloader(object):
 
         label = tf.cast(decoded_example[self.label][-1], tf.float32)
 
-        features = tf.stack(features)
+        features = tf.stack(features, axis=1)
 
         return features, label
 
@@ -85,17 +90,20 @@ class Dataloader(object):
         files = tf.data.Dataset.from_tensor_slices(files)
         dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = dataset.filter(lambda _, label: tf.not_equal(label, self.excluded_label))
+        dataset = dataset.map(with_categoric_labels)
 
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=10000)
 
         dataset = dataset.batch(batch_size)
+        dataset = dataset.prefetch(1)
 
         return dataset
 
 
 if __name__ == '__main__':
-    d = Dataloader("../../Dataset/CASE_dataset/tfrecord/", 1000, ["ecg", "rsp"], "arousal")
-    d = d(2, "test")
+    d = Dataloader("../../Dataset/CASE_dataset/tfrecord/", 1000, ["ecg", "rsp"], "valence")
+    d = d(64, "train")
     print(d)
     print("yes")
