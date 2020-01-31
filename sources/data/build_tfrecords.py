@@ -11,10 +11,10 @@ def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[int(value)]))
 
 def _float_feature(value):
-    assert len(value) == 1000
+    #assert len(value) == 5000
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
-def tfrecord_writer(data_path, destination_path):
+def tfrecord_writer(data_path, window_size, stride):
 
     os.chdir(data_path)
     for file in glob.glob("*.csv"):
@@ -23,22 +23,22 @@ def tfrecord_writer(data_path, destination_path):
 
         filename = os.path.basename(file).split(".")[0]
         print(filename)
-        writer = tf.io.TFRecordWriter(f"../tfrecord/{filename}.tfrecord")
+        writer = tf.io.TFRecordWriter(f"../tfrecord_{window_size}/{filename}.tfrecord")
 
         for video_data in data:
             size = len(video_data)
-            for window_start in range(size % 1000, size, 1000):
+            for window_start in range(size % stride, size - window_size + 1, stride):
                 features = tf.train.Features(
                     feature={
                         'Subject': _int64_feature(filename.split("_")[-1]),
                         'VideoID': _int64_feature(video_data['video'].iloc[0]),
-                        'ecg': _float_feature(video_data['ecg'][window_start:window_start+1000]),
-                        'bvp': _float_feature(video_data['bvp'][window_start:window_start+1000]),
-                        'gsr': _float_feature(video_data['gsr'][window_start:window_start+1000]),
-                        'rsp': _float_feature(video_data['rsp'][window_start:window_start+1000]),
-                        'skt': _float_feature(video_data['skt'][window_start:window_start+1000]),
-                        'valence': _float_feature(video_data['Valence'][window_start:window_start+1000]),
-                        'arousal': _float_feature(video_data['Arousal'][window_start:window_start+1000])
+                        'ecg': _float_feature(video_data['ecg'][window_start:window_start+window_size]),
+                        'bvp': _float_feature(video_data['bvp'][window_start:window_start+window_size]),
+                        'gsr': _float_feature(video_data['gsr'][window_start:window_start+window_size]),
+                        'rsp': _float_feature(video_data['rsp'][window_start:window_start+window_size]),
+                        'skt': _float_feature(video_data['skt'][window_start:window_start+window_size]),
+                        'valence': _float_feature(video_data['Valence'][window_start:window_start+window_size]),
+                        'arousal': _float_feature(video_data['Arousal'][window_start:window_start+window_size])
                     }
                 )
 
@@ -52,4 +52,4 @@ def tfrecord_writer(data_path, destination_path):
 
 
 if __name__ == '__main__':
-    tfrecord_writer("../../Dataset/CASE_dataset/merged/", "../../Dataset/CASE_dataset/tfrecord/")
+    tfrecord_writer("../../Dataset/CASE_dataset/merged/", window_size=5000, stride=1000)
