@@ -111,9 +111,10 @@ class Dataloader(object):
         dataset = dataset.map(with_categoric_labels)
 
         if mode == "train":
-            dataset = dataset.shuffle(buffer_size=10000)
-            dataset = dataset.batch(batch_size)
-            dataset = dataset.prefetch(1)
+            dataset = dataset.shuffle(buffer_size=25000)
+        
+        dataset = dataset.batch(batch_size)
+        dataset = dataset.prefetch(1)
 
         return dataset
 
@@ -125,4 +126,3 @@ if __name__ == '__main__':
     i=0
     for data, labels in d:
         print(data)
-

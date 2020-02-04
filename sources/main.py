@@ -34,8 +34,8 @@ def init_callbacks():
 
     callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(
         monitor='loss',
-        factor=0.75,
-        patience=25,
+        factor=0.5,
+        patience=5,
         min_lr=0.0001
     ))
 
@@ -53,17 +53,17 @@ def main():
 
     model = ResNET(num_classes=1)
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(),
+        optimizer=tf.keras.optimizers.Adam(clipnorm=1),
         loss=tf.keras.losses.BinaryCrossentropy(label_smoothing=0.05),
         metrics=['accuracy']
     )
 
-    train_dataset = dataloader("train", 64)
-    eval_dataset = dataloader("eval", 64)
+    train_dataset = dataloader(64, "train")
+    eval_dataset = dataloader(150, "eval")
 
     callbacks = init_callbacks()
 
-    model.fit(train_dataset, epochs=5, steps_per_epoch=10, validation_data=eval_dataset, callbacks=callbacks)
+    model.fit(train_dataset, epochs=100, validation_data=eval_dataset, validation_steps=15, callbacks=callbacks)
 
 
 if __name__ == '__main__':
