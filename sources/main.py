@@ -23,7 +23,7 @@ def init_tf_gpus():
 def init_callbacks():
     callbacks = []
 
-    run_id = tf.timestamp()
+    run_id = tf.timestamp().numpy()
 
     callbacks.append(tf.keras.callbacks.TensorBoard(
         log_dir=f"../Logs/Resnet/{run_id}/",
@@ -58,8 +58,8 @@ def main():
         metrics=['accuracy']
     )
 
-    train_dataset = dataloader(64, "train")
-    eval_dataset = dataloader(150, "eval")
+    train_dataset = dataloader("train", 64)
+    eval_dataset = dataloader("eval", 150)
 
     callbacks = init_callbacks()
 
