@@ -1,8 +1,7 @@
 import os
 import glob
 import tensorflow as tf
-
-
+import pandas as pd
 
 def window_dataset(dataset):
     window_ds = dataset.window(1000, shift=1000)
@@ -35,9 +34,12 @@ class Dataloader(object):
         else:
             self.labels = label
 
+        self.means = pd.read_csv("/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/stats/mean.csv", header=None, index_col=0, squeeze=True).astype("float32")
+        self.vars = pd.read_csv("/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/stats/var.csv", header=None, index_col=0, squeeze=True).astype("float32")
+
         self.excluded_label = tf.constant(5, tf.float32)
         self.train_num = range(1, 27)
-        self.eval_num = [27]
+        self.eval_num = [27, 28]
         self.test_num = range(28, 31)
 
     def _decode(self, serialized_example):
@@ -65,20 +67,19 @@ class Dataloader(object):
 
         features = []
         for feature in self.features:
-            features.append(decoded_example[feature])
+            features.append((decoded_example[feature] - self.means[feature]) / tf.sqrt(self.vars[feature]))
 
         labels = []
         for label in self.labels:
             value = tf.reduce_mean(decoded_example[label][-50:])
             labels.append(value)
 
-
         features = tf.stack(features, axis=1)
         label = tf.stack(labels)
 
         return features, label
 
-    def __call__(self, batch_size, mode, leave_out=None):
+    def __call__(self, mode, batch_size=64, leave_out=None):
 
         modes = ["train", "test", "eval", "inspect"]
         if mode not in modes:
@@ -110,21 +111,18 @@ class Dataloader(object):
         dataset = dataset.map(with_categoric_labels)
 
         if mode == "train":
-            dataset = dataset.shuffle(buffer_size=1000)
-
-        dataset = dataset.batch(batch_size)
-        dataset = dataset.prefetch(1)
+            dataset = dataset.shuffle(buffer_size=10000)
+            dataset = dataset.batch(batch_size)
+            dataset = dataset.prefetch(1)
 
         return dataset
 
 
 if __name__ == '__main__':
-    d = Dataloader("../../Dataset/CASE_dataset/tfrecord_5000/", ["ecg", "rsp"], ["arousal", "valence"])
-    d = d(1, "inspect")
+    d = Dataloader("../../Dataset/CASE_dataset/tfrecord_5000/", ["ecg", "rsp"], ["arousal"])
+    d = d("train")
 
-    total_count = 0
-    good = 0
-    for element, label in d:
-        print(element)
+    i=0
+    for data, labels in d:
+        print(data)
 
-    print(good)

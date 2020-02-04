@@ -23,8 +23,10 @@ def init_tf_gpus():
 def init_callbacks():
     callbacks = []
 
+    run_id = tf.timestamp()
+
     callbacks.append(tf.keras.callbacks.TensorBoard(
-        log_dir=f"../Logs/Resnet/{tf.timestamp}/",
+        log_dir=f"../Logs/Resnet/{run_id}/",
         histogram_freq=1,
         write_graph=True,
         update_freq=100
@@ -37,12 +39,17 @@ def init_callbacks():
         min_lr=0.0001
     ))
 
+    callbacks.append(tf.keras.callbacks.EarlyStopping(
+        monitor="val_loss",
+        patience=10
+    ))
+
     return callbacks
 
 def main():
     init_tf_gpus()
 
-    dataloader = Dataloader("../Dataset/CASE_dataset/tfrecord_5000/", ["bvp", "rsp"], ["arousal"])
+    dataloader = Dataloader("../Dataset/CASE_dataset/tfrecord_3000/", ["bvp", "ecg"], ["arousal"])
 
     model = ResNET(num_classes=1)
     model.compile(
@@ -51,8 +58,8 @@ def main():
         metrics=['accuracy']
     )
 
-    train_dataset = dataloader(64, "train")
-    eval_dataset = dataloader(64, "eval")
+    train_dataset = dataloader("train", 64)
+    eval_dataset = dataloader("eval", 64)
 
     callbacks = init_callbacks()
 

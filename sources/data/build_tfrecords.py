@@ -4,15 +4,19 @@ import pandas as pd
 import os
 import glob
 
+
 def _bytes_feature(value):
     return tf.train.Feature(bytes_list=tf.train.BytesList(value=[value]))
+
 
 def _int64_feature(value):
     return tf.train.Feature(int64_list=tf.train.Int64List(value=[int(value)]))
 
+
 def _float_feature(value):
     #assert len(value) == 5000
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
+
 
 def tfrecord_writer(data_path, window_size, stride):
 
@@ -50,6 +54,42 @@ def tfrecord_writer(data_path, window_size, stride):
         print("yes")
 
 
+def statistics_writer(data_path, file_ids):
+    os.chdir(data_path)
+    print(os.curdir)
+    print(file_ids)
+    dataset_mean, dataset_var = None, None
+    for file in [glob.glob(f"sub_{num}.csv") for num in file_ids]:
+        print(file[0])
+        data = pd.read_csv(file[0])
+
+        file_mean = data.mean(axis=0)
+        file_var = data.var(axis=0)
+        file_len = len(data)
+
+        if dataset_mean is None:
+            dataset_mean = file_mean
+            dataset_var = file_var
+            dataset_len = file_len
+            continue
+
+        summed_len = dataset_len + file_len
+        # Welford's online algorithm
+        for label, value in file_mean.items():
+            delta = file_mean[label] - dataset_mean[label]
+            m_data = dataset_var[label] * (dataset_len - 1)
+            m_file = file_var[label] * (file_len - 1)
+            dataset_m2 = m_data + m_file + delta ** 2 * dataset_len * file_len / summed_len
+            dataset_var[label] = dataset_m2 / (summed_len -1)
+            dataset_mean[label] = (dataset_len * dataset_mean[label] + file_len * file_mean[label]) / summed_len
+
+        dataset_len = summed_len
+
+    dataset_mean.to_csv(f"../stats/mean.csv", header=False)
+    dataset_var.to_csv(f"../stats/var.csv", header=False)
+
+
 
 if __name__ == '__main__':
-    tfrecord_writer("../../Dataset/CASE_dataset/merged/", window_size=5000, stride=1000)
+    #tfrecord_writer("../../Dataset/CASE_dataset/merged/", window_size=3000, stride=1000)
+    statistics_writer("../../Dataset/CASE_dataset/merged/", range(1, 27))

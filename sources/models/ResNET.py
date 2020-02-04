@@ -73,8 +73,6 @@ class ResNET(tf.keras.Model):
     def __init__(self, num_classes):
         super(ResNET, self).__init__()
 
-        self.input_norm = layers.BatchNormalization(axis=-1)
-
         self.resnet_block_1 = ResNETBlock(filter_channels=64)
         self.resnet_block_2 = ResNETBlock(filter_channels=128)
 
