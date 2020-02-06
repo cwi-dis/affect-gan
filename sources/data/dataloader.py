@@ -35,8 +35,8 @@ class Dataloader(object):
             self.labels = label
         self.normalized = normalized
 
-        self.means = pd.read_csv("/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/stats/mean.csv", header=None, index_col=0, squeeze=True).astype("float32")
-        self.vars = pd.read_csv("/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/stats/var.csv", header=None, index_col=0, squeeze=True).astype("float32")
+        self.means = pd.read_csv("../Dataset/CASE_dataset/stats/mean.csv", header=None, index_col=0, squeeze=True).astype("float32")
+        self.vars = pd.read_csv("../Dataset/CASE_dataset/stats/var.csv", header=None, index_col=0, squeeze=True).astype("float32")
 
         self.excluded_label = tf.constant(5, tf.float32)
         self.train_num = range(1, 27)
@@ -94,7 +94,7 @@ class Dataloader(object):
 
         modes = ["train", "test", "eval", "inspect"]
         if mode not in modes:
-            raise "mode not found! supported modes are " + modes
+            raise f"mode not found! supported modes are {modes}" 
         #if mode is "eval" and leave_out is None:
         #    raise Exception("leave-one-out evaluation undefined!")
 
@@ -119,11 +119,12 @@ class Dataloader(object):
         if mode is not "inspect":
             dataset = dataset.map(with_categoric_labels)
 
-        #dataset = dataset.shuffle(buffer_size=10000)
-
         if mode is "inspect":
             return dataset
 
+        if mode == "train":
+            dataset = dataset.shuffle(buffer_size=30000)
+        
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)
 

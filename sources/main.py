@@ -25,7 +25,7 @@ def init_tf_gpus():
 def init_callbacks():
     callbacks = []
 
-    run_id = tf.timestamp()
+    run_id = tf.timestamp().numpy()
 
     callbacks.append(tf.keras.callbacks.TensorBoard(
         log_dir=f"../Logs/Resnet/{run_id}/",
