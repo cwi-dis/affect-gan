@@ -19,7 +19,7 @@ def with_categoric_labels(features, label):
 
 class Dataloader(object):
 
-    def __init__(self, path="/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/tfrecord_5000/", features=None, label=None):
+    def __init__(self, path="/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/tfrecord_5000/", features=None, label=None, normalized=True):
         if features is None:
             features = ["bvp"]
         if path is None or not os.path.exists(path):
@@ -33,6 +33,7 @@ class Dataloader(object):
             self.labels = ["arousal"]
         else:
             self.labels = label
+        self.normalized = normalized
 
         self.means = pd.read_csv("/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/stats/mean.csv", header=None, index_col=0, squeeze=True).astype("float32")
         self.vars = pd.read_csv("/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/stats/var.csv", header=None, index_col=0, squeeze=True).astype("float32")
@@ -64,20 +65,30 @@ class Dataloader(object):
                                                      })
 
         subject = tf.cast(decoded_example["Subject"], tf.int8)
+        video = tf.cast(decoded_example["VideoID"], tf.int8)
 
         features = []
-        for feature in self.features:
-            features.append((decoded_example[feature] - self.means[feature]) / tf.sqrt(self.vars[feature]))
+        if self.normalized:
+            for feature in self.features:
+                features.append((decoded_example[feature] - self.means[feature]) / tf.sqrt(self.vars[feature]))
+        else:
+            for feature in self.features:
+                features.append(decoded_example[feature])
 
         labels = []
         for label in self.labels:
-            value = tf.reduce_mean(decoded_example[label][-50:])
-            labels.append(value)
+            if label is "subject":
+                labels.append(subject)
+            elif label is "video":
+                labels.append(video)
+            else:
+                value = tf.reduce_mean(decoded_example[label][-50:])
+                labels.append(value)
 
         features = tf.stack(features, axis=1)
         label = tf.stack(labels)
 
-        return features, label
+        return features, label, video
 
     def __call__(self, mode, batch_size=64, leave_out=None):
 
@@ -94,25 +105,25 @@ class Dataloader(object):
         elif mode is "test":
             files = [glob.glob(f"{self.path}sub_{num}.tfrecord") for num in self.test_num]
         elif mode is "inspect":
-            files = [glob.glob(f"{self.path}*.tfrecord")]
-            print(f"Files loaded in mode {mode}: {files}")
-
-            dataset = tf.data.TFRecordDataset(files)
-            dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-            dataset = dataset.filter(lambda _, label: tf.reduce_any(tf.greater(tf.abs(label - self.excluded_label), 0.05)))
-            return dataset
+            files = [glob.glob(f"{self.path}*_17.tfrecord")]
 
         print(f"Files loaded in mode {mode}: {files}")
         files = tf.data.Dataset.from_tensor_slices(files)
 
         dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.filter(lambda _, label: tf.reduce_any(tf.greater(tf.abs(label - self.excluded_label), 0.05)))
-        dataset = dataset.map(with_categoric_labels)
+        dataset = dataset.filter(lambda _, __, video: tf.less(video, 10))
+        dataset = dataset.map(lambda features, labels, video: (features, labels))
+        dataset = dataset.filter(lambda _, label: tf.reduce_any(tf.greater(tf.abs(label - self.excluded_label), 0.5)))
 
-        if mode == "train":
-            dataset = dataset.shuffle(buffer_size=25000)
-        
+        if mode is not "inspect":
+            dataset = dataset.map(with_categoric_labels)
+
+        #dataset = dataset.shuffle(buffer_size=10000)
+
+        if mode is "inspect":
+            return dataset
+
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)
 
@@ -121,8 +132,10 @@ class Dataloader(object):
 
 if __name__ == '__main__':
     d = Dataloader("../../Dataset/CASE_dataset/tfrecord_5000/", ["ecg", "rsp"], ["arousal"])
-    d = d("train")
+    d = d("train", 1)
 
     i=0
-    for data, labels in d:
-        print(data)
+    for x in d:
+        i += 1
+    print(i)
+

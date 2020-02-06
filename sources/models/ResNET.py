@@ -80,8 +80,11 @@ class ResNET(tf.keras.Model):
         self.dense_output = layers.Dense(units=num_classes, activation='sigmoid')
 
     def call(self, inputs, training=None, mask=None):
-        x = self.input_norm(inputs)
-        x_r1 = self.resnet_block_1(x)
+        x_r1 = self.resnet_block_1(inputs)
         x_r2 = self.resnet_block_2(x_r1)
         out = self.global_avg_pool(x_r2)
         return self.dense_output(out)
+
+    def model(self):
+        x = layers.Input(shape=(5000, 2))
+        return tf.keras.Model(inputs=[x], outputs=self.call(x))

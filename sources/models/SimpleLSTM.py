@@ -15,3 +15,7 @@ class SimpleLSTM(tf.keras.Model):
         x = self.norm(inputs)
         x2 = self.lstm_layer(x)
         return self.dense_output(x2)
+
+    def model(self):
+        x = layers.Input(shape=(5000, 2))
+        return tf.keras.Model(inputs=[x], outputs=self.call(x))

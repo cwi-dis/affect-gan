@@ -18,7 +18,7 @@ def _float_feature(value):
     return tf.train.Feature(float_list=tf.train.FloatList(value=value))
 
 
-def tfrecord_writer(data_path, window_size, stride):
+def tfrecord_writer(data_path, window_size, stride, downsampling_rate=1, skip_baselines=True):
 
     os.chdir(data_path)
     for file in glob.glob("*.csv"):
@@ -30,6 +30,9 @@ def tfrecord_writer(data_path, window_size, stride):
         writer = tf.io.TFRecordWriter(f"../tfrecord_{window_size}/{filename}.tfrecord")
 
         for video_data in data:
+            if skip_baselines and video_data['video'].iloc[0] >= 10:
+                continue
+
             size = len(video_data)
             for window_start in range(size % stride, size - window_size + 1, stride):
                 features = tf.train.Features(
@@ -89,7 +92,6 @@ def statistics_writer(data_path, file_ids):
     dataset_var.to_csv(f"../stats/var.csv", header=False)
 
 
-
 if __name__ == '__main__':
-    #tfrecord_writer("../../Dataset/CASE_dataset/merged/", window_size=3000, stride=1000)
-    statistics_writer("../../Dataset/CASE_dataset/merged/", range(1, 27))
+    tfrecord_writer("../../Dataset/CASE_dataset/merged/", window_size=3000, stride=1000, downsampling_rate=10)
+    #statistics_writer("../../Dataset/CASE_dataset/merged/", range(1, 27))

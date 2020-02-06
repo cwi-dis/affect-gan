@@ -5,6 +5,8 @@ from __future__ import print_function
 import tensorflow as tf
 
 from models.ResNET import ResNET
+from models.BaseNET1 import BaseNET1
+from models.SimpleLSTM import SimpleLSTM
 from data.dataloader import Dataloader
 
 
@@ -51,21 +53,27 @@ def main():
 
     dataloader = Dataloader("../Dataset/CASE_dataset/tfrecord_3000/", ["bvp", "ecg"], ["arousal"])
 
-    model = ResNET(num_classes=1)
+    model = BaseNET1()#ResNET(num_classes=1)
     model.compile(
         optimizer=tf.keras.optimizers.Adam(clipnorm=1),
         loss=tf.keras.losses.BinaryCrossentropy(label_smoothing=0.05),
         metrics=['accuracy']
     )
 
-    train_dataset = dataloader(64, "train")
-    eval_dataset = dataloader(150, "eval")
+    train_dataset = dataloader("train", 64)
+    eval_dataset = dataloader("eval", 150)
 
     callbacks = init_callbacks()
 
     model.fit(train_dataset, epochs=100, validation_data=eval_dataset, validation_steps=15, callbacks=callbacks)
 
 
-if __name__ == '__main__':
+def summary():
+    #ResNET(num_classes=1).model().summary()
+    #SimpleLSTM().model().summary()
+    BaseNET1().model().summary()
 
+
+if __name__ == '__main__':
+    #summary()
     main()
