@@ -2,6 +2,8 @@ import os
 import glob
 import tensorflow as tf
 import pandas as pd
+from scipy.signal import decimate
+import numpy as np
 
 def window_dataset(dataset):
     window_ds = dataset.window(1000, shift=1000)
@@ -19,9 +21,10 @@ def with_categoric_labels(features, label):
 
 class Dataloader(object):
 
-    def __init__(self, path="/root/UvA/thesis/affect-gan/Dataset/CASE_dataset/tfrecord_5000/", features=None, label=None, normalized=True):
+    def __init__(self, datasetID, features=None, label=None, normalized=True):
         if features is None:
             features = ["bvp"]
+        path = f"../Dataset/CASE_dataset/tfrecord_{datasetID}/"
         if path is None or not os.path.exists(path):
             raise Exception(f"Data path does not exist: {os.curdir}:{path}")
 
@@ -64,8 +67,8 @@ class Dataloader(object):
                                                                                                   allow_missing=True)
                                                      })
 
-        subject = tf.cast(decoded_example["Subject"], tf.int8)
-        video = tf.cast(decoded_example["VideoID"], tf.int8)
+        subject = tf.cast(decoded_example["Subject"], tf.float32)
+        video = tf.cast(decoded_example["VideoID"], tf.float32)
 
         features = []
         if self.normalized:
@@ -86,6 +89,7 @@ class Dataloader(object):
                 labels.append(value)
 
         features = tf.stack(features, axis=1)
+
         label = tf.stack(labels)
 
         return features, label, video
@@ -94,7 +98,7 @@ class Dataloader(object):
 
         modes = ["train", "test", "eval", "inspect"]
         if mode not in modes:
-            raise f"mode not found! supported modes are {modes}" 
+            raise Exception(f"mode not found! supported modes are {modes}")
         #if mode is "eval" and leave_out is None:
         #    raise Exception("leave-one-out evaluation undefined!")
 
@@ -105,7 +109,7 @@ class Dataloader(object):
         elif mode is "test":
             files = [glob.glob(f"{self.path}sub_{num}.tfrecord") for num in self.test_num]
         elif mode is "inspect":
-            files = [glob.glob(f"{self.path}*_17.tfrecord")]
+            files = [glob.glob(f"{self.path}*.tfrecord")]
 
         print(f"Files loaded in mode {mode}: {files}")
         files = tf.data.Dataset.from_tensor_slices(files)
@@ -114,16 +118,16 @@ class Dataloader(object):
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video: (features, labels))
-        dataset = dataset.filter(lambda _, label: tf.reduce_any(tf.greater(tf.abs(label - self.excluded_label), 0.5)))
-
-        if mode is not "inspect":
-            dataset = dataset.map(with_categoric_labels)
+        dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.25)))
 
         if mode is "inspect":
+            dataset = dataset.shuffle(buffer_size=500)
             return dataset
 
+        dataset = dataset.map(with_categoric_labels)
+
         if mode == "train":
-            dataset = dataset.shuffle(buffer_size=30000)
+            dataset = dataset.shuffle(buffer_size=20)
         
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)
@@ -132,11 +136,12 @@ class Dataloader(object):
 
 
 if __name__ == '__main__':
-    d = Dataloader("../../Dataset/CASE_dataset/tfrecord_5000/", ["ecg", "rsp"], ["arousal"])
+    d = Dataloader("5000d", ["ecg", "rsp"], ["arousal"])
     d = d("train", 1)
 
     i=0
-    for x in d:
-        i += 1
+    for data, label in d.take(1):
+        print(data)
+        print(label)
     print(i)
 

@@ -51,7 +51,7 @@ def init_callbacks():
 def main():
     init_tf_gpus()
 
-    dataloader = Dataloader("../Dataset/CASE_dataset/tfrecord_3000/", ["bvp", "ecg"], ["arousal"])
+    dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], ["arousal"])
 
     model = BaseNET1()#ResNET(num_classes=1)
     model.compile(
@@ -65,7 +65,7 @@ def main():
 
     callbacks = init_callbacks()
 
-    model.fit(train_dataset, epochs=100, validation_data=eval_dataset, validation_steps=15, callbacks=callbacks)
+    model.fit(train_dataset, epochs=500, validation_data=eval_dataset, validation_steps=10, callbacks=callbacks)
 
 
 def summary():
@@ -75,5 +75,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    #summary()
+    summary()
     main()
