@@ -9,6 +9,8 @@ from models.BaseNET1 import BaseNET1
 from models.SimpleLSTM import SimpleLSTM
 from data.dataloader import Dataloader
 
+from util.callbacks import CallbacksProducer
+
 
 def init_tf_gpus():
     gpus = tf.config.experimental.list_physical_devices('GPU')
@@ -22,31 +24,6 @@ def init_tf_gpus():
         except RuntimeError as e:
             print(e)
 
-def init_callbacks():
-    callbacks = []
-
-    run_id = tf.timestamp().numpy()
-
-    callbacks.append(tf.keras.callbacks.TensorBoard(
-        log_dir=f"../Logs/Resnet/{run_id}/",
-        histogram_freq=1,
-        write_graph=True,
-        update_freq=100
-    ))
-
-    callbacks.append(tf.keras.callbacks.ReduceLROnPlateau(
-        monitor='loss',
-        factor=0.5,
-        patience=5,
-        min_lr=0.0001
-    ))
-
-    callbacks.append(tf.keras.callbacks.EarlyStopping(
-        monitor="val_loss",
-        patience=10
-    ))
-
-    return callbacks
 
 def main():
     init_tf_gpus()
@@ -60,12 +37,12 @@ def main():
         metrics=['accuracy']
     )
 
-    train_dataset = dataloader("train", 64)
-    eval_dataset = dataloader("eval", 150)
+    train_dataset = dataloader("train", 128)
+    eval_dataset = dataloader("eval", 128)
 
-    callbacks = init_callbacks()
+    callbacks = CallbacksProducer().get_callbacks()
 
-    model.fit(train_dataset, epochs=500, validation_data=eval_dataset, validation_steps=10, callbacks=callbacks)
+    model.fit(train_dataset, epochs=50, validation_data=eval_dataset, validation_steps=26, callbacks=callbacks)
 
 
 def summary():
@@ -76,4 +53,4 @@ def summary():
 
 if __name__ == '__main__':
     summary()
-    main()
+    #main()
