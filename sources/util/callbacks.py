@@ -4,9 +4,12 @@ from datetime import datetime
 
 
 class LRLogCallback(callbacks.Callback):
-    def on_epoch_begin(self, epoch, logs=None):
+    def on_epoch_end(self, epoch, logs=None):
+        logs = logs or {}
         lr = self.model.optimizer.lr
-        tf.summary.scalar('learning rate', data=lr, step=epoch)
+        logs.update({'lr': lr})
+        super().on_epoch_end(epoch, logs)
+
 
 class CallbacksProducer:
 
