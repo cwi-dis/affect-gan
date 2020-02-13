@@ -13,9 +13,9 @@ class LRLogCallback(callbacks.Callback):
 
 class CallbacksProducer:
 
-    def __init__(self, logdir="../../Logs/Baseline/"):
+    def __init__(self, logdir="../Logs/Baseline/"):
         self.callbacks = {}
-        self.logdir = logdir + datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.logdir = logdir + datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
 
         self.callbacks["base"] = callbacks.TensorBoard(
             log_dir=logdir,
