@@ -3,7 +3,8 @@ from tensorflow.keras import callbacks
 from tensorflow.python.eager import context
 from tensorflow.python.ops import summary_ops_v2
 
-from datetime import datetime
+from tensorboard.plugins.hparams import api as hp
+
 import os
 
 
@@ -63,9 +64,9 @@ class MetricsCallback(callbacks.TensorBoard):
 
 class CallbacksProducer:
 
-    def __init__(self, logdir="../Logs"):
+    def __init__(self, hparams, logdir):
         self.callbacks = {}
-        self.logdir = os.path.join(logdir,datetime.now().strftime("%Y%m%d-%H%M%S"))
+        self.logdir = logdir
 
         self.callbacks["base"] = MetricsCallback(
             logdir=self.logdir
@@ -82,6 +83,8 @@ class CallbacksProducer:
         #    monitor="val_loss",
         #    patience=10
         #)
+
+        self.callbacks["hparams"] = hp.KerasCallback(self.logdir, hparams)
 
     def get_callbacks(self, callback_ids=None):
         callback_list = []
