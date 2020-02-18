@@ -42,7 +42,7 @@ def main():
 
     callbacks = CallbacksProducer().get_callbacks()
 
-    model.fit(train_dataset, epochs=50, validation_data=eval_dataset, validation_steps=26, callbacks=callbacks)
+    model.fit(train_dataset, epochs=30, validation_data=eval_dataset, validation_steps=45, callbacks=callbacks)
 
 
 def summary():
@@ -52,5 +52,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()

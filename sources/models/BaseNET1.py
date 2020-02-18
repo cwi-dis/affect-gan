@@ -21,7 +21,7 @@ class BaseNET1(tf.keras.Model):
         x = self.drop(x, training)
         x = self.avg(x)
         x = self.flat(x)
-        x = tf.reshape(x, [-1, 792])
+        x = tf.reshape(x, [-1, 784])
         #x = self.dense(x)
         return self.dense_out(x)
 

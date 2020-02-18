@@ -43,7 +43,7 @@ class Dataloader(object):
 
         self.excluded_label = tf.constant(5, tf.float32)
         self.train_num = range(1, 27)
-        self.eval_num = [27, 28]
+        self.eval_num = [27, 28, 29, 30]
         self.test_num = range(28, 31)
 
     def _decode(self, serialized_example):
@@ -128,7 +128,6 @@ class Dataloader(object):
 
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=30000)
-            dataset = dataset.repeat()
         
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)

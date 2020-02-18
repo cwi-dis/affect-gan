@@ -10,12 +10,12 @@ import os
 class MetricsCallback(callbacks.TensorBoard):
 
     def __init__(self, logdir, *args, **kwargs):
-        super(MetricsCallback, self).__init__(self.logdir, *args, **kwargs)
+        super(MetricsCallback, self).__init__(logdir, *args, **kwargs)
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
         lr = self.model.optimizer.lr
-        logs.update({'lr': lr})
+        logs.update({'lr': tf.keras.backend.eval(lr)})
         super().on_epoch_end(epoch, logs)
 
     def _log_metrics(self, logs, prefix, step):
@@ -25,7 +25,6 @@ class MetricsCallback(callbacks.TensorBoard):
             prefix: String. The prefix to apply to the scalar summary names.
             step: Int. The global step to use for TensorBoard.
         """
-        print(f"\n\n{logs}\n\n")
         if logs is None:
             logs = {}
 
@@ -40,13 +39,11 @@ class MetricsCallback(callbacks.TensorBoard):
             if name in ('batch', 'size', 'num_steps'):
                 # Scrub non-metric items.
                 continue
-            print(f"\n\n{name} : {value}\n\n")
             if name.startswith(validation_prefix):
                 name = name[len(validation_prefix):]
                 writer_name = self._validation_run_name
             else:
                 writer_name = self._train_run_name
-            print(f"\n\n{writer_name}\n\n")
             name = prefix + name  # assign batch or epoch prefix
             logs_by_writer[writer_name].append((name, value))
 
@@ -66,18 +63,18 @@ class MetricsCallback(callbacks.TensorBoard):
 
 class CallbacksProducer:
 
-    def __init__(self, logdir="../Logs/Baseline/"):
+    def __init__(self, logdir="../Logs"):
         self.callbacks = {}
-        self.logdir = logdir + datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
+        self.logdir = os.path.join(logdir,datetime.now().strftime("%Y%m%d-%H%M%S"))
 
         self.callbacks["base"] = MetricsCallback(
             logdir=self.logdir
         )
 
         self.callbacks["lr_decay"] = callbacks.ReduceLROnPlateau(
-            monitor='train_loss',
-            factor=0.75,
-            patience=5,
+            monitor='val_loss',
+            factor=0.5,
+            patience=7,
             min_lr=0.0001
         )
 
