@@ -29,6 +29,12 @@ def init_tf_gpus():
             print(e)
 
 def run(train, val, hparams, logdir, dense_shape):
+    init_tf_gpus()
+
+    dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], ["arousal"])
+    train_dataset = dataloader("train", 128)
+    eval_dataset = dataloader("eval", 128)
+
     model = BaseNET1(hparams, dense_shape)  # ResNET(num_classes=1)
     model.compile(
         optimizer=tf.keras.optimizers.Adam(clipnorm=1),
@@ -41,18 +47,12 @@ def run(train, val, hparams, logdir, dense_shape):
     model.fit(train, epochs=30, validation_data=val, validation_steps=45, callbacks=callbacks)
 
 def main():
-    init_tf_gpus()
-
     hparams_list = [config.HP_FILTERS, config.HP_DROPOUT, config.HP_KERNEL, config.HP_DILATION, config.HP_POOL, config.HP_LR]
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
     with tf.summary.create_file_writer(logdir).as_default():
         hp.hparams_config(hparams=hparams_list, metrics=[config.METRIC_ACC])
-
-    dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], ["arousal"])
-    train_dataset = dataloader("train", 128)
-    eval_dataset = dataloader("eval", 128)
 
     session_num = 0
 
@@ -77,7 +77,7 @@ def main():
                             print('--- Starting trial: %s' % run_name)
                             print({h.name: hparams[h] for h in hparams})
 
-                            run(train_dataset, eval_dataset, hparams, run_logdir, dense_shape)
+                            run(hparams, run_logdir, dense_shape)
 
 
 def summary():
