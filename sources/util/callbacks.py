@@ -1,9 +1,15 @@
 import tensorflow as tf
 from tensorflow.keras import callbacks
+
 from datetime import datetime
+import os
 
 
-class LRLogCallback(callbacks.Callback):
+class MetricsCallback(callbacks.TensorBoard):
+
+    def __init__(self, logdir, *args, **kwargs):
+        super(MetricsCallback, self).__init__(self.logdir, *args, **kwargs)
+
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
         lr = self.model.optimizer.lr
@@ -17,12 +23,8 @@ class CallbacksProducer:
         self.callbacks = {}
         self.logdir = logdir + datetime.now().strftime("%Y%m%d-%H%M%S") + "/"
 
-        self.callbacks["base"] = callbacks.TensorBoard(
-            log_dir=logdir,
-            histogram_freq=1,
-            write_graph=False,
-            write_images=True,
-            update_freq=100
+        self.callbacks["base"] = MetricsCallback(
+            logdir=self.logdir
         )
 
         self.callbacks["lr_decay"] = callbacks.ReduceLROnPlateau(
@@ -36,8 +38,6 @@ class CallbacksProducer:
         #    monitor="val_loss",
         #    patience=10
         #)
-
-        self.callbacks["lr_monitor"] = LRLogCallback()
 
     def get_callbacks(self, callback_ids=None):
         callback_list = []
