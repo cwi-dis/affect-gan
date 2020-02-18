@@ -114,7 +114,7 @@ class Dataloader(object):
         print(f"Files loaded in mode {mode}: {files}")
         files = tf.data.Dataset.from_tensor_slices(files)
 
-        dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE, cycle_length=10, block_length=128)
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video: (features, labels))
@@ -127,7 +127,8 @@ class Dataloader(object):
         dataset = dataset.map(with_categoric_labels)
 
         if mode == "train":
-            dataset = dataset.shuffle(buffer_size=40000)
+            dataset = dataset.shuffle(buffer_size=30000)
+            dataset = dataset.repeat()
         
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)
