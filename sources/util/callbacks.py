@@ -73,7 +73,7 @@ class CallbacksProducer:
         )
 
         self.callbacks["lr_decay"] = callbacks.ReduceLROnPlateau(
-            monitor='val_loss',
+            monitor='loss',
             factor=0.5,
             patience=7,
             min_lr=0.0001

@@ -24,9 +24,9 @@ class Dataloader(object):
     def __init__(self, datasetID, features=None, label=None, normalized=True):
         if features is None:
             features = ["bvp"]
-        path = f"../Dataset/CASE_dataset/tfrecord_{datasetID}/"
+        path = "../Dataset/CASE_dataset/tfrecord_%s/" % datasetID
         if path is None or not os.path.exists(path):
-            raise Exception(f"Data path does not exist: {os.curdir}:{path}")
+            raise Exception("Data path does not exist:" + os.curdir +":"+path)
 
         self.path = path
         self.next_element = None
@@ -98,20 +98,20 @@ class Dataloader(object):
 
         modes = ["train", "test", "eval", "inspect"]
         if mode not in modes:
-            raise Exception(f"mode not found! supported modes are {modes}")
+            raise Exception("mode not found! supported modes are %s" % modes)
         #if mode is "eval" and leave_out is None:
         #    raise Exception("leave-one-out evaluation undefined!")
 
         if mode is "train":
-            files = [glob.glob(f"{self.path}sub_{num}.tfrecord") for num in self.train_num]
+            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.train_num]
         elif mode is "eval":
-            files = [glob.glob(f"{self.path}sub_{num}.tfrecord") for num in self.eval_num]
+            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.eval_num]
         elif mode is "test":
-            files = [glob.glob(f"{self.path}sub_{num}.tfrecord") for num in self.test_num]
+            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.test_num]
         elif mode is "inspect":
-            files = [glob.glob(f"{self.path}*.tfrecord")]
+            files = [glob.glob("%s*.tfrecord" % self.path)]
 
-        print(f"Files loaded in mode {mode}: {files}")
+        #print(f"Files loaded in mode %s: {files}")
         files = tf.data.Dataset.from_tensor_slices(files)
 
         dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE, cycle_length=10, block_length=128)
