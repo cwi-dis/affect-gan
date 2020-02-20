@@ -61,23 +61,21 @@ def main():
             for kernel_size in config.HP_KERNEL.domain.values:
                 for dilation in config.HP_DILATION.domain.values:
                     for pool in config.HP_POOL.domain.values:
-                        for lr in config.HP_LR.domain.values:
-                            hparams = {
-                                config.HP_FILTERS: filters,
-                                config.HP_DROPOUT: dropout,
-                                config.HP_KERNEL: kernel_size,
-                                config.HP_DILATION: dilation,
-                                config.HP_POOL: pool,
-                                config.HP_LR: lr
-                            }
+                        hparams = {
+                            config.HP_FILTERS: filters,
+                            config.HP_DROPOUT: dropout,
+                            config.HP_KERNEL: kernel_size,
+                            config.HP_DILATION: dilation,
+                            config.HP_POOL: pool
+                        }
 
-                            dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
-                            run_name = f"run-{session_num}"
-                            run_logdir = os.path.join(logdir, run_name)
-                            print('--- Starting trial: %s' % run_name)
-                            print({h.name: hparams[h] for h in hparams})
+                        dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
+                        run_name = f"run-{session_num}"
+                        run_logdir = os.path.join(logdir, run_name)
+                        print('--- Starting trial: %s' % run_name)
+                        print({h.name: hparams[h] for h in hparams})
 
-                            run(hparams, run_logdir, dense_shape)
+                        run(hparams, run_logdir, dense_shape)
 
 
 def summary():
