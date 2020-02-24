@@ -62,7 +62,7 @@ class MetricsCallback(callbacks.TensorBoard):
 
 class CallbacksProducer:
 
-    def __init__(self, hparams, logdir):
+    def __init__(self, hparams, logdir, run_name):
         self.callbacks = {}
         self.logdir = logdir
 
@@ -83,7 +83,7 @@ class CallbacksProducer:
             restore_best_weights=True
         )
 
-        self.callbacks["hparams"] = hp.KerasCallback(self.logdir, hparams, _hparams_to_string(hparams))
+        self.callbacks["hparams"] = hp.KerasCallback(self.logdir, hparams, run_name)
 
     def get_callbacks(self, callback_ids=None):
         callback_list = []

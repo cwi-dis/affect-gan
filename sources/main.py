@@ -7,7 +7,6 @@ import tensorflow as tf
 from datetime import datetime
 import config
 
-from models.ResNET import ResNET
 from models.BaseNET1 import BaseNET1
 from models.SimpleLSTM import SimpleLSTM
 from data.dataloader import Dataloader
@@ -29,58 +28,79 @@ def init_tf_gpus():
         except RuntimeError as e:
             print(e)
 
-def run(hparams, logdir, dense_shape):
+def run(model_name, hparams, logdir, run_name, dense_shape):
 
     dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], ["arousal"])
     train_dataset = dataloader("train", 128)
     eval_dataset = dataloader("eval", 128)
 
-    model = BaseNET1(hparams, dense_shape)  # ResNET(num_classes=1)
+    if model_name == "BaseNET":
+        model = BaseNET1(hparams, dense_shape)  # ResNET(num_classes=1)
+    if model_name == "SimpleLSTM":
+        model = SimpleLSTM(hparams)
+
     model.compile(
         optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=hparams[config.HP_LR]),
         loss=tf.keras.losses.BinaryCrossentropy(label_smoothing=0.01),
         metrics=['accuracy']
     )
 
-    callbacks = CallbacksProducer(hparams, logdir).get_callbacks()
+    callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
 
     model.fit(train_dataset, epochs=30, validation_data=eval_dataset, validation_steps=45, callbacks=callbacks)
 
+def hp_sweep_run(logdir, run_id, model_name):
+    session_num = 0
+
+    if model_name == "BaseNET":
+        for filters in config.HP_FILTERS.domain.values:
+            for dropout in config.HP_DROPOUT.domain.values:
+                for kernel_size in config.HP_KERNEL.domain.values:
+                    for dilation in config.HP_DILATION.domain.values:
+                        for pool in config.HP_POOL.domain.values:
+                            for lr in config.HP_LR.domain.values:
+                                hparams = {
+                                    config.HP_FILTERS: filters,
+                                    config.HP_DROPOUT: dropout,
+                                    config.HP_KERNEL: kernel_size,
+                                    config.HP_DILATION: dilation,
+                                    config.HP_POOL: pool,
+                                    config.HP_LR: lr
+                                }
+
+                                dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
+                                run_name = "run-%d" % session_num
+                                run_logdir = os.path.join(logdir, run_name)
+                                print('--- Starting trial: %s' % run_name)
+                                print({h.name: hparams[h] for h in hparams})
+
+                                run(hparams, run_logdir, run_name, dense_shape)
+                                session_num += 1
+
+    if model_name == "SimpleLSTM":
+        for cells in config.HP_CELLS_LSTM.domain.values:
+            for lr in config.HP_LR_LSTM.domain.values:
+                hparams = {
+                    config.HP_CELLS_LSTM: cells,
+                    config.HP_LR_LSTM: lr
+                }
+
+                run_name = "run-%d" % session_num
+                run_logdir = os.path.join(logdir, run_name)
+                print('--- Starting trial: %s' % run_name)
+                print({h.name: hparams[h] for h in hparams})
+
+                run(hparams, run_logdir, run_name)
+                session_num += 1
+
 def main():
     init_tf_gpus()
-    hparams_list = [config.HP_FILTERS, config.HP_DROPOUT, config.HP_KERNEL, config.HP_DILATION, config.HP_POOL, config.HP_LR]
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    with tf.summary.create_file_writer(os.path.join(logdir, "hparam_tuning")).as_default():
-        hp.hparams_config(hparams=hparams_list, metrics=[config.METRIC_ACC])
+    hp_sweep_run(logdir, run_id, model_name="BaseNET")
 
-    session_num = 0
-
-    for filters in config.HP_FILTERS.domain.values:
-        for dropout in config.HP_DROPOUT.domain.values:
-            for kernel_size in config.HP_KERNEL.domain.values:
-                for dilation in config.HP_DILATION.domain.values:
-                    for pool in config.HP_POOL.domain.values:
-                        for lr in config.HP_LR.domain.values:
-                            hparams = {
-                                config.HP_FILTERS: filters,
-                                config.HP_DROPOUT: dropout,
-                                config.HP_KERNEL: kernel_size,
-                                config.HP_DILATION: dilation,
-                                config.HP_POOL: pool,
-                                config.HP_LR: lr
-                            }
-
-                            dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
-                            run_name = "run-%d" % session_num
-                            run_logdir = os.path.join(logdir, run_name)
-                            print('--- Starting trial: %s' % run_name)
-                            print({h.name: hparams[h] for h in hparams})
-
-                            run(hparams, run_logdir, dense_shape)
-                            session_num += 1
 
 
 def summary():
