@@ -28,7 +28,7 @@ def init_tf_gpus():
         except RuntimeError as e:
             print(e)
 
-def run(model_name, hparams, logdir, run_name, dense_shape):
+def run(model_name, hparams, logdir, run_name, dense_shape=None):
 
     dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], ["arousal"])
     train_dataset = dataloader("train", 128)
@@ -49,7 +49,7 @@ def run(model_name, hparams, logdir, run_name, dense_shape):
 
     model.fit(train_dataset, epochs=30, validation_data=eval_dataset, validation_steps=45, callbacks=callbacks)
 
-def hp_sweep_run(logdir, run_id, model_name):
+def hp_sweep_run(logdir, model_name):
     session_num = 0
 
     if model_name == "BaseNET":
@@ -74,7 +74,7 @@ def hp_sweep_run(logdir, run_id, model_name):
                                 print('--- Starting trial: %s' % run_name)
                                 print({h.name: hparams[h] for h in hparams})
 
-                                run(hparams, run_logdir, run_name, dense_shape)
+                                run(model_name, hparams, run_logdir, run_name, dense_shape)
                                 session_num += 1
 
     if model_name == "SimpleLSTM":
@@ -90,7 +90,7 @@ def hp_sweep_run(logdir, run_id, model_name):
                 print('--- Starting trial: %s' % run_name)
                 print({h.name: hparams[h] for h in hparams})
 
-                run(hparams, run_logdir, run_name)
+                run(model_name, hparams, run_logdir, run_name)
                 session_num += 1
 
 def main():
@@ -99,7 +99,7 @@ def main():
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    hp_sweep_run(logdir, run_id, model_name="BaseNET")
+    hp_sweep_run(logdir, model_name="BaseNET")
 
 
 
