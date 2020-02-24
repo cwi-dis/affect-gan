@@ -37,8 +37,8 @@ def run(hparams, logdir, dense_shape):
 
     model = BaseNET1(hparams, dense_shape)  # ResNET(num_classes=1)
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(clipnorm=1),
-        loss=tf.keras.losses.BinaryCrossentropy(label_smoothing=0.05),
+        optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=hparams[config.HP_LR]),
+        loss=tf.keras.losses.BinaryCrossentropy(label_smoothing=0.01),
         metrics=['accuracy']
     )
 
@@ -63,21 +63,24 @@ def main():
             for kernel_size in config.HP_KERNEL.domain.values:
                 for dilation in config.HP_DILATION.domain.values:
                     for pool in config.HP_POOL.domain.values:
-                        hparams = {
-                            config.HP_FILTERS: filters,
-                            config.HP_DROPOUT: dropout,
-                            config.HP_KERNEL: kernel_size,
-                            config.HP_DILATION: dilation,
-                            config.HP_POOL: pool
-                        }
+                        for lr in config.HP_LR.domain.values:
+                            hparams = {
+                                config.HP_FILTERS: filters,
+                                config.HP_DROPOUT: dropout,
+                                config.HP_KERNEL: kernel_size,
+                                config.HP_DILATION: dilation,
+                                config.HP_POOL: pool,
+                                config.HP_LR: lr
+                            }
 
-                        dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
-                        run_name = "run-%d" % session_num
-                        run_logdir = os.path.join(logdir, run_name)
-                        print('--- Starting trial: %s' % run_name)
-                        print({h.name: hparams[h] for h in hparams})
+                            dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
+                            run_name = "run-%d" % session_num
+                            run_logdir = os.path.join(logdir, run_name)
+                            print('--- Starting trial: %s' % run_name)
+                            print({h.name: hparams[h] for h in hparams})
 
-                        run(hparams, run_logdir, dense_shape)
+                            run(hparams, run_logdir, dense_shape)
+                            session_num += 1
 
 
 def summary():
