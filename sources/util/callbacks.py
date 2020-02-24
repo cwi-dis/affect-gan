@@ -4,8 +4,7 @@ from tensorflow.python.eager import context
 from tensorflow.python.ops import summary_ops_v2
 
 from tensorboard.plugins.hparams import api as hp
-
-import os
+from util.misc import _hparams_to_string
 
 
 class MetricsCallback(callbacks.TensorBoard):
@@ -61,7 +60,6 @@ class MetricsCallback(callbacks.TensorBoard):
                         for (name, value) in these_logs:
                             summary_ops_v2.scalar(name, value, step=step)
 
-
 class CallbacksProducer:
 
     def __init__(self, hparams, logdir):
@@ -75,16 +73,17 @@ class CallbacksProducer:
         self.callbacks["lr_decay"] = callbacks.ReduceLROnPlateau(
             monitor='loss',
             factor=0.5,
-            patience=7,
+            patience=4,
             min_lr=0.0001
         )
 
-        #self.callbacks["early_stop"] = callbacks.EarlyStopping(
-        #    monitor="val_loss",
-        #    patience=10
-        #)
+        self.callbacks["early_stop"] = callbacks.EarlyStopping(
+            monitor="val_loss",
+            patience=5,
+            restore_best_weights=True
+        )
 
-        self.callbacks["hparams"] = hp.KerasCallback(self.logdir, hparams)
+        self.callbacks["hparams"] = hp.KerasCallback(self.logdir, hparams, _hparams_to_string(hparams))
 
     def get_callbacks(self, callback_ids=None):
         callback_list = []

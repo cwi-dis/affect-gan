@@ -52,7 +52,8 @@ def main():
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
-    with tf.summary.create_file_writer(logdir).as_default():
+
+    with tf.summary.create_file_writer(os.path.join(logdir, "hparam_tuning")).as_default():
         hp.hparams_config(hparams=hparams_list, metrics=[config.METRIC_ACC])
 
     session_num = 0
