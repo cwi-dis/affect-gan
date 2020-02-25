@@ -9,6 +9,7 @@ import config
 
 from models.BaseNET1 import BaseNET1
 from models.SimpleLSTM import SimpleLSTM
+from models.ConvLSTM import ConvLSTM
 from data.dataloader import Dataloader
 
 from util.callbacks import CallbacksProducer
@@ -38,9 +39,11 @@ def run(model_name, hparams, logdir, run_name, dense_shape=None):
         model = BaseNET1(hparams, dense_shape)  # ResNET(num_classes=1)
     if model_name == "SimpleLSTM":
         model = SimpleLSTM(hparams)
+    if model_name == "ConvLSTM":
+        model = ConvLSTM(hparams)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=hparams[config.HP_LR_LSTM]),
+        optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=hparams[config.HP_LR_CL]),
         loss=tf.keras.losses.BinaryCrossentropy(label_smoothing=0.01),
         metrics=['accuracy']
     )
@@ -97,6 +100,31 @@ def hp_sweep_run(logdir, model_name):
                         run(model_name, hparams, run_logdir, run_name)
                         session_num += 1
 
+    if model_name == "ConvLSTM":
+        for filters in config.HP_FILTERS_CL.domain.values:
+            for dropout in config.HP_DROPOUT_CL.domain.values:
+                for kernel_size in config.HP_KERNEL_CL.domain.values:
+                    for strides in config.HP_STRIDES_CL.domain.values:
+                        for cells in config.HP_LSTMCELLS_CL.domain.values:
+                            for lr in config.HP_LR_CL.domain.values:
+                                hparams = {
+                                    config.HP_FILTERS_CL: filters,
+                                    config.HP_DROPOUT_CL: dropout,
+                                    config.HP_KERNEL_CL: kernel_size,
+                                    config.HP_STRIDES_CL: strides,
+                                    config.HP_LSTMCELLS_CL: cells,
+                                    config.HP_LR_CL: lr
+                                }
+
+                                #dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
+                                run_name = "run-%d" % session_num
+                                run_logdir = os.path.join(logdir, run_name)
+                                print('--- Starting trial: %s' % run_name)
+                                print({h.name: hparams[h] for h in hparams})
+
+                                run(model_name, hparams, run_logdir, run_name)
+                                session_num += 1
+
 def main():
     init_tf_gpus()
 
@@ -108,22 +136,21 @@ def main():
 
 
 def summary():
-
     hparams = {
-        config.HP_FILTERS: 8,
-        config.HP_DROPOUT: 0.5,
-        config.HP_KERNEL: 3,
-        config.HP_DILATION: 2,
-        config.HP_POOL: 3,
-        config.HP_LR: 0.001,
-        "dense_shape": tf.math.ceil(500 / 3) * 8
+        config.HP_FILTERS_CL: 8,
+        config.HP_DROPOUT_CL: 0.5,
+        config.HP_KERNEL_CL: 5,
+        config.HP_STRIDES_CL: 2,
+        config.HP_LSTMCELLS_CL: 8,
+        config.HP_LR_CL: 0.0001
     }
 
     #ResNET(num_classes=1).model().summary()
-    #SimpleLSTM().model().summary()
-    BaseNET1(hparams).model().summary()
+    #SimpleLSTM(hparams).model().summary()
+    #BaseNET1(hparams).model().summary()
+    ConvLSTM(hparams).model().summary()
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()
