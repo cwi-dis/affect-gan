@@ -11,7 +11,9 @@ HP_POOL = hp.HParam("pool_size", hp.Discrete([5, 10]))
 HP_LR = hp.HParam("learning_rate", hp.Discrete([0.001, 0.0005]))
 
 # SimpleLSTM hparams
-HP_CELLS_LSTM = hp.HParam("LSTM Cells", hp.Discrete([4, 8, 12, 16]))
-HP_LR_LSTM = hp.HParam("learning_rate", hp.Discrete([0.001, 0.0001]))
+HP_CELLS_LSTM = hp.HParam("LSTM Cells", hp.Discrete([2, 4, 6, 8]))
+HP_LR_LSTM = hp.HParam("learning_rate", hp.Discrete([0.0003]))
+HP_IN_DROPOUT_LSTM = hp.HParam("Input Dropout", hp.Discrete([0.2, 0.4]))
+HP_DROPOUT_LSTM = hp.HParam("Recurrent Dropout", hp.Discrete([0, 0.2, 0.4]))
 
 METRIC_ACC = hp.Metric("accuracy", display_name="Accuracy")

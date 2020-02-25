@@ -127,7 +127,7 @@ class Dataloader(object):
         dataset = dataset.map(with_categoric_labels)
 
         if mode == "train":
-            dataset = dataset.shuffle(buffer_size=30000)
+            dataset = dataset.shuffle(buffer_size=2)
         
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)
@@ -138,7 +138,7 @@ class Dataloader(object):
 if __name__ == '__main__':
     os.chdir("./..")
     d = Dataloader("5000d", ["ecg", "rsp"], ["arousal"])
-    d = d("eval", 1)
+    d = d("train", 1)
 
     i=0
     for _, __ in d:

@@ -40,7 +40,7 @@ def run(model_name, hparams, logdir, run_name, dense_shape=None):
         model = SimpleLSTM(hparams)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=hparams[config.HP_LR]),
+        optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=hparams[config.HP_LR_LSTM]),
         loss=tf.keras.losses.BinaryCrossentropy(label_smoothing=0.01),
         metrics=['accuracy']
     )
@@ -80,18 +80,22 @@ def hp_sweep_run(logdir, model_name):
     if model_name == "SimpleLSTM":
         for cells in config.HP_CELLS_LSTM.domain.values:
             for lr in config.HP_LR_LSTM.domain.values:
-                hparams = {
-                    config.HP_CELLS_LSTM: cells,
-                    config.HP_LR_LSTM: lr
-                }
+                for in_drop in config.HP_IN_DROPOUT_LSTM.domain.values:
+                    for rec_drop in config.HP_DROPOUT_LSTM.domain.values:
+                        hparams = {
+                            config.HP_CELLS_LSTM: cells,
+                            config.HP_LR_LSTM: lr,
+                            config.HP_IN_DROPOUT_LSTM: in_drop,
+                            config.HP_DROPOUT_LSTM: rec_drop
+                        }
 
-                run_name = "run-%d" % session_num
-                run_logdir = os.path.join(logdir, run_name)
-                print('--- Starting trial: %s' % run_name)
-                print({h.name: hparams[h] for h in hparams})
+                        run_name = "run-%d" % session_num
+                        run_logdir = os.path.join(logdir, run_name)
+                        print('--- Starting trial: %s' % run_name)
+                        print({h.name: hparams[h] for h in hparams})
 
-                run(model_name, hparams, run_logdir, run_name)
-                session_num += 1
+                        run(model_name, hparams, run_logdir, run_name)
+                        session_num += 1
 
 def main():
     init_tf_gpus()
@@ -99,7 +103,7 @@ def main():
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    hp_sweep_run(logdir, model_name="BaseNET")
+    hp_sweep_run(logdir, model_name="SimpleLSTM")
 
 
 
