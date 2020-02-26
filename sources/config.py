@@ -24,4 +24,9 @@ HP_DROPOUT_CL = hp.HParam("dropout", hp.Discrete([0.4]))
 HP_LSTMCELLS_CL = hp.HParam("LSTM Cells", hp.Discrete([4, 8, 12]))
 HP_LR_CL = hp.HParam("learning_rate", hp.Discrete([0.0001, 0.0005]))
 
+# ChannelCNN hparams
+HP_CHANNEL_FILTERS = hp.HParam("Channel Filters", hp.Discrete([2, 4, 6]))
+HP_CHANNEL_KERNEL = hp.HParam("Channel Kernel Size", hp.Discrete([3, 5, 8]))
+HP_CHANNEL_MERGE_KERNEL = hp.HParam("Channel Merge Kernel Size", hp.Discrete([3, 5]))
+
 METRIC_ACC = hp.Metric("accuracy", display_name="Accuracy")

@@ -10,6 +10,7 @@ import config
 from models.BaseNET1 import BaseNET1
 from models.SimpleLSTM import SimpleLSTM
 from models.ConvLSTM import ConvLSTM
+from models.ChannelCNN import ChannelCNN
 from data.dataloader import Dataloader
 
 from util.callbacks import CallbacksProducer
@@ -41,6 +42,8 @@ def run(model_name, hparams, logdir, run_name, dense_shape=None):
         model = SimpleLSTM(hparams)
     if model_name == "ConvLSTM":
         model = ConvLSTM(hparams)
+    if model_name == "ChannelCNN":
+        model = ChannelCNN(hparams)
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=hparams[config.HP_LR_CL]),
@@ -125,13 +128,32 @@ def hp_sweep_run(logdir, model_name):
                                 run(model_name, hparams, run_logdir, run_name)
                                 session_num += 1
 
+    if model_name == "ChannelCNN":
+        for filters in config.HP_CHANNEL_FILTERS.domain.values:
+            for channel_kernel in config.HP_CHANNEL_KERNEL.domain.values:
+                for merge_kernel in config.HP_CHANNEL_MERGE_KERNEL.domain.values:
+                    hparams ={
+                        config.HP_CHANNEL_FILTERS: filters,
+                        config.HP_CHANNEL_KERNEL: channel_kernel,
+                        config.HP_CHANNEL_MERGE_KERNEL: merge_kernel
+                    }
+
+                    run_name = "run-%d" % session_num
+                    run_logdir = os.path.join(logdir, run_name)
+                    print('--- Starting trial: %s' % run_name)
+                    print({h.name: hparams[h] for h in hparams})
+
+                    run(model_name, hparams, run_logdir, run_name)
+                    session_num += 1
+
+
 def main():
     init_tf_gpus()
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    hp_sweep_run(logdir, model_name="SimpleLSTM")
+    hp_sweep_run(logdir, model_name="ChannelCNN")
 
 
 
@@ -148,9 +170,10 @@ def summary():
     #ResNET(num_classes=1).model().summary()
     #SimpleLSTM(hparams).model().summary()
     #BaseNET1(hparams).model().summary()
-    ConvLSTM(hparams).model().summary()
+    #ConvLSTM(hparams).model().summary()
+    ChannelCNN(hparams, 5).model().summary()
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()
