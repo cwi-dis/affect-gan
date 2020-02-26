@@ -25,8 +25,8 @@ HP_LSTMCELLS_CL = hp.HParam("LSTM Cells", hp.Discrete([4, 8, 12]))
 HP_LR_CL = hp.HParam("learning_rate", hp.Discrete([0.0001, 0.0005]))
 
 # ChannelCNN hparams
-HP_CDEEP_CHANNELS = hp.HParam("Channel Filters", hp.Discrete([2, 4, 6]))
-HP_CDEEP_LAYERS = hp.HParam("Channel Kernel Size", hp.Discrete([3, 5, 8]))
+HP_CDEEP_CHANNELS = hp.HParam("Channel Filters", hp.Discrete([2, 3, 4, 5]))
+HP_CDEEP_LAYERS = hp.HParam("Channel Kernel Size", hp.Discrete([1, 2, 3]))
 
 # DeepCNN hparams
 HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([2, 4, 6, 8]))
