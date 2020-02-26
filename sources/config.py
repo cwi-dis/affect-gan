@@ -29,4 +29,8 @@ HP_CHANNEL_FILTERS = hp.HParam("Channel Filters", hp.Discrete([2, 4, 6]))
 HP_CHANNEL_KERNEL = hp.HParam("Channel Kernel Size", hp.Discrete([3, 5, 8]))
 HP_CHANNEL_MERGE_KERNEL = hp.HParam("Channel Merge Kernel Size", hp.Discrete([3, 5]))
 
+# DeepCNN hparams
+HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([2, 4, 6, 8]))
+HP_DEEP_LAYERS = hp.HParam("DownConv Layers", hp.Discrete([1, 2, 3]))
+
 METRIC_ACC = hp.Metric("accuracy", display_name="Accuracy")

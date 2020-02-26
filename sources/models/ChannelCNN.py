@@ -3,6 +3,8 @@ import config
 import tensorflow as tf
 import tensorflow.keras.layers as layers
 
+from models.DeepCNN import ChannelDownResBlock
+
 class ChannelCNN(tf.keras.Model):
 
     def __init__(self, hparams, n_channels):
@@ -10,11 +12,8 @@ class ChannelCNN(tf.keras.Model):
         self.n_channels = n_channels
 
         self.channel_conv = [
-            layers.Conv1D(
-                filters=hparams[config.HP_CHANNEL_FILTERS],
-                kernel_size=hparams[config.HP_CHANNEL_KERNEL],
-                strides=(hparams[config.HP_CHANNEL_KERNEL] + 1) // 2,
-                padding="valid",
+            ChannelDownResBlock(
+                channels=hparams[config.HP_CHANNEL_FILTERS],
                 activation=layers.LeakyReLU()
             ) for c in tf.range(self.n_channels)
         ]
@@ -27,9 +26,7 @@ class ChannelCNN(tf.keras.Model):
             strides=(hparams[config.HP_CHANNEL_MERGE_KERNEL] + 1) // 2,
             activation=layers.LeakyReLU()
         )
-        self.dense_out = layers.Dense(units=1, activation="softmax")
-
-
+        self.dense_out = layers.Dense(units=1, activation="sigmoid")
 
 
     def call(self, inputs, training=None, mask=None):

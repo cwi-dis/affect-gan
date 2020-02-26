@@ -11,6 +11,7 @@ from models.BaseNET1 import BaseNET1
 from models.SimpleLSTM import SimpleLSTM
 from models.ConvLSTM import ConvLSTM
 from models.ChannelCNN import ChannelCNN
+from models.DeepCNN import DeepCNN
 from data.dataloader import Dataloader
 
 from util.callbacks import CallbacksProducer
@@ -156,24 +157,20 @@ def main():
     hp_sweep_run(logdir, model_name="ChannelCNN")
 
 
-
 def summary():
     hparams = {
-        config.HP_FILTERS_CL: 8,
-        config.HP_DROPOUT_CL: 0.5,
-        config.HP_KERNEL_CL: 5,
-        config.HP_STRIDES_CL: 2,
-        config.HP_LSTMCELLS_CL: 8,
-        config.HP_LR_CL: 0.0001
+        config.HP_DEEP_LAYERS: 2,
+        config.HP_DEEP_CHANNELS: 8,
     }
 
     #ResNET(num_classes=1).model().summary()
     #SimpleLSTM(hparams).model().summary()
     #BaseNET1(hparams).model().summary()
     #ConvLSTM(hparams).model().summary()
-    ChannelCNN(hparams, 5).model().summary()
+    #ChannelCNN(hparams, 5).model().summary()
+    DeepCNN(hparams).model().summary()
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()
