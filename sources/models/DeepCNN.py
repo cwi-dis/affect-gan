@@ -4,7 +4,7 @@ import tensorflow as tf
 import tensorflow.keras.layers as layers
 
 
-class ChannelDownResBlock(tf.keras.layers.Layer):
+class ChannelDownResBlock(layers.Layer):
     def __init__(self, channels, activation=None):
         super(ChannelDownResBlock, self).__init__()
         self.out_channels = channels
@@ -36,6 +36,23 @@ class ChannelDownResBlock(tf.keras.layers.Layer):
 
         return out
 
+class ChannelDownResLayer(layers.Layer):
+    def __init__(self, channels_out, last_layer=False, **kwargs):
+        super(ChannelDownResLayer, self).__init__(**kwargs)
+        self.last_layer = last_layer
+
+        self.down_resblock = ChannelDownResBlock(channels_out)
+        self.lrelu = layers.LeakyReLU()
+        self.dropout = layers.Dropout(rate=0.5)
+
+    def call(self, inputs, **kwargs):
+        x = self.down_resblock(inputs)
+
+        if not self.last_layer:
+            x = self.dropout(self.lrelu(x), training=kwargs["training"])
+
+        return x
+
 
 class DeepCNN(tf.keras.Model):
 
@@ -43,32 +60,20 @@ class DeepCNN(tf.keras.Model):
         super(DeepCNN, self).__init__(*args, **kwargs)
         self.layers_count = hparams[config.HP_DEEP_LAYERS]
 
-        self.down_resblock0 = ChannelDownResBlock(hparams[config.HP_DEEP_CHANNELS])
-
-        self.lrelu1 = layers.LeakyReLU()
-        self.drop1 = layers.Dropout(rate=0.4)
-        self.down_resblock1 = ChannelDownResBlock(hparams[config.HP_DEEP_CHANNELS] * 2)
-
-        self.lrelu2 = layers.LeakyReLU()
-        self.drop2 = layers.Dropout(rate=0.4)
-        self.down_resblock2 = ChannelDownResBlock(hparams[config.HP_DEEP_CHANNELS] * 4)
+        self.down_res_layers = [ChannelDownResLayer(hparams[config.HP_DEEP_CHANNELS] * (2 ** l)) for l in range(self.layers_count - 1)]
+        self.down_res_layer_final = ChannelDownResLayer(hparams[config.HP_DEEP_CHANNELS] * (2 ** (self.layers_count-1)), last_layer=True)
 
         self.feature_pool = layers.GlobalAveragePooling1D()
         self.lrelu_out = layers.LeakyReLU()
         self.dense_out = layers.Dense(units=1, activation='sigmoid')
 
     def call(self, inputs, training=None, mask=None):
-        x = self.down_resblock0(inputs)
+        x = inputs
 
-        if self.layers_count != 1:
-            x = self.lrelu1(x)
-            x = self.drop1(x, training=training)
-            x = self.down_resblock1(x)
+        for i in range(self.layers_count - 1):
+            x = self.down_res_layers[i](x, training=training)
 
-        if self.layers_count == 3:
-            x = self.lrelu2(x)
-            x = self.drop2(x, training=training)
-            x = self.down_resblock2(x)
+        x = self.down_res_layer_final(x, training=training)
 
         x = self.feature_pool(x)
         x = self.lrelu_out(x)

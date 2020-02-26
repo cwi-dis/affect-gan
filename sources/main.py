@@ -44,7 +44,7 @@ def run(model_name, hparams, logdir, run_name, dense_shape=None):
     if model_name == "ConvLSTM":
         model = ConvLSTM(hparams)
     if model_name == "ChannelCNN":
-        model = ChannelCNN(hparams)
+        model = None
     if model_name == "DeepCNN":
         model = DeepCNN(hparams)
 
@@ -177,16 +177,16 @@ def main():
 
 def summary():
     hparams = {
-        config.HP_DEEP_LAYERS: 2,
-        config.HP_DEEP_CHANNELS: 8,
+        config.HP_CDEEP_LAYERS: 4,
+        config.HP_CDEEP_CHANNELS: 2,
     }
 
     #ResNET(num_classes=1).model().summary()
     #SimpleLSTM(hparams).model().summary()
     #BaseNET1(hparams).model().summary()
     #ConvLSTM(hparams).model().summary()
-    #ChannelCNN(hparams, 5).model().summary()
-    DeepCNN(hparams).model().summary()
+    ChannelCNN(hparams, 5).model().summary()
+    #DeepCNN(hparams).model().summary()
 
 
 if __name__ == '__main__':
