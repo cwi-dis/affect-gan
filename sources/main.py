@@ -173,20 +173,24 @@ def hp_sweep_run(logdir, model_name):
             for v_channels in config.HP_LDEEP_V_CHANNELS.domain.values:
                 for f_layers in config.HP_LDEEP_F_LAYERS.domain.values:
                     for dropout in config.HP_LDEEP_DROPOUT.domain.values:
-                        hparams = {
-                            config.HP_LDEEP_V_LAYERS: v_layers,
-                            config.HP_LDEEP_V_CHANNELS: v_channels,
-                            config.HP_LDEEP_F_LAYERS: f_layers,
-                            config.HP_LDEEP_DROPOUT: dropout
-                        }
+                        for ksize in config.HP_LDEEP_KSIZE.domain.values:
+                            for wnorm in config.HP_LDEEP_WEIGHTNORM.domain.values:
+                                hparams = {
+                                    config.HP_LDEEP_V_LAYERS: v_layers,
+                                    config.HP_LDEEP_V_CHANNELS: v_channels,
+                                    config.HP_LDEEP_F_LAYERS: f_layers,
+                                    config.HP_LDEEP_DROPOUT: dropout,
+                                    config.HP_LDEEP_KSIZE: ksize,
+                                    config.HP_LDEEP_WEIGHTNORM: wnorm
+                                }
 
-                        run_name = "run-%d" % session_num
-                        run_logdir = os.path.join(logdir, run_name)
-                        print('--- Starting trial: %s' % run_name)
-                        print({h.name: hparams[h] for h in hparams})
+                                run_name = "run-%d" % session_num
+                                run_logdir = os.path.join(logdir, run_name)
+                                print('--- Starting trial: %s' % run_name)
+                                print({h.name: hparams[h] for h in hparams})
 
-                        run(model_name, hparams, run_logdir, run_name)
-                        session_num += 1
+                                run(model_name, hparams, run_logdir, run_name)
+                                session_num += 1
 
 
 def main():
@@ -201,9 +205,11 @@ def main():
 def summary():
     hparams = {
         config.HP_LDEEP_V_LAYERS: 1,
-        config.HP_LDEEP_F_LAYERS: 1,
+        config.HP_LDEEP_F_LAYERS: 2,
         config.HP_LDEEP_V_CHANNELS: 2,
-        config.HP_LDEEP_DROPOUT: 0.4
+        config.HP_LDEEP_DROPOUT: 0.4,
+        config.HP_LDEEP_KSIZE: 5,
+        config.HP_LDEEP_WEIGHTNORM: 3
     }
 
     #ResNET(num_classes=1).model().summary()

@@ -17,7 +17,8 @@ class LateFuseCNN(tf.keras.Model):
             ChannelDownResLayer(
                 channels_out=hparams[config.HP_LDEEP_V_CHANNELS] * (2 ** l),
                 dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
-                kernel_size=hparams[config.HP_LDEEP_KSIZE]
+                kernel_size=hparams[config.HP_LDEEP_KSIZE],
+                w_norm_clip=hparams[config.HP_LDEEP_WEIGHTNORM]
             ) for c in range(self.views)
         ] for l in range(self.view_layers_count - 1)]
 
@@ -26,6 +27,7 @@ class LateFuseCNN(tf.keras.Model):
                 channels_out=hparams[config.HP_LDEEP_V_CHANNELS] * (2 ** (self.view_layers_count-1)),
                 dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
                 kernel_size=hparams[config.HP_LDEEP_KSIZE],
+                w_norm_clip=hparams[config.HP_LDEEP_WEIGHTNORM],
                 last_layer=True
             ) for c in range(self.views)
         ]
@@ -36,13 +38,15 @@ class LateFuseCNN(tf.keras.Model):
             ChannelDownResLayer(
                 self.merged_channel_n // (2 ** l),
                 dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
-                kernel_size=hparams[config.HP_LDEEP_KSIZE]
+                kernel_size=hparams[config.HP_LDEEP_KSIZE],
+                w_norm_clip = hparams[config.HP_LDEEP_WEIGHTNORM]
             ) for l in range(self.fuse_layers_count - 1)
         ]
         self.down_res_layer_final = ChannelDownResLayer(
             self.merged_channel_n // (2 ** (self.fuse_layers_count - 1)),
             dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
             kernel_size=hparams[config.HP_LDEEP_KSIZE],
+            w_norm_clip=hparams[config.HP_LDEEP_WEIGHTNORM],
             last_layer=True
         )
 
