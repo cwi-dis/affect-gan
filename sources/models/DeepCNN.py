@@ -37,13 +37,13 @@ class ChannelDownResBlock(layers.Layer):
         return out
 
 class ChannelDownResLayer(layers.Layer):
-    def __init__(self, channels_out, last_layer=False, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.3, last_layer=False, **kwargs):
         super(ChannelDownResLayer, self).__init__(**kwargs)
         self.last_layer = last_layer
 
         self.down_resblock = ChannelDownResBlock(channels_out)
         self.lrelu = layers.LeakyReLU()
-        self.dropout = layers.Dropout(rate=0.5)
+        self.dropout = layers.Dropout(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
         x = self.down_resblock(inputs)

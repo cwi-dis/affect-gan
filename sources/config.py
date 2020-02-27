@@ -32,4 +32,10 @@ HP_CDEEP_LAYERS = hp.HParam("Channel Kernel Size", hp.Discrete([1, 2, 3]))
 HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([2, 4, 6, 8]))
 HP_DEEP_LAYERS = hp.HParam("DownConv Layers", hp.Discrete([1, 2, 3]))
 
+# LateFuseCNN hparams
+HP_LDEEP_V_CHANNELS = hp.HParam("View-Ind. Filter start size", hp.Discrete([2, 4]))
+HP_LDEEP_V_LAYERS = hp.HParam("View-Ind DownConv Layers", hp.Discrete([1, 2]))
+HP_LDEEP_F_LAYERS = hp.HParam("Fused DownConv Layers", hp.Discrete([1, 2, 3]))
+HP_LDEEP_DROPOUT = hp.HParam("dropout", hp.Discrete([0.25, 0.5]))
+
 METRIC_ACC = hp.Metric("accuracy", display_name="Accuracy")

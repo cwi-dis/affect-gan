@@ -13,6 +13,7 @@ from models.SimpleLSTM import SimpleLSTM
 from models.ConvLSTM import ConvLSTM
 from models.ChannelCNN import ChannelCNN
 from models.DeepCNN import DeepCNN
+from models.LateFuseCNN import LateFuseCNN
 from data.dataloader import Dataloader
 
 from util.callbacks import CallbacksProducer
@@ -180,16 +181,18 @@ def main():
 
 def summary():
     hparams = {
-        config.HP_CDEEP_LAYERS: 4,
-        config.HP_CDEEP_CHANNELS: 2,
+        config.HP_LDEEP_V_LAYERS: 2,
+        config.HP_LDEEP_F_LAYERS: 3,
+        config.HP_LDEEP_V_CHANNELS: 4
     }
 
     #ResNET(num_classes=1).model().summary()
     #SimpleLSTM(hparams).model().summary()
     #BaseNET1(hparams).model().summary()
     #ConvLSTM(hparams).model().summary()
-    ChannelCNN(hparams, 5).model().summary()
+    #ChannelCNN(hparams, 5).model().summary()
     #DeepCNN(hparams).model().summary()
+    LateFuseCNN(hparams, 5).model().summary()
 
 
 if __name__ == '__main__':
