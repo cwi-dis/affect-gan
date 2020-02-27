@@ -6,6 +6,7 @@ import os
 import tensorflow as tf
 from datetime import datetime
 import config
+import multiprocessing
 
 from models.BaseNET1 import BaseNET1
 from models.SimpleLSTM import SimpleLSTM
@@ -57,6 +58,7 @@ def run(model_name, hparams, logdir, run_name, dense_shape=None):
     callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
 
     model.fit(train_dataset, epochs=30, validation_data=eval_dataset, validation_steps=45, callbacks=callbacks)
+
 
 def hp_sweep_run(logdir, model_name):
     session_num = 0
@@ -144,6 +146,9 @@ def hp_sweep_run(logdir, model_name):
                 print('--- Starting trial: %s' % run_name)
                 print({h.name: hparams[h] for h in hparams})
 
+                process_train = multiprocessing.Process(target=run, args=(model_name, hparams, run_logdir, run_name,))
+                process_train.start()
+                process_train.join()
                 run(model_name, hparams, run_logdir, run_name)
                 session_num += 1
 
