@@ -16,7 +16,8 @@ class LateFuseCNN(tf.keras.Model):
         self.channel_down_res_layers = [[
             ChannelDownResLayer(
                 channels_out=hparams[config.HP_LDEEP_V_CHANNELS] * (2 ** l),
-                dropout_rate=hparams[config.HP_LDEEP_DROPOUT]
+                dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
+                kernel_size=hparams[config.HP_LDEEP_KSIZE]
             ) for c in range(self.views)
         ] for l in range(self.view_layers_count - 1)]
 
@@ -24,16 +25,26 @@ class LateFuseCNN(tf.keras.Model):
             ChannelDownResLayer(
                 channels_out=hparams[config.HP_LDEEP_V_CHANNELS] * (2 ** (self.view_layers_count-1)),
                 dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
+                kernel_size=hparams[config.HP_LDEEP_KSIZE],
                 last_layer=True
             ) for c in range(self.views)
         ]
 
         self.merged_channel_n = hparams[config.HP_LDEEP_V_CHANNELS] * (2 ** (self.view_layers_count-1)) * self.views
 
-        self.down_res_layers = [ChannelDownResLayer(self.merged_channel_n // (2 ** l), dropout_rate=hparams[config.HP_LDEEP_DROPOUT]) for l in
-                                range(self.fuse_layers_count - 1)]
+        self.down_res_layers = [
+            ChannelDownResLayer(
+                self.merged_channel_n // (2 ** l),
+                dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
+                kernel_size=hparams[config.HP_LDEEP_KSIZE]
+            ) for l in range(self.fuse_layers_count - 1)
+        ]
         self.down_res_layer_final = ChannelDownResLayer(
-            self.merged_channel_n // (2 ** (self.fuse_layers_count - 1)), dropout_rate=hparams[config.HP_LDEEP_DROPOUT], last_layer=True)
+            self.merged_channel_n // (2 ** (self.fuse_layers_count - 1)),
+            dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
+            kernel_size=hparams[config.HP_LDEEP_KSIZE],
+            last_layer=True
+        )
 
         self.feature_pool = layers.GlobalAveragePooling1D()
         self.lrelu_out = layers.LeakyReLU()

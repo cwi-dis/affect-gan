@@ -5,11 +5,13 @@ import tensorflow.keras.layers as layers
 
 
 class ChannelDownResBlock(layers.Layer):
-    def __init__(self, channels, activation=None):
+    def __init__(self, channels, kernel_size, activation=None):
         super(ChannelDownResBlock, self).__init__()
         self.out_channels = channels
-        self.conv1 = layers.Conv1D(filters=channels, kernel_size=3, padding="same", activation=layers.LeakyReLU(alpha=0.2))
-        self.conv2 = layers.Conv1D(filters=channels, kernel_size=3, padding="same")
+        self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(alpha=0.2),
+                                   kernel_constraint=tf.keras.constraints.MaxNorm(axis=[0,1]))
+        self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
+                                   kernel_constraint=tf.keras.constraints.MaxNorm(axis=[0,1]))
 
         self.pool = layers.AveragePooling1D(pool_size=2, strides=2)
 
@@ -37,11 +39,11 @@ class ChannelDownResBlock(layers.Layer):
         return out
 
 class ChannelDownResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.3, last_layer=False, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.3, kernel_size=5, last_layer=False, **kwargs):
         super(ChannelDownResLayer, self).__init__(**kwargs)
         self.last_layer = last_layer
 
-        self.down_resblock = ChannelDownResBlock(channels_out)
+        self.down_resblock = ChannelDownResBlock(channels_out, kernel_size)
         self.lrelu = layers.LeakyReLU()
         self.dropout = layers.Dropout(rate=dropout_rate)
 

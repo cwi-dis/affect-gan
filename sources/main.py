@@ -200,9 +200,10 @@ def main():
 
 def summary():
     hparams = {
-        config.HP_LDEEP_V_LAYERS: 2,
-        config.HP_LDEEP_F_LAYERS: 3,
-        config.HP_LDEEP_V_CHANNELS: 4
+        config.HP_LDEEP_V_LAYERS: 1,
+        config.HP_LDEEP_F_LAYERS: 1,
+        config.HP_LDEEP_V_CHANNELS: 2,
+        config.HP_LDEEP_DROPOUT: 0.4
     }
 
     #ResNET(num_classes=1).model().summary()
