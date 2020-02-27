@@ -38,14 +38,14 @@ class LateFuseCNN(tf.keras.Model):
             ChannelDownResLayer(
                 self.merged_channel_n // (2 ** l),
                 dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
-                kernel_size=hparams[config.HP_LDEEP_KSIZE],
+                kernel_size=3,#hparams[config.HP_LDEEP_KSIZE],
                 w_norm_clip = hparams[config.HP_LDEEP_WEIGHTNORM]
             ) for l in range(self.fuse_layers_count - 1)
         ]
         self.down_res_layer_final = ChannelDownResLayer(
             self.merged_channel_n // (2 ** (self.fuse_layers_count - 1)),
             dropout_rate=hparams[config.HP_LDEEP_DROPOUT],
-            kernel_size=hparams[config.HP_LDEEP_KSIZE],
+            kernel_size=3,#hparams[config.HP_LDEEP_KSIZE],
             w_norm_clip=hparams[config.HP_LDEEP_WEIGHTNORM],
             last_layer=True
         )

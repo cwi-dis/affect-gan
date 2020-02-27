@@ -204,12 +204,8 @@ def main():
 
 def summary():
     hparams = {
-        config.HP_LDEEP_V_LAYERS: 1,
-        config.HP_LDEEP_F_LAYERS: 2,
-        config.HP_LDEEP_V_CHANNELS: 2,
-        config.HP_LDEEP_DROPOUT: 0.4,
-        config.HP_LDEEP_KSIZE: 5,
-        config.HP_LDEEP_WEIGHTNORM: 3
+        config.HP_DEEP_LAYERS: 2,
+        config.HP_DEEP_CHANNELS: 16
     }
 
     #ResNET(num_classes=1).model().summary()
@@ -217,8 +213,8 @@ def summary():
     #BaseNET1(hparams).model().summary()
     #ConvLSTM(hparams).model().summary()
     #ChannelCNN(hparams, 5).model().summary()
-    #DeepCNN(hparams).model().summary()
-    LateFuseCNN(hparams, 5).model().summary()
+    DeepCNN(hparams).model().summary()
+    #LateFuseCNN(hparams, 5).model().summary()
 
 
 if __name__ == '__main__':
