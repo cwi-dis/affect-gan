@@ -39,7 +39,7 @@ class ChannelDownResBlock(layers.Layer):
         return out
 
 class ChannelDownResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=3, w_norm_clip=2, last_layer=False, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=7, w_norm_clip=2, last_layer=False, **kwargs):
         super(ChannelDownResLayer, self).__init__(**kwargs)
         self.last_layer = last_layer
 
@@ -61,9 +61,18 @@ class DeepCNN(tf.keras.Model):
     def __init__(self, hparams, *args, **kwargs):
         super(DeepCNN, self).__init__(*args, **kwargs)
         self.layers_count = hparams[config.HP_DEEP_LAYERS]
+        self.input_len = 500
 
-        self.down_res_layers = [ChannelDownResLayer(hparams[config.HP_DEEP_CHANNELS] // (2 ** l)) for l in range(self.layers_count - 1)]
-        self.down_res_layer_final = ChannelDownResLayer(hparams[config.HP_DEEP_CHANNELS] // (2 ** (self.layers_count-1)), last_layer=True)
+        self.down_res_layers = [ChannelDownResLayer
+            (
+                hparams[config.HP_DEEP_CHANNELS] * ((l+3) // 2),
+                kernel_size=max(3, hparams[config.HP_DEEP_KERNEL_SIZE] - 2*l)
+            ) for l in range(self.layers_count - 1)]
+        self.down_res_layer_final = ChannelDownResLayer\
+            (
+                hparams[config.HP_DEEP_CHANNELS] * ((self.layers_count+2) // 2),
+                kernel_size=max(3, hparams[config.HP_DEEP_KERNEL_SIZE] - 2*(self.layers_count-1)),
+                last_layer=True)
 
         self.feature_pool = layers.GlobalAveragePooling1D()
         self.lrelu_out = layers.LeakyReLU()
