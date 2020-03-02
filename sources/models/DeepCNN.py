@@ -75,7 +75,13 @@ class DeepCNN(tf.keras.Model):
 
         self.feature_pool = layers.GlobalAveragePooling1D()
         self.lrelu_out = layers.LeakyReLU()
-        self.dense_out = layers.Dense(units=1, activation='sigmoid')
+
+        if hparams[config.HP_LOSS_TYPE] == "MSE":
+            activation = None
+        else:
+            activation = 'sigmoid'
+
+        self.dense_out = layers.Dense(units=1, activation=activation)
 
     def call(self, inputs, training=None, mask=None):
         x = inputs
