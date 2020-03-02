@@ -83,7 +83,8 @@ class CallbacksProducer:
             restore_best_weights=True
         )
 
-        self.callbacks["hparams"] = hp.KerasCallback(self.logdir, hparams, run_name)
+        if run_name is not None:
+            self.callbacks["hparams"] = hp.KerasCallback(self.logdir, hparams, run_name)
 
     def get_callbacks(self, callback_ids=None):
         callback_list = []

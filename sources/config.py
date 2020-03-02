@@ -29,9 +29,10 @@ HP_CDEEP_CHANNELS = hp.HParam("Channel Filters", hp.Discrete([2, 3, 4, 5]))
 HP_CDEEP_LAYERS = hp.HParam("Channel Kernel Size", hp.Discrete([1, 2, 3]))
 
 # DeepCNN hparams
-HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([2, 4, 6, 8]))
-HP_DEEP_LAYERS = hp.HParam("DownConv Layers", hp.Discrete([1, 2, 3, 4]))
-HP_DEEP_KERNEL_SIZE = hp.HParam("Kernel Size", hp.Discrete([3, 5, 7, 10]))
+HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([2]))
+HP_DEEP_LAYERS = hp.HParam("DownConv Layers", hp.Discrete([2, 3, 4]))
+HP_DEEP_KERNEL_SIZE = hp.HParam("Kernel Size", hp.Discrete([3, 5]))
+HP_LOSS_TYPE = hp.HParam("Loss Type", hp.Discrete(["BCE", "MSE"]))
 
 # LateFuseCNN hparams
 HP_LDEEP_V_CHANNELS = hp.HParam("View-Ind. Filter start size", hp.Discrete([2, 4]))
@@ -40,5 +41,21 @@ HP_LDEEP_F_LAYERS = hp.HParam("Fused DownConv Layers", hp.Discrete([1, 2, 3]))
 HP_LDEEP_DROPOUT = hp.HParam("dropout", hp.Discrete([0.4]))
 HP_LDEEP_KSIZE = hp.HParam("kernel_size", hp.Discrete([3, 5, 10]))
 HP_LDEEP_WEIGHTNORM = hp.HParam("Weight maxnorm constraint", hp.Discrete([2]))
+
+OPT_PARAMS = {
+    "BaseNET": {
+        HP_FILTERS: 8,
+        HP_DROPOUT: 0.4,
+        HP_KERNEL: 5,
+        HP_DILATION: 1,
+        HP_POOL: 5
+    },
+    "DeepCNN": {
+        HP_DEEP_LAYERS: 3,
+        HP_DEEP_CHANNELS: 4,
+        HP_DEEP_KERNEL_SIZE: 3,
+        HP_LOSS_TYPE: "MSE"
+    }
+}
 
 METRIC_ACC = hp.Metric("accuracy", display_name="Accuracy")

@@ -21,7 +21,7 @@ def with_categoric_labels(features, label):
 
 class Dataloader(object):
 
-    def __init__(self, datasetID, features=None, label=None, normalized=True):
+    def __init__(self, datasetID, features=None, label=None, continuous_labels=False, normalized=True):
         if features is None:
             features = ["bvp"]
         path = "../Dataset/CASE_dataset/tfrecord_%s/" % datasetID
@@ -36,6 +36,7 @@ class Dataloader(object):
             self.labels = ["arousal"]
         else:
             self.labels = label
+        self.continuous_labels = continuous_labels
         self.normalized = normalized
 
         self.means = pd.read_csv("../Dataset/CASE_dataset/stats/mean.csv", header=None, index_col=0, squeeze=True).astype("float32")
@@ -124,7 +125,8 @@ class Dataloader(object):
             dataset = dataset.shuffle(buffer_size=500)
             return dataset
 
-        dataset = dataset.map(with_categoric_labels)
+        if not self.continuous_labels:
+            dataset = dataset.map(with_categoric_labels)
 
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=2)

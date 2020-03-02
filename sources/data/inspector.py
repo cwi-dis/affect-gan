@@ -101,6 +101,7 @@ def video_viz(extended_labels):
     plt.show()
 
 if __name__ == '__main__':
+    os.chdir("./..")
     dataloader = Dataloader("5000d", features=["bvp", "ecg", "rsp", "gsr", "skt"], label=["arousal", "valence"], normalized=True)
     data = dataloader("inspect", 1)
 

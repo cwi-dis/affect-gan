@@ -17,6 +17,8 @@ from models.LateFuseCNN import LateFuseCNN
 from data.dataloader import Dataloader
 
 from util.callbacks import CallbacksProducer
+from util.CustomLosses import CombinedLoss
+from util.CustomMetrics import SimpleRegressionAccuracy
 from tensorboard.plugins.hparams import api as hp
 
 
@@ -33,9 +35,22 @@ def init_tf_gpus():
         except RuntimeError as e:
             print(e)
 
-def run(model_name, hparams, logdir, run_name, dense_shape=None):
+def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
+    try:
+        if hparams[config.HP_LOSS_TYPE] == "MSE":
+            continuous_labels = True
+            loss = CombinedLoss()
+            metrics = [SimpleRegressionAccuracy]
+        else:
+            continuous_labels = False
+            loss = tf.keras.losses.BinaryCrossentropy()
+            metrics = ["accuracy"]
+    except:
+        continuous_labels = False
+        loss = tf.keras.losses.BinaryCrossentropy()
+        metrics = ["accuracy"]
 
-    dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], ["arousal"])
+    dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], ["arousal"], continuous_labels=continuous_labels)
     train_dataset = dataloader("train", 128)
     eval_dataset = dataloader("eval", 128)
 
@@ -54,8 +69,8 @@ def run(model_name, hparams, logdir, run_name, dense_shape=None):
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=0.0005),
-        loss=tf.keras.losses.BinaryCrossentropy(),
-        metrics=['accuracy']
+        loss=loss,
+        metrics=metrics
     )
 
     callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
@@ -156,19 +171,21 @@ def hp_sweep_run(logdir, model_name):
         for layers in config.HP_DEEP_LAYERS.domain.values:
             for upchannels in config.HP_DEEP_CHANNELS.domain.values:
                 for ksize in config.HP_DEEP_KERNEL_SIZE.domain.values:
-                    hparams = {
-                        config.HP_DEEP_LAYERS: layers,
-                        config.HP_DEEP_CHANNELS: upchannels,
-                        config.HP_DEEP_KERNEL_SIZE: ksize
-                    }
+                    for loss in config.HP_DEEP_LOSS.domain.values:
+                        hparams = {
+                            config.HP_DEEP_LAYERS: layers,
+                            config.HP_DEEP_CHANNELS: upchannels,
+                            config.HP_DEEP_KERNEL_SIZE: ksize,
+                            config.HP_DEEP_LOSS: loss
+                        }
 
-                    run_name = "run-%d" % session_num
-                    run_logdir = os.path.join(logdir, run_name)
-                    print('--- Starting trial: %s' % run_name)
-                    print({h.name: hparams[h] for h in hparams})
+                        run_name = "run-%d" % session_num
+                        run_logdir = os.path.join(logdir, run_name)
+                        print('--- Starting trial: %s' % run_name)
+                        print({h.name: hparams[h] for h in hparams})
 
-                    run(model_name, hparams, run_logdir, run_name)
-                    session_num += 1
+                        run(model_name, hparams, run_logdir, run_name)
+                        session_num += 1
 
     if model_name == "LateFuseCNN":
         for v_layers in config.HP_LDEEP_V_LAYERS.domain.values:
@@ -194,6 +211,11 @@ def hp_sweep_run(logdir, model_name):
                                 run(model_name, hparams, run_logdir, run_name)
                                 session_num += 1
 
+def single_run(model_name):
+    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+    logdir = os.path.join("../Logs", model_name + run_id)
+    hparams = config.OPT_PARAMS[model_name]
+    run(model_name, hparams, logdir)
 
 def main():
     init_tf_gpus()
@@ -201,14 +223,16 @@ def main():
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    hp_sweep_run(logdir, model_name="LateFuseCNN")
+    single_run(model_name="DeepCNN")
+    #hp_sweep_run(logdir, model_name="LateFuseCNN")
 
 
 def summary():
     hparams = {
-        config.HP_DEEP_LAYERS: 4,
-        config.HP_DEEP_CHANNELS: 7,
-        config.HP_DEEP_KERNEL_SIZE: 5
+        config.HP_DEEP_LAYERS: 3,
+        config.HP_DEEP_CHANNELS: 2,
+        config.HP_DEEP_KERNEL_SIZE: 7,
+        config.HP_LOSS_TYPE: "MSE"
     }
 
     #ResNET(num_classes=1).model().summary()
@@ -221,5 +245,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()
