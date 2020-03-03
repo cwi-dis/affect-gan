@@ -5,6 +5,8 @@ import pandas as pd
 from scipy.signal import decimate
 import numpy as np
 
+from tensorflow.python.ops import math_ops
+
 def window_dataset(dataset):
     window_ds = dataset.window(1000, shift=1000)
 
@@ -15,8 +17,8 @@ def window_dataset(dataset):
     return windows
 
 
-def with_categoric_labels(features, label):
-    return features, 0 if label > 5 else 1
+def with_categoric_labels(features, label, threshold=5.0):
+    return features, math_ops.cast(label > threshold, label.dtype)
 
 
 class Dataloader(object):
@@ -91,9 +93,7 @@ class Dataloader(object):
 
         features = tf.stack(features, axis=1)
 
-        label = tf.stack(labels)
-
-        return features, label, video
+        return features, labels, video
 
     def __call__(self, mode, batch_size=64, leave_out=None):
 
@@ -128,6 +128,9 @@ class Dataloader(object):
         if not self.continuous_labels:
             dataset = dataset.map(with_categoric_labels)
 
+        if len(self.labels) == 2:
+            dataset = dataset.map(lambda data, labels: (data, (labels[0], labels[1])))
+
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=2)
         
@@ -139,11 +142,11 @@ class Dataloader(object):
 
 if __name__ == '__main__':
     os.chdir("./..")
-    d = Dataloader("5000d", ["ecg", "rsp"], ["arousal"])
+    d = Dataloader("5000d", ["ecg", "rsp"], ["arousal", "valence"])
     d = d("train", 1)
 
     i=0
-    for _, __ in d:
-        i += 1
+    for _, label1 in d.take(1):
+        print(label1)
     print(i)
 

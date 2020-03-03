@@ -61,6 +61,7 @@ class DeepCNN(tf.keras.Model):
     def __init__(self, hparams, *args, **kwargs):
         super(DeepCNN, self).__init__(*args, **kwargs)
         self.layers_count = hparams[config.HP_DEEP_LAYERS]
+        self.dual_output = hparams[config.HP_LOSS_TYPE] == "DUAL_BCE"
         self.input_len = 500
 
         self.down_res_layers = [ChannelDownResLayer
@@ -81,7 +82,10 @@ class DeepCNN(tf.keras.Model):
         else:
             activation = 'sigmoid'
 
-        self.dense_out = layers.Dense(units=1, activation=activation)
+        self.dense_out = layers.Dense(units=2, activation=activation)
+
+        self.dense_out_a = layers.Dense(units=1, activation=activation, name="arousal_class")
+        self.dense_out_v = layers.Dense(units=1, activation=activation, name="valence_class")
 
     def call(self, inputs, training=None, mask=None):
         x = inputs
@@ -94,7 +98,10 @@ class DeepCNN(tf.keras.Model):
         x = self.feature_pool(x)
         x = self.lrelu_out(x)
 
-        return self.dense_out(x)
+        if self.dual_output:
+            return self.dense_out_a(x), self.dense_out_v(x)
+        else:
+            return self.dense_out_a(x)
 
     def model(self):
         x = layers.Input(shape=(500, 5))

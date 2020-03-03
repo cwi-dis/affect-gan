@@ -41,16 +41,24 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
             continuous_labels = True
             loss = CombinedLoss()
             metrics = [SimpleRegressionAccuracy]
-        else:
+            labels = ["arousal"]
+        elif hparams[config.HP_LOSS_TYPE] == "BCE":
             continuous_labels = False
             loss = tf.keras.losses.BinaryCrossentropy()
             metrics = ["accuracy"]
+            labels = ["arousal"]
+        elif hparams[config.HP_LOSS_TYPE] == "DUAL_BCE":
+            continuous_labels = False
+            loss = [tf.keras.losses.BinaryCrossentropy(), tf.keras.losses.BinaryCrossentropy()]
+            metrics = ["accuracy", "accuracy"]
+            labels = ["arousal", "valence"]
     except:
         continuous_labels = False
         loss = tf.keras.losses.BinaryCrossentropy()
         metrics = ["accuracy"]
+        labels = ["arousal"]
 
-    dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], ["arousal"], continuous_labels=continuous_labels)
+    dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], labels, continuous_labels=continuous_labels)
     train_dataset = dataloader("train", 128)
     eval_dataset = dataloader("eval", 128)
 
@@ -171,12 +179,12 @@ def hp_sweep_run(logdir, model_name):
         for layers in config.HP_DEEP_LAYERS.domain.values:
             for upchannels in config.HP_DEEP_CHANNELS.domain.values:
                 for ksize in config.HP_DEEP_KERNEL_SIZE.domain.values:
-                    for loss in config.HP_DEEP_LOSS.domain.values:
+                    for loss in config.HP_LOSS_TYPE.domain.values:
                         hparams = {
                             config.HP_DEEP_LAYERS: layers,
                             config.HP_DEEP_CHANNELS: upchannels,
                             config.HP_DEEP_KERNEL_SIZE: ksize,
-                            config.HP_DEEP_LOSS: loss
+                            config.HP_LOSS_TYPE: loss
                         }
 
                         run_name = "run-%d" % session_num
@@ -223,8 +231,8 @@ def main():
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    single_run(model_name="DeepCNN")
-    #hp_sweep_run(logdir, model_name="LateFuseCNN")
+    #single_run(model_name="DeepCNN")
+    hp_sweep_run(logdir, model_name="LateFuseCNN")
 
 
 def summary():
@@ -232,7 +240,7 @@ def summary():
         config.HP_DEEP_LAYERS: 3,
         config.HP_DEEP_CHANNELS: 2,
         config.HP_DEEP_KERNEL_SIZE: 7,
-        config.HP_LOSS_TYPE: "MSE"
+        config.HP_LOSS_TYPE: "DUAL_BCE"
     }
 
     #ResNET(num_classes=1).model().summary()
