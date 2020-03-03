@@ -12,7 +12,7 @@ from models.BaseNET1 import BaseNET1
 from models.SimpleLSTM import SimpleLSTM
 from models.ConvLSTM import ConvLSTM
 from models.ChannelCNN import ChannelCNN
-from models.DeepCNN import DeepCNN
+from models.DeepCNN2 import DeepCNN
 from models.LateFuseCNN import LateFuseCNN
 from data.dataloader import Dataloader
 
@@ -253,5 +253,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()

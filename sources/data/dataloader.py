@@ -143,10 +143,10 @@ class Dataloader(object):
 if __name__ == '__main__':
     os.chdir("./..")
     d = Dataloader("5000d", ["ecg", "rsp"], ["arousal", "valence"])
-    d = d("train", 1)
+    d = d("eval", 1)
 
     i=0
-    for _, label1 in d.take(1):
+    for _, label1 in d.take(10):
         print(label1)
     print(i)
 
