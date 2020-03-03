@@ -238,8 +238,8 @@ def main():
 def summary():
     hparams = {
         config.HP_DEEP_LAYERS: 3,
-        config.HP_DEEP_CHANNELS: 2,
-        config.HP_DEEP_KERNEL_SIZE: 7,
+        config.HP_DEEP_CHANNELS: 10,
+        config.HP_DEEP_KERNEL_SIZE: 3,
         config.HP_LOSS_TYPE: "DUAL_BCE"
     }
 

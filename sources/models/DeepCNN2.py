@@ -66,16 +66,16 @@ class DeepCNN(tf.keras.Model):
 
         self.down_res_layers = [ChannelDownResLayer
             (
-                hparams[config.HP_DEEP_CHANNELS] * ((l+3) // 2),
+                hparams[config.HP_DEEP_CHANNELS] // ((l+3) // 2),
                 kernel_size=max(3, hparams[config.HP_DEEP_KERNEL_SIZE] - 2*l)
             ) for l in range(self.layers_count - 1)]
 
         self.down_res_layer_final_a = ChannelDownResLayer(
-                hparams[config.HP_DEEP_CHANNELS] * ((self.layers_count+2) // 2),
+                hparams[config.HP_DEEP_CHANNELS] // ((self.layers_count+2) // 2),
                 kernel_size=max(3, hparams[config.HP_DEEP_KERNEL_SIZE] - 2*(self.layers_count-1)),
                 last_layer=True)
         self.down_res_layer_final_v = ChannelDownResLayer(
-            hparams[config.HP_DEEP_CHANNELS] * ((self.layers_count + 2) // 2),
+            hparams[config.HP_DEEP_CHANNELS] // ((self.layers_count + 2) // 2),
             kernel_size=max(3, hparams[config.HP_DEEP_KERNEL_SIZE] - 2 * (self.layers_count - 1)),
             last_layer=True)
 
@@ -99,13 +99,13 @@ class DeepCNN(tf.keras.Model):
             x = self.down_res_layers[i](x, training=training)
 
         x_a = self.down_res_layer_final_a(x, training=training)
-        x_a = self.feature_pool_a(x_a)
         x_a = self.lrelu_out_a(x_a)
+        x_a = self.feature_pool_a(x_a)
 
         if self.dual_output:
             x_v = self.down_res_layer_final_v(x, training=training)
-            x_v = self.feature_pool_v(x_v)
             x_v = self.lrelu_out_v(x_v)
+            x_v = self.feature_pool_v(x_v)
             return self.dense_out_a(x_a), self.dense_out_v(x_v)
         else:
             return self.dense_out_a(x_a)
