@@ -35,21 +35,21 @@ class DeepCNN(tf.keras.Model):
 
         self.down_res_layers = [ChannelDownResLayer
             (
-                hparams[config.HP_DEEP_CHANNELS] * (l + 1),
+                hparams[config.HP_DEEP_CHANNELS] * 2**l,
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
                 first_layer=(l == 0),
                 dropout_rate=self.dropout_rate
             ) for l in range(self.layers_count - 1)]
 
         self.down_res_layer_final_a = ChannelDownResLayer(
-                hparams[config.HP_DEEP_CHANNELS] * self.layers_count,
+                hparams[config.HP_DEEP_CHANNELS] * 2**(self.layers_count-1),
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
                 first_layer=False,
                 last_layer=True,
                 dropout_rate=self.dropout_rate
         )
         self.down_res_layer_final_v = ChannelDownResLayer(
-                hparams[config.HP_DEEP_CHANNELS] * self.layers_count,
+                hparams[config.HP_DEEP_CHANNELS] * 2**(self.layers_count-1),
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
                 first_layer=False,
                 last_layer=True,
