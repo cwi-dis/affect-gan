@@ -1,6 +1,7 @@
 from tensorboard.plugins.hparams import api as hp
 
 INPUT_SIZE = 500
+RUNS = 2
 
 # BaseNET hparams
 HP_FILTERS = hp.HParam("filters", hp.Discrete([2, 4, 8]))
@@ -29,10 +30,10 @@ HP_CDEEP_CHANNELS = hp.HParam("Channel Filters", hp.Discrete([2, 3, 4, 5]))
 HP_CDEEP_LAYERS = hp.HParam("Channel Kernel Size", hp.Discrete([1, 2, 3]))
 
 # DeepCNN hparams
-HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([5, 10]))
-HP_DEEP_LAYERS = hp.HParam("DownConv Layers", hp.Discrete([2, 3, 4]))
-HP_DEEP_KERNEL_SIZE = hp.HParam("Kernel Size", hp.Discrete([3, 5]))
-HP_LOSS_TYPE = hp.HParam("Loss Type", hp.Discrete(["BCE", "DUAL_BCE"]))
+HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([2, 4]))
+HP_DEEP_LAYERS = hp.HParam("DownConv Layers", hp.Discrete([4, 5]))
+HP_DEEP_KERNEL_SIZE = hp.HParam("Kernel Size", hp.Discrete([3]))
+HP_LOSS_TYPE = hp.HParam("Loss Type", hp.Discrete(["BCE"]))
 
 # LateFuseCNN hparams
 HP_LDEEP_V_CHANNELS = hp.HParam("View-Ind. Filter start size", hp.Discrete([2, 4]))
@@ -51,10 +52,10 @@ OPT_PARAMS = {
         HP_POOL: 5
     },
     "DeepCNN": {
-        HP_DEEP_LAYERS: 3,
+        HP_DEEP_LAYERS: 4,
         HP_DEEP_CHANNELS: 4,
         HP_DEEP_KERNEL_SIZE: 3,
-        HP_LOSS_TYPE: "DUAL_BCE"
+        HP_LOSS_TYPE: "BCE"
     }
 }
 

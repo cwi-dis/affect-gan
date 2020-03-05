@@ -14,6 +14,7 @@ from models.ConvLSTM import ConvLSTM
 from models.ChannelCNN import ChannelCNN
 from models.DeepCNN2 import DeepCNN
 from models.LateFuseCNN import LateFuseCNN
+from models.AttentionNET import AttentionNET
 from data.dataloader import Dataloader
 
 from util.callbacks import CallbacksProducer
@@ -180,20 +181,22 @@ def hp_sweep_run(logdir, model_name):
             for upchannels in config.HP_DEEP_CHANNELS.domain.values:
                 for ksize in config.HP_DEEP_KERNEL_SIZE.domain.values:
                     for loss in config.HP_LOSS_TYPE.domain.values:
-                        hparams = {
-                            config.HP_DEEP_LAYERS: layers,
-                            config.HP_DEEP_CHANNELS: upchannels,
-                            config.HP_DEEP_KERNEL_SIZE: ksize,
-                            config.HP_LOSS_TYPE: loss
-                        }
+                        for r in range(config.RUNS):
+                            hparams = {
+                                config.HP_DEEP_LAYERS: layers,
+                                config.HP_DEEP_CHANNELS: upchannels,
+                                config.HP_DEEP_KERNEL_SIZE: ksize,
+                                config.HP_LOSS_TYPE: loss
+                            }
 
-                        run_name = "run-%d" % session_num
-                        run_logdir = os.path.join(logdir, run_name)
-                        print('--- Starting trial: %s' % run_name)
-                        print({h.name: hparams[h] for h in hparams})
+                            run_name = "run-%d" % session_num
+                            run_logdir = os.path.join(logdir, run_name)
+                            print('--- Starting trial: %s' % run_name)
+                            print({h.name: hparams[h] for h in hparams})
+                            print("--- Restart %d of %d" % (r, config.RUNS))
 
-                        run(model_name, hparams, run_logdir, run_name)
-                        session_num += 1
+                            run(model_name, hparams, run_logdir, run_name)
+                            session_num += 1
 
     if model_name == "LateFuseCNN":
         for v_layers in config.HP_LDEEP_V_LAYERS.domain.values:
@@ -236,12 +239,13 @@ def main():
 
 
 def summary():
-    hparams = {
-        config.HP_DEEP_LAYERS: 4,
-        config.HP_DEEP_CHANNELS: 2,
-        config.HP_DEEP_KERNEL_SIZE: 3,
-        config.HP_LOSS_TYPE: "DUAL_BCE"
-    }
+    hparams = config.OPT_PARAMS["DeepCNN"]
+    #hparams = {
+    #    config.HP_DEEP_LAYERS: 4,
+    #    config.HP_DEEP_CHANNELS: 2,
+    #    config.HP_DEEP_KERNEL_SIZE: 3,
+    #    config.HP_LOSS_TYPE: "BCE"
+    #}
 
     #ResNET(num_classes=1).model().summary()
     #SimpleLSTM(hparams).model().summary()
@@ -250,6 +254,7 @@ def summary():
     #ChannelCNN(hparams, 5).model().summary()
     DeepCNN(hparams).model().summary()
     #LateFuseCNN(hparams, 5).model().summary()
+    #AttentionNET(hparams).model().summary()
 
 
 if __name__ == '__main__':

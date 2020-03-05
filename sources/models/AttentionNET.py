@@ -3,31 +3,39 @@ import tensorflow.keras.layers as layers
 
 import config
 
-class ConvLSTM(tf.keras.Model):
+class AttentionNET(tf.keras.Model):
 
-    def __init__(self, hparams):
-        super(ConvLSTM, self).__init__()
+    def __init__(self, hparams, filters=5):
+        super(AttentionNET, self).__init__()
 
-        self.conv_1 = layers.Conv1D(
-            filters=hparams[config.HP_FILTERS_CL],
-            kernel_size=hparams[config.HP_KERNEL_CL],
-            strides=hparams[config.HP_STRIDES_CL],
-            padding="same", activation=layers.LeakyReLU())
-        self.drop = layers.Dropout(rate=hparams[config.HP_DROPOUT_CL])
-        self.avg = layers.AveragePooling1D(
-            pool_size=5,
-            strides=3,
-            padding="same")
+        self.query_mat = layers.Conv1D(
+            filters=filters,
+            kernel_size=4,
+            strides=2
+        )
+        self.value_mat = layers.Conv1D(
+            filters=filters,
+            kernel_size=4,
+            strides=2
+        )
 
-        self.lstm_layer = layers.LSTM(units=hparams[config.HP_LSTMCELLS_CL])
+        self.attention0 = layers.Attention(
+            use_scale=True,
+            causal=False
+        )
+
+        self.avg = layers.GlobalAveragePooling1D()
+
         self.dense_output = layers.Dense(1, activation="sigmoid")
 
     def call(self, inputs, training=None, mask=None):
-        x = self.conv_1(inputs)
-        x = self.drop(x, training)
+        q = self.query_mat(inputs)
+        v = self.value_mat(inputs)
+
+        x = self.attention0([q, v])
         x = self.avg(x)
-        x2 = self.lstm_layer(x)
-        return self.dense_output(x2)
+
+        return self.dense_output(x)
 
     def model(self):
         x = layers.Input(shape=(500, 5))

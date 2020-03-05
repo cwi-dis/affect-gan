@@ -2,48 +2,15 @@ import config
 
 import tensorflow as tf
 import tensorflow.keras.layers as layers
-
-
-class ChannelDownResBlock(layers.Layer):
-    def __init__(self, channels, kernel_size, w_norm_clip, activation=None):
-        super(ChannelDownResBlock, self).__init__()
-        self.out_channels = channels
-        self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(alpha=0.2),
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
-        self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
-
-        self.pool = layers.AveragePooling1D(pool_size=2, strides=2)
-
-        self.shortcut_conv = layers.Conv1D(filters=channels, kernel_size=1, padding="same")
-        self.shortcut_pool = layers.AveragePooling1D(pool_size=2, strides=2)
-
-        self.out_activation = activation
-
-    def call(self, inputs, **kwargs):
-        input_channels = inputs.shape.as_list()[-1]
-
-        x = self.conv1(inputs)
-        x = self.conv2(x)
-        x = self.pool(x)
-
-        if self.out_channels != input_channels:
-            inputs = self.shortcut_conv(inputs)
-        inputs = self.shortcut_pool(inputs)
-
-        out = x + inputs
-
-        if self.out_activation is not None:
-            out = self.out_activation(out)
-
-        return out
+from models.Blocks import *
 
 class ChannelDownResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=7, w_norm_clip=2, last_layer=False, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=7, w_norm_clip=2, first_layer=False, **kwargs):
         super(ChannelDownResLayer, self).__init__(**kwargs)
-        self.last_layer = last_layer
-
-        self.down_resblock = ChannelDownResBlock(channels_out, kernel_size, w_norm_clip)
+        if first_layer:
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=None)
+        else:
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip)
         self.lrelu = layers.LeakyReLU()
         self.dropout = layers.Dropout(rate=dropout_rate)
 
