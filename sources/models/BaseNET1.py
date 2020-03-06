@@ -6,9 +6,9 @@ import tensorflow.keras.layers as layers
 
 class BaseNET1(tf.keras.Model):
 
-    def __init__(self, hparams, dense_shape):
+    def __init__(self, hparams):
         super(BaseNET1, self).__init__()
-        self.dense_shape = dense_shape
+        self.dense_shape = tf.math.ceil(config.INPUT_SIZE / hparams[config.HP_POOL]) * hparams[config.HP_FILTERS]
 
         self.conv_1 = layers.Conv1D(
             filters=hparams[config.HP_FILTERS],

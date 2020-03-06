@@ -4,25 +4,6 @@ import tensorflow as tf
 import tensorflow.keras.layers as layers
 from models.Blocks import *
 
-class ChannelDownResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.3, kernel_size=3, w_norm_clip=2, first_layer=False, last_layer=False, **kwargs):
-        super(ChannelDownResLayer, self).__init__(**kwargs)
-        self.last_layer = last_layer
-        if first_layer:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip)
-        else:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU())
-        self.lrelu = layers.LeakyReLU()
-        self.dropout = layers.Dropout(rate=dropout_rate)
-
-    def call(self, inputs, **kwargs):
-        x = self.down_resblock(inputs)
-
-        if not self.last_layer:
-            x = self.dropout(self.lrelu(x), training=kwargs["training"])
-
-        return x
-
 
 class DeepCNN(tf.keras.Model):
 
@@ -31,22 +12,21 @@ class DeepCNN(tf.keras.Model):
         self.layers_count = hparams[config.HP_DEEP_LAYERS]
         self.dual_output = hparams[config.HP_LOSS_TYPE] == "DUAL_BCE"
         self.input_len = 500
-        self.dropout_rate = 0.8 / (self.layers_count - 1)
 
-        self.down_res_layers = [ChannelDownResLayer
+        self.down_res_layers = [DownResLayer
             (
                 hparams[config.HP_DEEP_CHANNELS] * 2**l,
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
                 first_layer=(l == 0)
             ) for l in range(self.layers_count - 1)]
 
-        self.down_res_layer_final_a = ChannelDownResLayer(
+        self.down_res_layer_final_a = DownResLayer(
                 hparams[config.HP_DEEP_CHANNELS] * 2**(self.layers_count-1),
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
                 first_layer=False,
                 last_layer=True
         )
-        self.down_res_layer_final_v = ChannelDownResLayer(
+        self.down_res_layer_final_v = DownResLayer(
                 hparams[config.HP_DEEP_CHANNELS] * 2**(self.layers_count-1),
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
                 first_layer=False,

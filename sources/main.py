@@ -36,6 +36,7 @@ def init_tf_gpus():
         except RuntimeError as e:
             print(e)
 
+
 def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
     try:
         if hparams[config.HP_LOSS_TYPE] == "MSE":
@@ -222,11 +223,30 @@ def hp_sweep_run(logdir, model_name):
                                 run(model_name, hparams, run_logdir, run_name)
                                 session_num += 1
 
+    if model_name == "AttentionNET":
+        for filters in config.HP_ATT_FILTERS.domain.values:
+            for extra in config.HP_ATT_EXTRA_LAYER.domain.values:
+                for attd in config.HP_ATT_DOWNRESATT.domain.values:
+                    hparams = {
+                        config.HP_ATT_FILTERS: filters,
+                        config.HP_ATT_EXTRA_LAYER: extra,
+                        config.HP_ATT_DOWNRESATT: attd
+                    }
+
+                    run_name = "run-%d" % session_num
+                    run_logdir = os.path.join(logdir, run_name)
+                    print('--- Starting trial: %s' % run_name)
+                    print({h.name: hparams[h] for h in hparams})
+
+                    run(model_name, hparams, run_logdir, run_name)
+                    session_num += 1
+
 def single_run(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", model_name + run_id)
     hparams = config.OPT_PARAMS[model_name]
     run(model_name, hparams, logdir)
+
 
 def main():
     init_tf_gpus()
@@ -235,11 +255,11 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     #single_run(model_name="DeepCNN")
-    hp_sweep_run(logdir, model_name="LateFuseCNN")
+    hp_sweep_run(logdir, model_name="AttentionNET")
 
 
 def summary():
-    hparams = config.OPT_PARAMS["DeepCNN"]
+    hparams = config.OPT_PARAMS["AttentionNET"]
     #hparams = {
     #    config.HP_DEEP_LAYERS: 4,
     #    config.HP_DEEP_CHANNELS: 2,
@@ -252,9 +272,9 @@ def summary():
     #BaseNET1(hparams).model().summary()
     #ConvLSTM(hparams).model().summary()
     #ChannelCNN(hparams, 5).model().summary()
-    DeepCNN(hparams).model().summary()
+    #DeepCNN(hparams).model().summary()
     #LateFuseCNN(hparams, 5).model().summary()
-    #AttentionNET(hparams).model().summary()
+    AttentionNET(hparams).model().summary()
 
 
 if __name__ == '__main__':

@@ -34,3 +34,22 @@ class DownResBlock(layers.Layer):
         out = x + x_0
 
         return out
+
+
+class DownResLayer(layers.Layer):
+    def __init__(self, channels_out, dropout_rate=0.3, kernel_size=3, w_norm_clip=2, first_layer=False, last_layer=False, **kwargs):
+        super(DownResLayer, self).__init__(**kwargs)
+        self.last_layer = last_layer
+        if first_layer:
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip)
+        else:
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU())
+        self.dropout = layers.Dropout(rate=dropout_rate)
+
+    def call(self, inputs, **kwargs):
+        x = self.down_resblock(inputs)
+
+        if not self.last_layer:
+            x = self.dropout(x, training=kwargs["training"])
+
+        return x
