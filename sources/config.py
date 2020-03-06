@@ -2,6 +2,7 @@ from tensorboard.plugins.hparams import api as hp
 
 INPUT_SIZE = 500
 RUNS = 2
+GLOBAL_LR = 0.0003
 
 # BaseNET hparams
 HP_FILTERS = hp.HParam("filters", hp.Discrete([2, 4, 8]))
@@ -15,19 +16,19 @@ HP_LR = hp.HParam("learning_rate", hp.Discrete([0.001, 0.0005]))
 HP_CELLS_LSTM = hp.HParam("LSTM Cells", hp.Discrete([2, 4, 6, 8]))
 HP_LR_LSTM = hp.HParam("learning_rate", hp.Discrete([0.0003]))
 HP_IN_DROPOUT_LSTM = hp.HParam("Input Dropout", hp.Discrete([0.2, 0.4]))
-HP_DROPOUT_LSTM = hp.HParam("Recurrent Dropout", hp.Discrete([0.0, 0.2, 0.4]))
 
 # ConvLSTM hparams
-HP_FILTERS_CL = hp.HParam("filters", hp.Discrete([8, 10]))
-HP_KERNEL_CL = hp.HParam("kernel_size", hp.Discrete([5]))
-HP_STRIDES_CL = hp.HParam("stride", hp.Discrete([1, 2, 3]))
+HP_FILTERS_CL = hp.HParam("filters", hp.Discrete([6, 8]))
+HP_KERNEL_CL = hp.HParam("kernel_size", hp.Discrete([3, 5]))
+HP_STRIDES_CL = hp.HParam("stride", hp.Discrete([2]))
 HP_DROPOUT_CL = hp.HParam("dropout", hp.Discrete([0.4]))
-HP_LSTMCELLS_CL = hp.HParam("LSTM Cells", hp.Discrete([4, 8, 12]))
-HP_LR_CL = hp.HParam("learning_rate", hp.Discrete([0.0001, 0.0005]))
+HP_LSTMCELLS_CL = hp.HParam("LSTM Cells", hp.Discrete([2, 4, 8]))
+HP_LR_CL = hp.HParam("learning_rate", hp.Discrete([0.0003]))
+HP_DROPOUT_LSTM = hp.HParam("Recurrent Dropout", hp.Discrete([0.0]))
 
 # ChannelCNN hparams
-HP_CDEEP_CHANNELS = hp.HParam("Channel Filters", hp.Discrete([2, 3, 4, 5]))
-HP_CDEEP_LAYERS = hp.HParam("Channel Kernel Size", hp.Discrete([1, 2, 3]))
+HP_CDEEP_CHANNELS = hp.HParam("Channel Filters", hp.Discrete([2]))
+HP_CDEEP_LAYERS = hp.HParam("Downres Layers", hp.Discrete([1, 2, 3, 4, 5]))
 
 # DeepCNN hparams
 HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([2, 4]))

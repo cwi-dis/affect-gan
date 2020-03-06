@@ -79,8 +79,7 @@ class CallbacksProducer:
 
         self.callbacks["early_stop"] = callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=10,
-            restore_best_weights=True
+            patience=8
         )
 
         if run_name is not None:
