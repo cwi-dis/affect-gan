@@ -76,6 +76,8 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
         model = DeepCNN(hparams)
     if model_name == "LateFuseCNN":
         model = LateFuseCNN(hparams, 5)
+    if model_name == "AttentionNET":
+        model = AttentionNET(hparams)
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=0.0005),
