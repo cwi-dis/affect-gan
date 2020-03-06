@@ -37,9 +37,9 @@ class DownResBlock(layers.Layer):
 
 
 class DownResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.3, kernel_size=3, w_norm_clip=2, first_layer=False, last_layer=False, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.5, kernel_size=3, w_norm_clip=2, first_layer=False, use_dropout=False, **kwargs):
         super(DownResLayer, self).__init__(**kwargs)
-        self.last_layer = last_layer
+        self.use_dropout = use_dropout
         if first_layer:
             self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip)
         else:
@@ -49,7 +49,7 @@ class DownResLayer(layers.Layer):
     def call(self, inputs, **kwargs):
         x = self.down_resblock(inputs)
 
-        if not self.last_layer:
+        if self.use_dropout:
             x = self.dropout(x, training=kwargs["training"])
 
         return x

@@ -44,7 +44,8 @@ class AttentionNET(tf.keras.Model):
         self.upchannnel_attention = 2 if hparams[config.HP_ATT_UPCHANNEL] else 1
         self.downres0 = DownResLayer(
             channels_out=hparams[config.HP_ATT_FILTERS],
-            first_layer=True
+            first_layer=True,
+            use_dropout=True
         )
 
         self.attention_layer = AttentionLayer(
@@ -53,13 +54,11 @@ class AttentionNET(tf.keras.Model):
         )
 
         self.downres1 = DownResLayer(
-            channels_out=hparams[config.HP_ATT_FILTERS] * 2 * self.upchannnel_attention,
-            last_layer=not self.use_last_layer
+            channels_out=hparams[config.HP_ATT_FILTERS] * 2 * self.upchannnel_attention
         )
 
         self.downres_f = DownResLayer(
-            channels_out=hparams[config.HP_ATT_FILTERS] * 4 * self.upchannnel_attention,
-            last_layer=True
+            channels_out=hparams[config.HP_ATT_FILTERS] * 4 * self.upchannnel_attention
         )
 
         self.avg = layers.GlobalAveragePooling1D()

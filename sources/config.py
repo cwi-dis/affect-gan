@@ -68,7 +68,7 @@ OPT_PARAMS = {
         HP_ATT_FILTERS: 2,
         HP_ATT_EXTRA_LAYER: False,
         HP_ATT_DOWNRESATT: False,
-        HP_ATT_UPCHANNEL: True
+        HP_ATT_UPCHANNEL: False
     }
 }
 

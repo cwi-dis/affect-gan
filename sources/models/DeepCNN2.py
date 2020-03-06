@@ -17,20 +17,19 @@ class DeepCNN(tf.keras.Model):
             (
                 hparams[config.HP_DEEP_CHANNELS] * 2**l,
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
-                first_layer=(l == 0)
+                first_layer=(l == 0),
+                use_dropout=True
             ) for l in range(self.layers_count - 1)]
 
         self.down_res_layer_final_a = DownResLayer(
                 hparams[config.HP_DEEP_CHANNELS] * 2**(self.layers_count-1),
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
-                first_layer=False,
-                last_layer=True
+                first_layer=False
         )
         self.down_res_layer_final_v = DownResLayer(
                 hparams[config.HP_DEEP_CHANNELS] * 2**(self.layers_count-1),
                 kernel_size=hparams[config.HP_DEEP_KERNEL_SIZE],
-                first_layer=False,
-                last_layer=True
+                first_layer=False
         )
 
         self.feature_pool_a = layers.GlobalAveragePooling1D()
