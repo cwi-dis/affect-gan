@@ -48,6 +48,7 @@ HP_LDEEP_WEIGHTNORM = hp.HParam("Weight maxnorm constraint", hp.Discrete([2]))
 HP_ATT_FILTERS = hp.HParam("Channels", hp.Discrete([2, 4, 8]))
 HP_ATT_EXTRA_LAYER = hp.HParam("Third Downres Layer", hp.Discrete([True, False]))
 HP_ATT_DOWNRESATT = hp.HParam("Downsampling Attention", hp.Discrete([True, False]))
+HP_ATT_UPCHANNEL = hp.HParam("Upchannel Attention", hp.Discrete([True, False]))
 
 OPT_PARAMS = {
     "BaseNET": {
@@ -64,9 +65,10 @@ OPT_PARAMS = {
         HP_LOSS_TYPE: "BCE"
     },
     "AttentionNET": {
-        HP_ATT_FILTERS: 4,
-        HP_ATT_EXTRA_LAYER: True,
-        HP_ATT_DOWNRESATT: False
+        HP_ATT_FILTERS: 2,
+        HP_ATT_EXTRA_LAYER: False,
+        HP_ATT_DOWNRESATT: False,
+        HP_ATT_UPCHANNEL: True
     }
 }
 

@@ -41,23 +41,24 @@ class AttentionNET(tf.keras.Model):
     def __init__(self, hparams):
         super(AttentionNET, self).__init__()
         self.use_last_layer = hparams[config.HP_ATT_EXTRA_LAYER]
+        self.upchannnel_attention = 2 if hparams[config.HP_ATT_UPCHANNEL] else 1
         self.downres0 = DownResLayer(
             channels_out=hparams[config.HP_ATT_FILTERS],
             first_layer=True
         )
 
         self.attention_layer = AttentionLayer(
-            filters=hparams[config.HP_ATT_FILTERS],
+            filters=hparams[config.HP_ATT_FILTERS] * self.upchannnel_attention,
             downsample=hparams[config.HP_ATT_DOWNRESATT]
         )
 
         self.downres1 = DownResLayer(
-            channels_out=hparams[config.HP_ATT_FILTERS] * 2,
+            channels_out=hparams[config.HP_ATT_FILTERS] * 2 * self.upchannnel_attention,
             last_layer=not self.use_last_layer
         )
 
         self.downres_f = DownResLayer(
-            channels_out=hparams[config.HP_ATT_FILTERS] * 4,
+            channels_out=hparams[config.HP_ATT_FILTERS] * 4 * self.upchannnel_attention,
             last_layer=True
         )
 

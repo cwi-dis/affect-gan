@@ -229,20 +229,22 @@ def hp_sweep_run(logdir, model_name):
         for filters in config.HP_ATT_FILTERS.domain.values:
             for extra in config.HP_ATT_EXTRA_LAYER.domain.values:
                 for attd in config.HP_ATT_DOWNRESATT.domain.values:
-                    for r in range(config.RUNS):
-                        hparams = {
-                            config.HP_ATT_FILTERS: filters,
-                            config.HP_ATT_EXTRA_LAYER: extra,
-                            config.HP_ATT_DOWNRESATT: attd
-                        }
+                    for upchannel in config.HP_ATT_UPCHANNEL.domain.values:
+                        for r in range(config.RUNS):
+                            hparams = {
+                                config.HP_ATT_FILTERS: filters,
+                                config.HP_ATT_EXTRA_LAYER: extra,
+                                config.HP_ATT_DOWNRESATT: attd,
+                                config.HP_ATT_UPCHANNEL: upchannel
+                            }
 
-                        run_name = "run-%d" % session_num
-                        run_logdir = os.path.join(logdir, run_name)
-                        print('--- Starting trial: %s' % run_name)
-                        print({h.name: hparams[h] for h in hparams})
-                        print("--- Restart %d of %d" % (r+1, config.RUNS))
-                        run(model_name, hparams, run_logdir, run_name)
-                        session_num += 1
+                            run_name = "run-%d" % session_num
+                            run_logdir = os.path.join(logdir, run_name)
+                            print('--- Starting trial: %s' % run_name)
+                            print({h.name: hparams[h] for h in hparams})
+                            print("--- Restart %d of %d" % (r+1, config.RUNS))
+                            run(model_name, hparams, run_logdir, run_name)
+                            session_num += 1
 
 def single_run(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
