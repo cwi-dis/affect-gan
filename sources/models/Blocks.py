@@ -11,11 +11,11 @@ class DownResBlock(layers.Layer):
         self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
                                    kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
 
-        self.pool = layers.AveragePooling1D(pool_size=3, strides=3)
+        self.pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
 
         self.shortcut_conv = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
                                            kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
-        self.shortcut_pool = layers.AveragePooling1D(pool_size=3, strides=3)
+        self.shortcut_pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
 
     def call(self, inputs, **kwargs):
         x = inputs

@@ -52,7 +52,7 @@ OPT_PARAMS = {
         HP_POOL: 5
     },
     "DeepCNN": {
-        HP_DEEP_LAYERS: 4,
+        HP_DEEP_LAYERS: 3,
         HP_DEEP_CHANNELS: 2,
         HP_DEEP_KERNEL_SIZE: 3,
         HP_LOSS_TYPE: "BCE"
