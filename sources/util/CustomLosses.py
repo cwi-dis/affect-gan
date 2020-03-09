@@ -1,6 +1,13 @@
 import tensorflow as tf
 from tensorflow.keras import losses
+from tensorflow.python.ops import math_ops
 
-class CombinedLoss(losses.Loss):
+
+class CastingBinaryCrossentropy(losses.BinaryCrossentropy):
+    def __init__(self):
+        super().__init__()
+        self.threshold = 5.0
+
     def call(self, y_true, y_pred):
-        return losses.MSE(y_true, y_pred)
+        y_true = math_ops.cast(y_true > self.threshold, y_true.dtype)
+        return super(CastingBinaryCrossentropy, self).call(y_true, y_pred)

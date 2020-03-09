@@ -75,5 +75,5 @@ class AttentionNET(tf.keras.Model):
         return self.dense_output(x)
 
     def model(self):
-        x = layers.Input(shape=(500, 5))
+        x = layers.Input(shape=(500, 2))
         return tf.keras.Model(inputs=[x], outputs=self.call(x))

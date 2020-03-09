@@ -23,7 +23,7 @@ def with_categoric_labels(features, label, threshold=5.0):
 
 class Dataloader(object):
 
-    def __init__(self, datasetID, features=None, label=None, continuous_labels=False, normalized=True):
+    def __init__(self, datasetID, features=None, label=None, continuous_labels=True, normalized=True):
         if features is None:
             features = ["bvp"]
         path = "../Dataset/CASE_dataset/tfrecord_%s/" % datasetID
@@ -97,7 +97,7 @@ class Dataloader(object):
 
     def __call__(self, mode, batch_size=64, leave_out=None):
 
-        modes = ["train", "test", "eval", "inspect"]
+        modes = ["train", "test", "eval", "inspect", "test_eval"]
         if mode not in modes:
             raise Exception("mode not found! supported modes are %s" % modes)
         #if mode is "eval" and leave_out is None:
@@ -105,7 +105,7 @@ class Dataloader(object):
 
         if mode is "train":
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.train_num]
-        elif mode is "eval":
+        elif mode is "eval" or "test_eval":
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.eval_num]
         elif mode is "test":
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.test_num]
@@ -133,6 +133,9 @@ class Dataloader(object):
 
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=2)
+
+        if mode == "test_eval":
+            return dataset.shuffle(1000, seed=42).batch(500).take(1)
         
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)

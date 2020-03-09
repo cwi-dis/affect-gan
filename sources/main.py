@@ -18,8 +18,8 @@ from models.AttentionNET import AttentionNET
 from data.dataloader import Dataloader
 
 from util.callbacks import CallbacksProducer
-from util.CustomLosses import CombinedLoss
-from util.CustomMetrics import SimpleRegressionAccuracy
+from util.CustomLosses import CastingBinaryCrossentropy
+from util.CustomMetrics import *
 from tensorboard.plugins.hparams import api as hp
 
 
@@ -41,17 +41,17 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
     try:
         if hparams[config.HP_LOSS_TYPE] == "MSE":
             continuous_labels = True
-            loss = CombinedLoss()
+            loss = tf.keras.losses.MeanSquaredError()
             metrics = [SimpleRegressionAccuracy]
             labels = ["arousal"]
         elif hparams[config.HP_LOSS_TYPE] == "BCE":
-            continuous_labels = False
-            loss = tf.keras.losses.BinaryCrossentropy()
-            metrics = ["accuracy"]
+            continuous_labels = True
+            loss = CastingBinaryCrossentropy()
+            metrics = [CastingBinaryAccuracy()]
             labels = ["arousal"]
         elif hparams[config.HP_LOSS_TYPE] == "DUAL_BCE":
             continuous_labels = False
-            loss = [tf.keras.losses.BinaryCrossentropy(), tf.keras.losses.BinaryCrossentropy()]
+            loss = [CastingBinaryCrossentropy(), CastingBinaryCrossentropy()]
             metrics = ["accuracy", "accuracy"]
             labels = ["arousal", "valence"]
     except:
@@ -85,9 +85,11 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
         metrics=metrics
     )
 
-    callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
+    callback_dataset = dataloader("test_eval")
+    tf.print(callback_dataset)
+    callbacks = CallbacksProducer(hparams, logdir, run_name, callback_dataset).get_callbacks()
 
-    model.fit(train_dataset, epochs=30, validation_data=eval_dataset, validation_steps=45, callbacks=callbacks)
+    model.fit(train_dataset, epochs=30, validation_data=eval_dataset, callbacks=callbacks)
 
 
 def hp_sweep_run(logdir, model_name):
@@ -259,8 +261,8 @@ def main():
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    #single_run(model_name="DeepCNN")
-    hp_sweep_run(logdir, model_name="AttentionNET")
+    single_run(model_name="DeepCNN")
+    #hp_sweep_run(logdir, model_name="AttentionNET")
 
 
 def summary():
@@ -283,5 +285,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()
