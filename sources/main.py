@@ -55,9 +55,9 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
             metrics = ["accuracy", "accuracy"]
             labels = ["arousal", "valence"]
     except:
-        continuous_labels = False
-        loss = tf.keras.losses.BinaryCrossentropy()
-        metrics = ["accuracy"]
+        continuous_labels = True
+        loss = CastingBinaryCrossentropy()
+        metrics = [CastingBinaryAccuracy()]
         labels = ["arousal"]
 
     dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], labels, continuous_labels=continuous_labels)
