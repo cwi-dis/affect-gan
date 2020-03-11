@@ -16,6 +16,7 @@ from models.DeepCNN2 import DeepCNN
 from models.LateFuseCNN import LateFuseCNN
 from models.AttentionNET import AttentionNET
 from models.AttentionNET2 import AttentionNET as AttentionNET2
+from models.AttentionNETDual import AttentionNETDual
 from data.dataloader import Dataloader
 
 from util.callbacks import CallbacksProducer
@@ -81,6 +82,8 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
         model = AttentionNET(hparams)
     if model_name == "AttentionNET2":
         model = AttentionNET2(hparams)
+    if model_name == "AttentionNETDual":
+        model = AttentionNETDual(hparams)
 
     model.compile(
         optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=0.0005),
@@ -89,7 +92,6 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
     )
 
     callback_dataset = dataloader("test_eval")
-    tf.print(callback_dataset)
     callbacks = CallbacksProducer(hparams, logdir, run_name, callback_dataset).get_callbacks()
 
     model.fit(train_dataset, epochs=30, validation_data=eval_dataset, callbacks=callbacks)
@@ -266,6 +268,26 @@ def hp_sweep_run(logdir, model_name):
                     print({h.name: hparams[h] for h in hparams})
                     print("--- Restart %d of %d" % (r+1, config.RUNS))
                     run(model_name, hparams, run_logdir, run_name)
+                session_num += 1
+
+    if model_name == "AttentionNETDual":
+        for filters in config.HP_ATTD_FILTERS.domain.values:
+            for layers in config.HP_ATTD_LAYERS.domain.values:
+                for comm in config.HP_ATTD_COMMON_INIT.domain.values:
+                    for r in range(config.RUNS):
+                        hparams = {
+                            config.HP_ATTD_FILTERS: filters,
+                            config.HP_ATTD_LAYERS: layers,
+                            config.HP_ATTD_COMMON_INIT: comm,
+                            config.HP_LOSS_TYPE: "DUAL_BCE"
+                        }
+
+                        run_name = "run-%d.%d" % (session_num, r)
+                        run_logdir = os.path.join(logdir, run_name)
+                        print('--- Starting trial: %s' % run_name)
+                        print({h.name: hparams[h] for h in hparams})
+                        print("--- Restart %d of %d" % (r+1, config.RUNS))
+                        run(model_name, hparams, run_logdir, run_name)
                     session_num += 1
 
 def single_run(model_name):
@@ -281,12 +303,12 @@ def main():
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    single_run(model_name="DeepCNN")
+    single_run(model_name="AttentionNET2")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 
 
 def summary():
-    hparams = config.OPT_PARAMS["AttentionNET2"]
+    hparams = config.OPT_PARAMS["AttentionNETDual"]
     #hparams = {
     #    config.HP_DEEP_LAYERS: 4,
     #    config.HP_DEEP_CHANNELS: 2,
@@ -301,7 +323,7 @@ def summary():
     #ChannelCNN(hparams, 5).model().summary()
     #DeepCNN(hparams).model().summary()
     #LateFuseCNN(hparams, 5).model().summary()
-    AttentionNET2(hparams).model().summary()
+    AttentionNETDual(hparams).model().summary()
 
 
 if __name__ == '__main__':

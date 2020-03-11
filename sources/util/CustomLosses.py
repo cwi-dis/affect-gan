@@ -5,7 +5,7 @@ from tensorflow.python.ops import math_ops
 
 class CastingBinaryCrossentropy(losses.BinaryCrossentropy):
     def __init__(self, **kwargs):
-        super(CastingBinaryCrossentropy).__init__(**kwargs)
+        super(CastingBinaryCrossentropy, self).__init__(**kwargs)
         self.threshold = 5.0
 
     def call(self, y_true, y_pred):

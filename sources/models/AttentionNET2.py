@@ -5,62 +5,6 @@ import config
 from models.Blocks import *
 
 
-class AttentionLayer(layers.Layer):
-    def __init__(self, filters, use_input_as_value=False, initial_layer=False, **kwargs):
-        super().__init__(**kwargs)
-        self.use_input_as_value = use_input_as_value
-        self.initial_layer = initial_layer
-
-        self.act = layers.LeakyReLU()
-        self.norm = layers.BatchNormalization()
-        self.query_mat = layers.Conv1D(
-            filters=filters,
-            kernel_size=4,
-            strides=2,
-            padding="same"
-        )
-        self.value_mat = layers.Conv1D(
-            filters=filters,
-            kernel_size=4,
-            strides=2,
-            padding="same"
-        )
-
-        self.attention0 = layers.Attention(
-            use_scale=True,
-            causal=False
-        )
-
-        self.short_downres = layers.Conv1D(
-            filters=filters,
-            kernel_size=4,
-            strides=2,
-            padding="same"
-        )
-
-        self.drop = layers.Dropout(rate=0.4)
-
-    def call(self, inputs, **kwargs):
-        x_0 = self.short_downres(inputs)
-        x = inputs
-
-        if not self.initial_layer:
-            x = self.act(inputs)
-            x = self.norm(x, training=kwargs["training"])
-
-        q = self.query_mat(x)
-        v = self.value_mat(x)
-
-        x = self.attention0([q, v])
-
-        x = layers.add([x, x_0])
-
-        if self.initial_layer:
-            x = self.drop(x, training=kwargs["training"])
-
-        return x
-
-
 class AttentionNET(tf.keras.Model):
 
     def __init__(self, hparams):

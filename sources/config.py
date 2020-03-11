@@ -34,7 +34,7 @@ HP_CDEEP_LAYERS = hp.HParam("Downres Layers", hp.Discrete([1, 2, 3, 4, 5]))
 HP_DEEP_CHANNELS = hp.HParam("Filter start size", hp.Discrete([2, 4]))
 HP_DEEP_LAYERS = hp.HParam("DownConv Layers", hp.Discrete([3, 4]))
 HP_DEEP_KERNEL_SIZE = hp.HParam("Kernel Size", hp.Discrete([3]))
-HP_LOSS_TYPE = hp.HParam("Loss Type", hp.Discrete(["BCE"]))
+HP_LOSS_TYPE = hp.HParam("Loss Type", hp.Discrete(["BCE", "DUAL_BCE"]))
 
 # LateFuseCNN hparams
 HP_LDEEP_V_CHANNELS = hp.HParam("View-Ind. Filter start size", hp.Discrete([2, 4]))
@@ -53,6 +53,11 @@ HP_ATT_UPCHANNEL = hp.HParam("Upchannel Attention", hp.Discrete([True, False]))
 # AttentionNET2 hparams
 HP_ATT2_FILTERS = hp.HParam("Channels", hp.Discrete([2, 4, 6]))
 HP_ATT2_LAYERS = hp.HParam("Layers", hp.Discrete([3, 4, 5, 6]))
+
+# AttentionNETDual hparams
+HP_ATTD_COMMON_INIT = hp.HParam("Common Downres", hp.Discrete([True, False]))
+HP_ATTD_LAYERS = hp.HParam("Attention Layers", hp.Discrete([2, 3, 4, 5, 6]))
+HP_ATTD_FILTERS = hp.HParam("Channels", hp.Discrete([2, 4, 6, 8]))
 
 OPT_PARAMS = {
     "BaseNET": {
@@ -77,6 +82,12 @@ OPT_PARAMS = {
     "AttentionNET2": {
         HP_ATT2_FILTERS: 4,
         HP_ATT2_LAYERS: 6
+    },
+    "AttentionNETDual": {
+        HP_ATTD_FILTERS: 4,
+        HP_ATTD_LAYERS: 3,
+        HP_ATTD_COMMON_INIT: True,
+        HP_LOSS_TYPE: "DUAL_BCE"
     }
 }
 

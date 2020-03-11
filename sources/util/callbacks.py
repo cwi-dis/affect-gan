@@ -81,6 +81,7 @@ class ConfusionMatrixCallback(callbacks.Callback):
 
         with self.file_writer_cm.as_default():
             tf.summary.image("Confusion Matrix", cm_image, step=epoch)
+        super().on_epoch_end(epoch, logs)
 
 
 

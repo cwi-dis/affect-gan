@@ -11,7 +11,7 @@ def SimpleRegressionAccuracy(y_true, y_pred, threshold=5):
 
 
 class CastingBinaryAccuracy(tf.keras.metrics.BinaryAccuracy):
-    def __init__(self, name="binary_accuracy_v2", dtype=None, threshold=0.5):
+    def __init__(self, name="Accuracy", dtype=None, threshold=0.5):
         super(CastingBinaryAccuracy, self).__init__(name=name, dtype=dtype, threshold=threshold)
         self.true_threshold = 5.0
 
