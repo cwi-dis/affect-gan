@@ -50,6 +50,10 @@ HP_ATT_EXTRA_LAYER = hp.HParam("Third Downres Layer", hp.Discrete([True, False])
 HP_ATT_DOWNRESATT = hp.HParam("Downsampling Attention", hp.Discrete([True, False]))
 HP_ATT_UPCHANNEL = hp.HParam("Upchannel Attention", hp.Discrete([True, False]))
 
+# AttentionNET2 hparams
+HP_ATT2_FILTERS = hp.HParam("Channels", hp.Discrete([2, 4, 6]))
+HP_ATT2_LAYERS = hp.HParam("Layers", hp.Discrete([3, 4, 5, 6]))
+
 OPT_PARAMS = {
     "BaseNET": {
         HP_FILTERS: 8,
@@ -69,6 +73,10 @@ OPT_PARAMS = {
         HP_ATT_EXTRA_LAYER: False,
         HP_ATT_DOWNRESATT: False,
         HP_ATT_UPCHANNEL: False
+    },
+    "AttentionNET2": {
+        HP_ATT2_FILTERS: 4,
+        HP_ATT2_LAYERS: 6
     }
 }
 
