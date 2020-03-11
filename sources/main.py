@@ -52,9 +52,9 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
             metrics = [CastingBinaryAccuracy()]
             labels = ["arousal"]
         elif hparams[config.HP_LOSS_TYPE] == "DUAL_BCE":
-            continuous_labels = False
+            continuous_labels = True
             loss = [CastingBinaryCrossentropy(), CastingBinaryCrossentropy()]
-            metrics = ["accuracy", "accuracy"]
+            metrics = [CastingBinaryAccuracy(), CastingBinaryAccuracy()]
             labels = ["arousal", "valence"]
     except:
         continuous_labels = True

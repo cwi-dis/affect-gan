@@ -86,7 +86,7 @@ OPT_PARAMS = {
     "AttentionNETDual": {
         HP_ATTD_FILTERS: 4,
         HP_ATTD_LAYERS: 3,
-        HP_ATTD_COMMON_INIT: True,
+        HP_ATTD_COMMON_INIT: False,
         HP_LOSS_TYPE: "DUAL_BCE"
     }
 }
