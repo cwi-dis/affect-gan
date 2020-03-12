@@ -255,20 +255,22 @@ def hp_sweep_run(logdir, model_name):
 
     if model_name == "AttentionNET2":
         for filters in config.HP_ATT2_FILTERS.domain.values:
-            for layers in config.HP_ATT2_LAYERS.domain.values:
-                for r in range(config.RUNS):
-                    hparams = {
-                        config.HP_ATT2_FILTERS: filters,
-                        config.HP_ATT2_LAYERS: layers,
-                    }
+            for late_filters in config.HP_ATT2_OTHERFILTERS.domain.values:
+                for layers in config.HP_ATT2_LAYERS.domain.values:
+                    for r in range(config.RUNS):
+                        hparams = {
+                            config.HP_ATT2_FILTERS: filters,
+                            config.HP_ATT2_LAYERS: layers,
+                            config.HP_ATT2_OTHERFILTERS: late_filters
+                        }
 
-                    run_name = "run-%d.%d" % (session_num, r)
-                    run_logdir = os.path.join(logdir, run_name)
-                    print('--- Starting trial: %s' % run_name)
-                    print({h.name: hparams[h] for h in hparams})
-                    print("--- Restart %d of %d" % (r+1, config.RUNS))
-                    run(model_name, hparams, run_logdir, run_name)
-                session_num += 1
+                        run_name = "run-%d.%d" % (session_num, r)
+                        run_logdir = os.path.join(logdir, run_name)
+                        print('--- Starting trial: %s' % run_name)
+                        print({h.name: hparams[h] for h in hparams})
+                        print("--- Restart %d of %d" % (r+1, config.RUNS))
+                        run(model_name, hparams, run_logdir, run_name)
+                    session_num += 1
 
     if model_name == "AttentionNETDual":
         for filters in config.HP_ATTD_FILTERS.domain.values:
@@ -308,7 +310,7 @@ def main():
 
 
 def summary():
-    hparams = config.OPT_PARAMS["AttentionNETDual"]
+    hparams = config.OPT_PARAMS["AttentionNET2"]
     #hparams = {
     #    config.HP_DEEP_LAYERS: 4,
     #    config.HP_DEEP_CHANNELS: 2,
@@ -323,7 +325,7 @@ def summary():
     #ChannelCNN(hparams, 5).model().summary()
     #DeepCNN(hparams).model().summary()
     #LateFuseCNN(hparams, 5).model().summary()
-    AttentionNETDual(hparams).model().summary()
+    AttentionNET2(hparams).model().summary()
 
 
 if __name__ == '__main__':

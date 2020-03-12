@@ -51,8 +51,9 @@ HP_ATT_DOWNRESATT = hp.HParam("Downsampling Attention", hp.Discrete([True, False
 HP_ATT_UPCHANNEL = hp.HParam("Upchannel Attention", hp.Discrete([True, False]))
 
 # AttentionNET2 hparams
-HP_ATT2_FILTERS = hp.HParam("Channels", hp.Discrete([2, 4, 6]))
-HP_ATT2_LAYERS = hp.HParam("Layers", hp.Discrete([3, 4, 5, 6]))
+HP_ATT2_FILTERS = hp.HParam("Channels", hp.Discrete([6]))
+HP_ATT2_LAYERS = hp.HParam("Layers", hp.Discrete([4, 5]))
+HP_ATT2_OTHERFILTERS = hp.HParam("Late Channels", hp.Discrete([3, 6, 8]))
 
 # AttentionNETDual hparams
 HP_ATTD_COMMON_INIT = hp.HParam("Common Downres", hp.Discrete([True, False]))
@@ -80,8 +81,9 @@ OPT_PARAMS = {
         HP_ATT_UPCHANNEL: False
     },
     "AttentionNET2": {
-        HP_ATT2_FILTERS: 4,
-        HP_ATT2_LAYERS: 6
+        HP_ATT2_FILTERS: 6,
+        HP_ATT2_LAYERS: 4,
+        HP_ATT2_OTHERFILTERS: 8
     },
     "AttentionNETDual": {
         HP_ATTD_FILTERS: 4,

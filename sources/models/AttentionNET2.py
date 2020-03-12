@@ -11,10 +11,11 @@ class AttentionNET(tf.keras.Model):
         super(AttentionNET, self).__init__()
         self.num_layers = hparams[config.HP_ATT2_LAYERS]
 
+
         self.att_layers = []
         for l in range(self.num_layers):
             self.att_layers.append(AttentionLayer(
-                filters=hparams[config.HP_ATT2_FILTERS],
+                filters=hparams[config.HP_ATT2_FILTERS] if l <= 1 else hparams[config.HP_ATT2_OTHERFILTERS],
                 initial_layer=l == 0
             ))
 
