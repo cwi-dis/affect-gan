@@ -97,13 +97,13 @@ class Dataloader(object):
 
     def __call__(self, mode, batch_size=64, leave_out=None):
 
-        modes = ["train", "test", "eval", "inspect", "test_eval"]
+        modes = ["train", "test", "eval", "inspect", "test_eval", "gan"]
         if mode not in modes:
             raise Exception("mode not found! supported modes are %s" % modes)
         #if mode is "eval" and leave_out is None:
         #    raise Exception("leave-one-out evaluation undefined!")
 
-        if mode is "train":
+        if mode is "train" or "gan":
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.train_num]
         elif mode is "eval" or "test_eval":
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.eval_num]
@@ -133,6 +133,10 @@ class Dataloader(object):
 
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=2)
+
+        if mode == "gan":
+            dataset = dataset.map(lambda features, labels: features)
+            dataset = dataset.repeat()
 
         if mode == "test_eval":
             return dataset.shuffle(1000, seed=42).batch(500).take(1)

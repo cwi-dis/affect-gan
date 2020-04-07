@@ -17,7 +17,9 @@ from models.LateFuseCNN import LateFuseCNN
 from models.AttentionNET import AttentionNET
 from models.AttentionNET2 import AttentionNET as AttentionNET2
 from models.AttentionNETDual import AttentionNETDual
+from models.TAGAN import Generator, Discriminator
 from data.dataloader import Dataloader
+from train_gan import GAN_Trainer
 
 from util.callbacks import CallbacksProducer
 from util.CustomLosses import CastingBinaryCrossentropy
@@ -292,6 +294,7 @@ def hp_sweep_run(logdir, model_name):
                         run(model_name, hparams, run_logdir, run_name)
                     session_num += 1
 
+
 def single_run(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", model_name + run_id)
@@ -299,13 +302,39 @@ def single_run(model_name):
     run(model_name, hparams, logdir)
 
 
+def run_gan(model_name):
+    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+    logdir = os.path.join("../Logs", model_name + run_id)
+    hparams = config.OPT_PARAMS[model_name]
+    dataloader = Dataloader(
+        "5000d", ["bvp", "ecg", "rsp", "gsr", "skt"]
+    )
+    dataset = dataloader("gan", 128)
+    discriminator = Discriminator(hparams)
+    generator = Generator()
+    trainer = GAN_Trainer(
+        batch_size=128,
+        n_epochs=50,
+        iter_per_epoch=300,
+        noise_dim=125,
+        generator=generator,
+        discriminator=discriminator,
+        generator_lr=0.001,
+        discriminator_lr=0.0008,
+        save_image_every_n_steps=100,
+        logdir=logdir
+    )
+
+    trainer.train(dataset=dataset)
+
 def main():
     init_tf_gpus()
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    single_run(model_name="AttentionNET2")
+    #single_run(model_name="AttentionNET2")
+    run_gan(model_name="vanilla_gan")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 
 
@@ -325,9 +354,11 @@ def summary():
     #ChannelCNN(hparams, 5).model().summary()
     #DeepCNN(hparams).model().summary()
     #LateFuseCNN(hparams, 5).model().summary()
-    AttentionNET2(hparams).model().summary()
+    #AttentionNET2(hparams).model().summary()
+    Generator().model().summary()
+    Discriminator(hparams).model().summary()
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()

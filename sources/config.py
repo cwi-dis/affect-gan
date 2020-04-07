@@ -90,6 +90,11 @@ OPT_PARAMS = {
         HP_ATTD_LAYERS: 3,
         HP_ATTD_COMMON_INIT: False,
         HP_LOSS_TYPE: "DUAL_BCE"
+    },
+    "vanilla_gan": {
+        HP_ATT2_FILTERS: 6,
+        HP_ATT2_LAYERS: 3,
+        HP_ATT2_OTHERFILTERS: 8
     }
 }
 

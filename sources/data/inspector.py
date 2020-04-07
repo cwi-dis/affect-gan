@@ -1,13 +1,77 @@
 import numpy as np
 import os
+import io
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import tensorflow as tf
+import itertools
 
 from data.dataloader import Dataloader
 from matplotlib.widgets import MultiCursor
 
 color_pallete = ["#e6194B", "#ffe119", "#4363d8", "#f58231", "#42d4f4", "#f032e6", "#fabebe", "#469990", "#e6beff", "#9A6324", "#000000", "#800000", "#aaffc3", "#000075", "#a9a9a9", "#ffffff", "#3cb44b"]
+
+
+def plot_to_image(figure):
+    """Converts the matplotlib plot specified by 'figure' to a PNG image and
+    returns it. The supplied figure is closed and inaccessible after this call."""
+    # Save the plot to a PNG in memory.
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    # Closing the figure prevents it from being displayed directly inside
+    # the notebook.
+    plt.close(figure)
+    buf.seek(0)
+    # Convert PNG buffer to TF image
+    image = tf.image.decode_png(buf.getvalue(), channels=4)
+    # Add the batch dimension
+    image = tf.expand_dims(image, 0)
+    return image
+
+
+def plot_confusion_matrix(cm, class_names):
+    """
+    Returns a matplotlib figure containing the plotted confusion matrix.
+
+    Args:
+    cm (array, shape = [n, n]): a confusion matrix of integer classes
+    class_names (array, shape = [n]): String names of the integer classes
+    """
+    figure = plt.figure(figsize=(2, 2))
+    plt.imshow(cm, interpolation='nearest', cmap=plt.cm.Blues)
+    plt.title("Confusion matrix")
+    plt.colorbar()
+    tick_marks = np.arange(len(class_names))
+    plt.xticks(tick_marks, class_names, rotation=45)
+    plt.yticks(tick_marks, class_names)
+
+    # Normalize the confusion matrix.
+    cm = np.around(cm.astype('float') / cm.sum(axis=1)[:, np.newaxis], decimals=2)
+
+    # Use white text if squares are dark; otherwise black.
+    threshold = cm.max() / 2.
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        color = "white" if cm[i, j] > threshold else "black"
+        plt.text(j, i, cm[i, j], horizontalalignment="center", color=color)
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label')
+    return figure
+
+def plot_generated_signals(signals, n_signals):
+    sig1, sig2 = signals[0], signals[1]
+    x = range(len(sig1))
+    fig, axs = plt.subplots(n_signals, 2)
+    for sig in range(2):
+        for phys_sig in range(n_signals):
+            axs[phys_sig, sig].plot(x, signals[sig, :, phys_sig])
+    plt.tight_layout()
+    return fig
+
+
+
 
 def collect_labels(data):
     arousal = []
@@ -62,18 +126,23 @@ def plot_label_heatmap(labels):
     sns.kdeplot(labels.valence, labels.arousal, cmap=cmap, n_levels=60, shade=True)
     plt.show()
 
+
+def plot_signal(signal):
+    x = range(len(signal))
+    fig, (ax0, ax1, ax2, ax3, ax4) = plt.subplots(5, sharex=True)
+    ax0.plot(x, signal[:, 0])
+    ax1.plot(x, signal[:, 1])
+    ax2.plot(x, signal[:, 2])
+    ax3.plot(x, signal[:, 3])
+    ax4.plot(x, signal[:, 4])
+    multi = MultiCursor(fig.canvas, (ax0, ax1, ax2, ax3, ax4), color='r', lw=1)
+    plt.show()
+
 def plot_signals(data):
-    for signals, label in data.take(10):
+    for signal, label in data.take(10):
         print(label)
-        x = range(len(signals))
-        fig, (ax0, ax1, ax2, ax3, ax4) = plt.subplots(5, sharex=True)
-        ax0.plot(x, signals[:, 0])
-        ax1.plot(x, signals[:, 1])
-        ax2.plot(x, signals[:, 2])
-        ax3.plot(x, signals[:, 3])
-        ax4.plot(x, signals[:, 4])
-        multi = MultiCursor(fig.canvas, (ax0, ax1, ax2, ax3, ax4), color='r', lw=1)
-        plt.show()
+        plot_signal(signal)
+
 
 def valence_arousal_viz(extended_labels):
     current_palette = sns.color_palette("bright", n_colors=11)

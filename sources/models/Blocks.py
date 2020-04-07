@@ -54,12 +54,61 @@ class DownResLayer(layers.Layer):
 
         return x
 
+class UpResBlock(layers.Layer):
+    def __init__(self, channels, kernel_size=4, w_norm_clip=2, **kwargs):
+        super(UpResBlock, self).__init__(**kwargs)
+        self.out_channels = channels
+
+        self.up = layers.UpSampling1D(size=2)
+        self.conv0 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
+                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
+        self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
+                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0, 1]))
+
+        self.up_s = layers.UpSampling1D(size=2)
+        self.upconv_s = layers.Conv1D(filters=channels, kernel_size=1, padding="same")
+
+    def call(self, inputs, **kwargs):
+        x = inputs
+        input_channels = inputs.shape.as_list()[-1]
+
+        x = self.up(x)
+        x = self.conv0(x)
+        x = self.conv1(x)
+
+        x_0 = self.up_s(inputs)
+        if self.out_channels != input_channels:
+            x_0 = self.upconv_s(x_0)
+
+        out = x + x_0
+
+        return out
+
+
+class UpResLayer(layers.Layer):
+    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=4, w_norm_clip=2, use_actnormdrop=False, **kwargs):
+        super(UpResLayer, self).__init__(**kwargs)
+        self.use_actnormdrop = use_actnormdrop
+        self.up_resblock = UpResBlock(channels_out, kernel_size, w_norm_clip)
+        self.act = layers.LeakyReLU()
+        self.batchnorm = layers.BatchNormalization()
+        self.dropout = layers.Dropout(rate=dropout_rate)
+
+    def call(self, inputs, **kwargs):
+        x = self.up_resblock(inputs)
+
+        if not self.use_actnormdrop:
+            x = self.act(x)
+            x = self.batchnorm(x, training=kwargs["training"])
+            x = self.dropout(x, training=kwargs["training"])
+
+        return x
 
 class AttentionLayer(layers.Layer):
-    def __init__(self, filters, use_input_as_value=False, initial_layer=False, **kwargs):
+    def __init__(self, filters, use_input_as_value=False, use_actnormdrop=False, dropout_rate=0.4, **kwargs):
         super().__init__(**kwargs)
         self.use_input_as_value = use_input_as_value
-        self.initial_layer = initial_layer
+        self.use_actnormdrop = use_actnormdrop
 
         self.act = layers.LeakyReLU()
         self.norm = layers.BatchNormalization()
@@ -88,15 +137,11 @@ class AttentionLayer(layers.Layer):
             padding="same"
         )
 
-        self.drop = layers.Dropout(rate=0.5)
+        self.drop = layers.Dropout(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
         x_0 = self.short_downres(inputs)
         x = inputs
-
-        if not self.initial_layer:
-            x = self.act(inputs)
-            x = self.norm(x, training=kwargs["training"])
 
         q = self.query_mat(x)
         v = self.value_mat(x)
@@ -105,7 +150,9 @@ class AttentionLayer(layers.Layer):
 
         x = layers.add([x, x_0])
 
-        if self.initial_layer:
+        if self.use_actnormdrop:
+            x = self.act(x)
+            x = self.norm(x, training=kwargs["training"])
             x = self.drop(x, training=kwargs["training"])
 
         return x
