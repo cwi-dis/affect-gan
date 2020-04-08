@@ -309,19 +309,19 @@ def run_gan(model_name):
     dataloader = Dataloader(
         "5000d", ["bvp", "ecg", "rsp", "gsr", "skt"]
     )
-    dataset = dataloader("gan", 128)
+    dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE])
     discriminator = Discriminator(hparams)
     generator = Generator()
     trainer = GAN_Trainer(
-        batch_size=128,
+        batch_size=hparams[config.HP_GAN_BATCHSIZE],
         n_epochs=50,
-        iter_per_epoch=300,
+        iter_per_epoch=3000,
         noise_dim=125,
         generator=generator,
         discriminator=discriminator,
-        generator_lr=0.001,
-        discriminator_lr=0.0008,
-        save_image_every_n_steps=100,
+        generator_lr=0.0008,
+        discriminator_lr=0.0005,
+        save_image_every_n_steps=1000,
         logdir=logdir
     )
 
@@ -360,5 +360,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()

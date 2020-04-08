@@ -60,6 +60,8 @@ HP_ATTD_COMMON_INIT = hp.HParam("Common Downres", hp.Discrete([True, False]))
 HP_ATTD_LAYERS = hp.HParam("Attention Layers", hp.Discrete([2, 3, 4, 5, 6]))
 HP_ATTD_FILTERS = hp.HParam("Channels", hp.Discrete([2, 4, 6, 8]))
 
+HP_GAN_BATCHSIZE = hp.HParam("Batchsize", hp.Discrete([8, 16, 32, 64]))
+
 OPT_PARAMS = {
     "BaseNET": {
         HP_FILTERS: 8,
@@ -94,7 +96,8 @@ OPT_PARAMS = {
     "vanilla_gan": {
         HP_ATT2_FILTERS: 6,
         HP_ATT2_LAYERS: 3,
-        HP_ATT2_OTHERFILTERS: 8
+        HP_ATT2_OTHERFILTERS: 8,
+        HP_GAN_BATCHSIZE: 16
     }
 }
 

@@ -137,6 +137,7 @@ class Dataloader(object):
         if mode == "gan":
             dataset = dataset.map(lambda features, labels: features)
             dataset = dataset.repeat()
+            dataset = dataset.shuffle(buffer_size=25000)
 
         if mode == "test_eval":
             return dataset.shuffle(1000, seed=42).batch(500).take(1)
