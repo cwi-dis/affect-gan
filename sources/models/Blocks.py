@@ -114,14 +114,12 @@ class AttentionLayer(layers.Layer):
         self.norm = layers.BatchNormalization()
         self.query_mat = layers.Conv1D(
             filters=filters,
-            kernel_size=4,
-            strides=2,
+            kernel_size=3,
             padding="same"
         )
         self.value_mat = layers.Conv1D(
             filters=filters,
-            kernel_size=4,
-            strides=2,
+            kernel_size=3,
             padding="same"
         )
 
@@ -132,8 +130,7 @@ class AttentionLayer(layers.Layer):
 
         self.short_downres = layers.Conv1D(
             filters=filters,
-            kernel_size=4,
-            strides=2,
+            kernel_size=3,
             padding="same"
         )
 
