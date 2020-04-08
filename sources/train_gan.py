@@ -25,7 +25,7 @@ class GAN_Trainer():
         self.save_image_every_n_steps = save_image_every_n_steps
 
         self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=generator_lr, beta_1=0.5)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=discriminator_lr, beta_1=0.5)
+        self.discriminator_optimizer = tf.keras.optimizers.SGD(learning_rate=0.001, momentum=0.9)
 
         self.summary_writer = tf.summary.create_file_writer(logdir=logdir)
 

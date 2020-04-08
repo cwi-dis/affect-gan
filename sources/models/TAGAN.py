@@ -9,17 +9,17 @@ class Generator(tf.keras.Model):
     def __init__(self, *args, **kwargs):
         super(Generator, self).__init__(*args, **kwargs)
 
-        self.up_0 = UpResLayer(channels_out=8)
-        self.non_local = AttentionLayer(filters=8, use_actnormdrop=True)
-        self.up_1 = UpResLayer(channels_out=6, use_actnormdrop=True)
+        self.up_0 = UpResLayer(channels_out=16, kernel_size=3, use_actnormdrop=True, dropout_rate=0.5)
+        self.up_1 = UpResLayer(channels_out=16, kernel_size=5)
+        self.non_local = AttentionLayer(filters=16, use_actnormdrop=True)
         self.final_conv = layers.Conv1D(filters=5, kernel_size=3, padding="same",
                                         kernel_constraint=tf.keras.constraints.MaxNorm(max_value=1, axis=[0, 1]))
 
     def call(self, inputs, training=None, mask=None):
         x = tf.expand_dims(inputs, axis=-1)
         x = self.up_0(x)
-        x = self.non_local(x)
         x = self.up_1(x)
+        x = self.non_local(x)
         x = self.final_conv(x)
         x = tf.keras.activations.tanh(x)
         return x

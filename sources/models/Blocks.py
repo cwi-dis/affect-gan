@@ -97,7 +97,7 @@ class UpResLayer(layers.Layer):
     def call(self, inputs, **kwargs):
         x = self.up_resblock(inputs)
 
-        if not self.use_actnormdrop:
+        if self.use_actnormdrop:
             x = self.act(x)
             x = self.batchnorm(x, training=kwargs["training"])
             x = self.dropout(x, training=kwargs["training"])
