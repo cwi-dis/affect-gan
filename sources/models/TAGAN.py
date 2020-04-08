@@ -34,22 +34,22 @@ class Discriminator(tf.keras.Model):
         super(Discriminator, self).__init__(*args, **kwargs)
 
         self.downres0 = DownResLayer(
-            channels_out=6,
+            channels_out=4,
             dropout_rate=0.3,
             first_layer=True,
             use_dropout=True
         )
         self.non_local = AttentionLayer(
-            filters=6,
+            filters=4,
             use_actnormdrop=True,
             dropout_rate=0.0
         )
         self.downres1 = DownResLayer(
-            channels_out=6,
+            channels_out=2,
             use_dropout=True
         )
         self.downres2 = DownResLayer(
-            channels_out=8,
+            channels_out=2,
             use_dropout=False
         )
 
