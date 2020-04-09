@@ -68,7 +68,8 @@ OPT_PARAMS = {
         HP_DROPOUT: 0.4,
         HP_KERNEL: 5,
         HP_DILATION: 1,
-        HP_POOL: 5
+        HP_POOL: 5,
+        HP_GAN_BATCHSIZE: 16
     },
     "DeepCNN": {
         HP_DEEP_LAYERS: 3,

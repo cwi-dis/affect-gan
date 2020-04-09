@@ -73,9 +73,6 @@ def plot_generated_signals(signals, n_signals):
     plt.tight_layout()
     return fig
 
-
-
-
 def collect_labels(data):
     arousal = []
     valence = []

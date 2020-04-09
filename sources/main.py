@@ -305,12 +305,12 @@ def single_run(model_name):
 def run_gan(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", model_name + run_id)
-    hparams = config.OPT_PARAMS[model_name]
+    hparams = config.OPT_PARAMS["BaseNET"]
     dataloader = Dataloader(
         "5000d", ["ecg"]
     )
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE])
-    discriminator = Discriminator(hparams)
+    discriminator = BaseNET1(hparams)
     generator = Generator(n_signals=1)
     trainer = GAN_Trainer(
         batch_size=hparams[config.HP_GAN_BATCHSIZE],

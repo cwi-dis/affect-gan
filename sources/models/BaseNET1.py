@@ -22,7 +22,7 @@ class BaseNET1(tf.keras.Model):
             padding="same")
         self.flat = layers.Flatten()
         self.dense = layers.Dense(8, input_shape=(self.dense_shape,), activation=layers.LeakyReLU())
-        self.dense_out = layers.Dense(1)
+        self.dense_out = layers.Dense(1, activation="sigmoid")
 
     def call(self, inputs, training=None, mask=None):
 

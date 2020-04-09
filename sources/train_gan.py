@@ -1,5 +1,6 @@
 import tensorflow as tf
 from util.CustomLosses import discriminator_loss, generator_loss
+from util.CustomMetrics import discriminator_accuracy
 from data.inspector import plot_generated_signals, plot_to_image
 
 class GAN_Trainer():
@@ -35,14 +36,16 @@ class GAN_Trainer():
 
         for epoch in range(self.n_epochs):
             for batch in dataset.take(self.iterations_per_epoch):
-                gen_loss, dis_loss = self.train_step(batch)
+                gen_loss, dis_loss, fake_acc, real_acc = self.train_step(batch)
 
                 with self.summary_writer.as_default():
                     tf.summary.scalar("generator_loss", gen_loss, step=train_step)
                     tf.summary.scalar("discriminator_loss", dis_loss, step=train_step)
+                    tf.summary.scalar("fake accuracy", fake_acc, step=train_step)
+                    tf.summary.scalar("real accuracy", real_acc, step=train_step)
 
                 if train_step % self.save_image_every_n_steps == 0:
-                    tf.print("Current Train Step: %d, Generator Loss: %3f, Discriminator Loss: %3f" % (train_step, gen_loss, dis_loss))
+                    tf.print("Current Train Step: %d, Generator Loss: %3f, Discriminator Loss: %3f, Fake Acc.: %3f, Real Acc.: %3f" % (train_step, gen_loss, dis_loss, fake_acc, real_acc))
                     gen_signals = self.generator(test_seed, training=False)
                     fig = plot_generated_signals(gen_signals, 1)
                     img = plot_to_image(fig)
@@ -66,10 +69,12 @@ class GAN_Trainer():
             gen_loss = generator_loss(fake_out)
             dis_loss = discriminator_loss(real_out, fake_out)
 
+            fake_acc, real_acc = discriminator_accuracy(fake_out, real_out)
+
         gen_gradients = gen_tape.gradient(gen_loss, self.generator.trainable_variables)
         dis_gradients = dis_tape.gradient(dis_loss, self.discriminator.trainable_variables)
 
         self.generator_optimizer.apply_gradients(zip(gen_gradients,self.generator.trainable_variables))
         self.discriminator_optimizer.apply_gradients(zip(dis_gradients, self.discriminator.trainable_variables))
 
-        return gen_loss, dis_loss
+        return gen_loss, dis_loss, fake_acc, real_acc
