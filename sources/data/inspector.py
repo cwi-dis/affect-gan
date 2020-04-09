@@ -65,8 +65,11 @@ def plot_generated_signals(signals, n_signals):
     x = range(len(sig1))
     fig, axs = plt.subplots(n_signals, 2)
     for sig in range(2):
-        for phys_sig in range(n_signals):
-            axs[phys_sig, sig].plot(x, signals[sig, :, phys_sig])
+        if n_signals == 1:
+            axs[sig].plot(x, signals[sig, :, 0])
+        else:
+            for phys_sig in range(n_signals):
+                axs[phys_sig, sig].plot(x, signals[sig, :, phys_sig])
     plt.tight_layout()
     return fig
 

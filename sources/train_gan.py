@@ -44,7 +44,7 @@ class GAN_Trainer():
                 if train_step % self.save_image_every_n_steps == 0:
                     tf.print("Current Train Step: %d, Generator Loss: %3f, Discriminator Loss: %3f" % (train_step, gen_loss, dis_loss))
                     gen_signals = self.generator(test_seed, training=False)
-                    fig = plot_generated_signals(gen_signals, 5)
+                    fig = plot_generated_signals(gen_signals, 1)
                     img = plot_to_image(fig)
                     with self.summary_writer.as_default():
                         tf.summary.image("Generated Signals", img, step=train_step)

@@ -307,11 +307,11 @@ def run_gan(model_name):
     logdir = os.path.join("../Logs", model_name + run_id)
     hparams = config.OPT_PARAMS[model_name]
     dataloader = Dataloader(
-        "5000d", ["bvp", "ecg", "rsp", "gsr", "skt"]
+        "5000d", ["ecg"]
     )
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE])
     discriminator = Discriminator(hparams)
-    generator = Generator()
+    generator = Generator(n_signals=1)
     trainer = GAN_Trainer(
         batch_size=hparams[config.HP_GAN_BATCHSIZE],
         n_epochs=50,
@@ -321,7 +321,7 @@ def run_gan(model_name):
         discriminator=discriminator,
         generator_lr=0.0008,
         discriminator_lr=0.0005,
-        save_image_every_n_steps=1000,
+        save_image_every_n_steps=500,
         logdir=logdir
     )
 
@@ -355,10 +355,10 @@ def summary():
     #DeepCNN(hparams).model().summary()
     #LateFuseCNN(hparams, 5).model().summary()
     #AttentionNET2(hparams).model().summary()
-    Generator().model().summary()
+    Generator(n_signals=1).model().summary()
     Discriminator(hparams).model().summary()
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()
