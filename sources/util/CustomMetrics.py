@@ -1,7 +1,6 @@
 import tensorflow as tf
 from tensorflow.python.ops import math_ops
 
-binary_accuracy = tf.metrics.BinaryAccuracy()
 
 @tf.function
 def SimpleRegressionAccuracy(y_true, y_pred, threshold=5):
@@ -11,8 +10,8 @@ def SimpleRegressionAccuracy(y_true, y_pred, threshold=5):
     return math_ops.cast(math_ops.equal(y_true, y_pred), tf.keras.backend.floatx())
 
 def discriminator_accuracy(fake_out, real_out):
-    fake_acc = binary_accuracy(tf.zeros_like(fake_out), fake_out)
-    real_acc = binary_accuracy(tf.ones_like(real_out), real_out)
+    fake_acc = tf.keras.backend.mean(tf.keras.metrics.binary_accuracy(tf.zeros_like(fake_out), fake_out))
+    real_acc = tf.keras.backend.mean(tf.keras.metrics.binary_accuracy(tf.ones_like(real_out), real_out))
 
     return fake_acc, real_acc
 
