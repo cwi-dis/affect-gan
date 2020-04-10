@@ -98,8 +98,9 @@ class GAN_Trainer():
 
             real_out = self.discriminator(real_sig, training=True)
             fake_out = self.discriminator(fake_sig, training=True)
+
             interpolated_out = self.discriminator(interpolated_sig, training=True)
-            interpolated_gradients = tape.gradient(interpolated_out, interpolated_sig)
+            interpolated_gradients = tf.gradients(interpolated_out, [interpolated_sig])[0]
 
             critic_loss = wgangp_critic_loss(real_out, fake_out, interpolated_gradients)
 
