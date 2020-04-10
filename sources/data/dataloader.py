@@ -136,8 +136,8 @@ class Dataloader(object):
 
         if mode == "gan":
             dataset = dataset.map(lambda features, labels: features)
+            dataset = dataset.shuffle(buffer_size=30000)
             dataset = dataset.repeat()
-            dataset = dataset.shuffle(buffer_size=25000)
 
         if mode == "test_eval":
             return dataset.shuffle(1000, seed=42).batch(500).take(1)
@@ -151,13 +151,13 @@ class Dataloader(object):
 if __name__ == '__main__':
     os.chdir("./..")
     d = Dataloader("5000d", ["ecg", "rsp"], ["valence"])
-    d = d("train", 1)
+    d = d("gan", 1)
 
-    i=0
-    h=0
-    for data, label1 in d:
-        i += 1
-        h += 1 if label1 > 5 else 0
-
-    print(h/i)
+    for tries in range(3):
+        i = 0
+        for batch in d:
+            tf.print(batch)
+            i += 1
+            if i == 2:
+                break
 

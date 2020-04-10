@@ -305,23 +305,23 @@ def single_run(model_name):
 def run_gan(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", model_name + run_id)
-    hparams = config.OPT_PARAMS["BaseNET"]
+    hparams = config.OPT_PARAMS["gan"]
     dataloader = Dataloader(
         "5000d", ["ecg"]
     )
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE])
-    discriminator = BaseNET1(hparams)
+    discriminator = Discriminator(hparams)
     generator = Generator(n_signals=1)
     trainer = GAN_Trainer(
+        mode=model_name,
         batch_size=hparams[config.HP_GAN_BATCHSIZE],
-        n_epochs=50,
-        iter_per_epoch=3000,
+        n_epochs=20,
+        n_critic=3,
+        iter_per_epoch=1500,
         noise_dim=125,
         generator=generator,
         discriminator=discriminator,
-        generator_lr=0.0008,
-        discriminator_lr=0.0005,
-        save_image_every_n_steps=500,
+        save_image_every_n_steps=200,
         logdir=logdir
     )
 
@@ -334,7 +334,7 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     #single_run(model_name="AttentionNET2")
-    run_gan(model_name="vanilla_gan")
+    run_gan(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 
 

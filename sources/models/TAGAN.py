@@ -12,8 +12,7 @@ class Generator(tf.keras.Model):
         self.up_0 = UpResLayer(channels_out=2, kernel_size=3)
         self.non_local = AttentionLayer(filters=4, use_actnormdrop=True)
         self.up_1 = UpResLayer(channels_out=4, kernel_size=3, use_actnormdrop=True, dropout_rate=0.4)
-        self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=3, padding="same",
-                                        kernel_constraint=tf.keras.constraints.MaxNorm(max_value=1, axis=[0, 1]))
+        self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=3, padding="same")
 
     def call(self, inputs, training=None, mask=None):
         x = tf.expand_dims(inputs, axis=-1)
@@ -30,18 +29,18 @@ class Generator(tf.keras.Model):
 
 
 class Discriminator(tf.keras.Model):
-    def __init__(self, hparams, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         super(Discriminator, self).__init__(*args, **kwargs)
 
         self.downres0 = DownResLayer(
             channels_out=4,
-            dropout_rate=0.3,
+            dropout_rate=0.5,
             first_layer=True,
             use_dropout=True
         )
         self.non_local = AttentionLayer(
             filters=4,
-            use_actnormdrop=True,
+            use_actnormdrop=False,
             dropout_rate=0.0
         )
         self.downres1 = DownResLayer(
@@ -55,7 +54,7 @@ class Discriminator(tf.keras.Model):
 
         self.avg = layers.GlobalAveragePooling1D()
 
-        self.dense_output = layers.Dense(1, activation="sigmoid")
+        self.dense_output = layers.Dense(1)
 
     def call(self, inputs, training=None, mask=None):
         x = self.downres0(inputs, training=training)

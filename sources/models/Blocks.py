@@ -7,14 +7,14 @@ class DownResBlock(layers.Layer):
         self.out_channels = channels
         self.in_act = initial_activation
         self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
+                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
         self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
+                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
 
         self.pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
 
         self.shortcut_conv = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
-                                           kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
+                                           )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
         self.shortcut_pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
 
     def call(self, inputs, **kwargs):
@@ -86,7 +86,7 @@ class UpResBlock(layers.Layer):
 
 
 class UpResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=4, w_norm_clip=2, use_actnormdrop=False, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=4, w_norm_clip=1, use_actnormdrop=False, **kwargs):
         super(UpResLayer, self).__init__(**kwargs)
         self.use_actnormdrop = use_actnormdrop
         self.up_resblock = UpResBlock(channels_out, kernel_size, w_norm_clip)
@@ -150,6 +150,9 @@ class AttentionLayer(layers.Layer):
         if self.use_actnormdrop:
             x = self.act(x)
             x = self.norm(x, training=kwargs["training"])
+            x = self.drop(x, training=kwargs["training"])
+        else:
+            x = self.act(x)
             x = self.drop(x, training=kwargs["training"])
 
         return x

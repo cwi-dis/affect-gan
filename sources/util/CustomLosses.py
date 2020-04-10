@@ -22,3 +22,9 @@ def discriminator_loss(real_output, fake_output):
     fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
     total_loss = real_loss + fake_loss
     return total_loss
+
+def wgangp_critic_loss(real_out, fake_out, interpolated_out, alpha=10):
+    gradient_penalty = alpha * tf.square(tf.subtract(tf.norm(interpolated_out, ord="euclidean", axis=1), 1))
+    wgangp_loss = fake_out - real_out + gradient_penalty
+
+    return tf.reduce_mean(wgangp_loss)
