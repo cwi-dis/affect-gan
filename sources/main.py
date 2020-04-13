@@ -307,7 +307,7 @@ def run_gan(model_name):
     logdir = os.path.join("../Logs", model_name + run_id)
     hparams = config.OPT_PARAMS["gan"]
     dataloader = Dataloader(
-        "5000d", ["ecg"]
+        "5000d", ["ecg"], range_clipped=True
     )
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE])
     discriminator = Discriminator(hparams)

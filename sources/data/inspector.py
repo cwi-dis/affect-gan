@@ -171,7 +171,7 @@ def video_viz(extended_labels):
 
 if __name__ == '__main__':
     os.chdir("./..")
-    dataloader = Dataloader("5000d", features=["bvp", "ecg", "rsp", "gsr", "skt"], label=["arousal", "valence"], normalized=True)
+    dataloader = Dataloader("5000d", features=["bvp", "ecg", "rsp", "gsr", "skt"], label=["arousal", "valence"], normalized=True, range_clipped=True)
     data = dataloader("inspect", 1)
 
     #labels = collect_labels(data)

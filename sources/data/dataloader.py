@@ -23,7 +23,7 @@ def with_categoric_labels(features, label, threshold=5.0):
 
 class Dataloader(object):
 
-    def __init__(self, datasetID, features=None, label=None, continuous_labels=True, normalized=True):
+    def __init__(self, datasetID, features=None, label=None, continuous_labels=True, normalized=True, range_clipped=False):
         if features is None:
             features = ["bvp"]
         path = "../Dataset/CASE_dataset/tfrecord_%s/" % datasetID
@@ -40,9 +40,11 @@ class Dataloader(object):
             self.labels = label
         self.continuous_labels = continuous_labels
         self.normalized = normalized
+        self.range_clipped = range_clipped
 
         self.means = pd.read_csv("../Dataset/CASE_dataset/stats/mean.csv", header=None, index_col=0, squeeze=True).astype("float32")
         self.vars = pd.read_csv("../Dataset/CASE_dataset/stats/var.csv", header=None, index_col=0, squeeze=True).astype("float32")
+        self.minmax = pd.read_csv("../Dataset/CASE_dataset/stats/minmax.csv", header=0, index_col=0, squeeze=True).astype("float32")
 
         self.excluded_label = tf.constant(5, tf.float32)
         self.train_num = range(1, 27)
@@ -76,7 +78,10 @@ class Dataloader(object):
         features = []
         if self.normalized:
             for feature in self.features:
-                features.append((decoded_example[feature] - self.means[feature]) / tf.sqrt(self.vars[feature]))
+                znorm = (decoded_example[feature] - self.means[feature]) / tf.sqrt(self.vars[feature])
+                if self.range_clipped:
+                    znorm = 2 * (znorm - self.minmax[min][feature]) / (self.minmax[max][feature] - self.minmax[min][feature]) - 1
+                features.append(znorm)
         else:
             for feature in self.features:
                 features.append(decoded_example[feature])
@@ -119,10 +124,13 @@ class Dataloader(object):
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video: (features, labels))
-        dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.2)))
+        if mode is not ("gar" or "inspect"):
+            dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.2)))
+        if self.range_clipped:
+            dataset = dataset.filter(lambda features, _: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
 
         if mode is "inspect":
-            #dataset = dataset.shuffle(buffer_size=500)
+            dataset = dataset.shuffle(buffer_size=5000)
             return dataset
 
         if not self.continuous_labels:
@@ -150,14 +158,34 @@ class Dataloader(object):
 
 if __name__ == '__main__':
     os.chdir("./..")
-    d = Dataloader("5000d", ["ecg", "rsp"], ["valence"])
-    d = d("gan", 1)
+    d = Dataloader("5000d", ["ecg", "bvp", "gsr", "skt", "rsp"], range_clipped=True)
+    d = d("inspect", 1)
 
-    for tries in range(3):
-        i = 0
-        for batch in d:
-            tf.print(batch)
-            i += 1
-            if i == 2:
-                break
+    for e in d.take(10):
+        print(e[0])
 
+    #min = None
+    #max = None
+#
+    #for batch in d:
+    #    if min is None:
+    #        min = tf.reduce_min(batch[0], axis=0)
+    #        max = tf.reduce_max(batch[0], axis=0)
+    #    else:
+    #        mn = tf.abs(tf.reduce_min(batch[0])) > 6
+    #        mx = tf.reduce_max(batch[0]) > 6
+    #        if not (mn or mx):
+    #            min = tf.reduce_min(tf.concat([[min], [tf.reduce_min(batch[0], axis=0)]], axis=0), axis=0)
+    #            max = tf.reduce_max(tf.concat([[max], [tf.reduce_max(batch[0], axis=0)]], axis=0), axis=0)
+    #min = min.numpy()
+    #max = max.numpy()
+    #df = pd.DataFrame.from_dict(
+    #    {
+    #        "ecg": [min[0], max[0]],
+    #        "bvp": [min[1], max[1]],
+    #        "gsr": [min[2], max[2]],
+    #        "skt": [min[3], max[3]],
+    #        "rsp": [min[4], max[4]],
+    #    }, orient="index", columns=["min", "max"])
+#
+    #df.to_csv(f"../Dataset/CASE_dataset/stats/minmax.csv" )
