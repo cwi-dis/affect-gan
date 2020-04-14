@@ -7,14 +7,14 @@ class DownResBlock(layers.Layer):
         self.out_channels = channels
         self.in_act = initial_activation
         self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
-                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
+                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
         self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
-                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
+                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
 
         self.pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
 
         self.shortcut_conv = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
-                                           )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
+                                           kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
         self.shortcut_pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
 
     def call(self, inputs, **kwargs):
@@ -47,38 +47,49 @@ class DownResLayer(layers.Layer):
         self.dropout = layers.Dropout(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
-        x = self.down_resblock(inputs)
-
+        x = inputs
         if self.use_dropout:
             x = self.dropout(x, training=kwargs["training"])
+
+        x = self.down_resblock(inputs)
 
         return x
 
 class UpResBlock(layers.Layer):
-    def __init__(self, channels, kernel_size=4, w_norm_clip=2, **kwargs):
+    def __init__(self, channels, kernel_size=4, w_norm_clip=2,
+                 use_initial_activation=True, use_batchnorm=False, **kwargs):
         super(UpResBlock, self).__init__(**kwargs)
         self.out_channels = channels
-
+        self.use_initial_activation = use_initial_activation
+        self.use_batchnorm = use_batchnorm
+        self.batchnorm = layers.BatchNormalization()
+        self.initial_activation = layers.LeakyReLU(alpha=0.2)
         self.up = layers.UpSampling1D(size=2)
         self.conv0 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
+                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
         self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0, 1]))
+                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
 
         self.up_s = layers.UpSampling1D(size=2)
-        self.upconv_s = layers.Conv1D(filters=channels, kernel_size=1, padding="same")
+        self.upconv_s = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
+                                      kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
 
     def call(self, inputs, **kwargs):
+        x_0 = inputs
         x = inputs
         input_channels = inputs.shape.as_list()[-1]
 
+        if self.use_batchnorm:
+            x = self.batchnorm(x, training=kwargs["training"])
+        if self.use_initial_activation:
+            x = self.initial_activation(x)
         x = self.up(x)
         x = self.conv0(x)
         x = self.conv1(x)
 
-        x_0 = self.up_s(inputs)
         if self.out_channels != input_channels:
             x_0 = self.upconv_s(x_0)
+        x_0 = self.up_s(x_0)
 
         out = x + x_0
 
@@ -86,73 +97,64 @@ class UpResBlock(layers.Layer):
 
 
 class UpResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=4, w_norm_clip=1, use_actnormdrop=False, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.4, kernel_size=4, w_norm_clip=1,
+                 use_initial_activation=True, use_batchnorm=False, **kwargs):
         super(UpResLayer, self).__init__(**kwargs)
-        self.use_actnormdrop = use_actnormdrop
-        self.up_resblock = UpResBlock(channels_out, kernel_size, w_norm_clip)
-        self.act = layers.LeakyReLU()
-        self.batchnorm = layers.BatchNormalization()
+        self.up_resblock = UpResBlock(channels_out, kernel_size, w_norm_clip, use_initial_activation, use_batchnorm)
         self.dropout = layers.Dropout(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
-        x = self.up_resblock(inputs)
-
-        if self.use_actnormdrop:
-            x = self.act(x)
-            x = self.batchnorm(x, training=kwargs["training"])
-            x = self.dropout(x, training=kwargs["training"])
-
+        x = self.dropout(inputs)
+        x = self.up_resblock(x)
         return x
 
 class AttentionLayer(layers.Layer):
-    def __init__(self, filters, use_input_as_value=False, use_actnormdrop=False, dropout_rate=0.4, **kwargs):
+    def __init__(self, channels_out, filters, kernel_size=3, use_input_as_value=False, **kwargs):
         super().__init__(**kwargs)
         self.use_input_as_value = use_input_as_value
-        self.use_actnormdrop = use_actnormdrop
 
         self.act = layers.LeakyReLU()
         self.norm = layers.BatchNormalization()
-        self.query_mat = layers.Conv1D(
+        self.key_mat = layers.Conv1D(
             filters=filters,
-            kernel_size=3,
+            kernel_size=kernel_size,
             padding="same"
         )
-        self.value_mat = layers.Conv1D(
+        self.query_mat = layers.Conv1D(
             filters=filters,
-            kernel_size=3,
+            kernel_size=kernel_size,
+            padding="same"
+        )
+
+        self.value_mat = layers.Conv1D(
+            filters=channels_out,
+            kernel_size=kernel_size,
             padding="same"
         )
 
         self.attention0 = layers.Attention(
-            use_scale=True,
+            use_scale=False,
             causal=False
         )
 
-        self.short_downres = layers.Conv1D(
-            filters=filters,
-            kernel_size=3,
+        self.attention_conv = layers.Conv1D(
+            filters=channels_out,
+            kernel_size=1,
             padding="same"
         )
 
-        self.drop = layers.Dropout(rate=dropout_rate)
+        self.gamma = tf.Variable(initial_value=0.05, trainable=True, name="gamma")
 
     def call(self, inputs, **kwargs):
-        x_0 = self.short_downres(inputs)
         x = inputs
 
         q = self.query_mat(x)
+        k = self.key_mat(x)
         v = self.value_mat(x)
 
-        x = self.attention0([q, v])
+        x = self.attention0([q, v, k])
+        x = self.attention_conv(x)
 
-        x = layers.add([x, x_0])
+        out = inputs + self.gamma * x
 
-        if self.use_actnormdrop:
-            x = self.act(x)
-            x = self.norm(x, training=kwargs["training"])
-            x = self.drop(x, training=kwargs["training"])
-        else:
-            x = self.act(x)
-            x = self.drop(x, training=kwargs["training"])
-
-        return x
+        return out

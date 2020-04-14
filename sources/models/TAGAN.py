@@ -8,17 +8,20 @@ class Generator(tf.keras.Model):
 
     def __init__(self, n_signals, *args, **kwargs):
         super(Generator, self).__init__(*args, **kwargs)
-
-        self.up_0 = UpResLayer(channels_out=2, kernel_size=3)
-        self.non_local = AttentionLayer(filters=4, use_actnormdrop=True)
-        self.up_1 = UpResLayer(channels_out=4, kernel_size=3, use_actnormdrop=True, dropout_rate=0.4)
+        
+        self.expand = layers.Dense(units=125 * 32, use_bias=False)
+        self.up_0 = UpResLayer(channels_out=16, kernel_size=4, dropout_rate=0.0)
+        self.non_local = AttentionLayer(channels_out=16, filters=4)
+        self.up_1 = UpResLayer(channels_out=8, kernel_size=4, dropout_rate=0.0)
+        self.act = layers.LeakyReLU(alpha=0.2)
         self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=3, padding="same")
 
     def call(self, inputs, training=None, mask=None):
-        x = tf.expand_dims(inputs, axis=-1)
-        x = self.up_0(x)
+        x = self.expand(inputs)
+        x = tf.reshape(x, shape=[-1, 125, 32])
+        x = self.up_0(x, training=training)
         x = self.non_local(x)
-        x = self.up_1(x)
+        x = self.act(self.up_1(x, training=training))
         x = self.final_conv(x)
         x = tf.keras.activations.tanh(x)
         return x
@@ -39,16 +42,15 @@ class Discriminator(tf.keras.Model):
             use_dropout=True
         )
         self.non_local = AttentionLayer(
-            filters=4,
-            use_actnormdrop=False,
-            dropout_rate=0.0
+            channels_out=4,
+            filters=2
         )
         self.downres1 = DownResLayer(
-            channels_out=2,
-            use_dropout=True
+            channels_out=6,
+            use_dropout=False
         )
         self.downres2 = DownResLayer(
-            channels_out=2,
+            channels_out=8,
             use_dropout=False
         )
 
@@ -63,7 +65,8 @@ class Discriminator(tf.keras.Model):
         x = self.downres2(x, training=training)
 
         x = self.avg(x)
-        return self.dense_output(x)
+        x = self.dense_output
+        return tf.sigmoid(x), x
 
     def model(self):
         x = layers.Input(shape=(500, 1))

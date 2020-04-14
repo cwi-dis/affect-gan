@@ -339,7 +339,7 @@ def main():
 
 
 def summary():
-    hparams = config.OPT_PARAMS["vanilla_gan"]
+    hparams = config.OPT_PARAMS["gan"]
     #hparams = {
     #    config.HP_DEEP_LAYERS: 4,
     #    config.HP_DEEP_CHANNELS: 2,
@@ -360,5 +360,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()

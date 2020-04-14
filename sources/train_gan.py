@@ -28,8 +28,8 @@ class GAN_Trainer():
         self.discriminator = discriminator
         self.save_image_every_n_steps = save_image_every_n_steps
 
-        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001, beta_1=0.5, beta_2=0.9)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0001, beta_1=0.5, beta_2=0.9)
+        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.5, beta_2=0.9)
+        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0004, beta_1=0.5, beta_2=0.9)
         self.train = self.train_vanilla if mode is "vanilla_gan" else self.train_wgangp
 
         self.summary_writer = tf.summary.create_file_writer(logdir=logdir)
@@ -66,7 +66,7 @@ class GAN_Trainer():
 
         for epoch in range(self.n_epochs):
             for batch in dataset:
-                gen_loss, dis_loss, fake_acc, real_acc = self.train_step_vanilla(batch, train_step)
+                gen_loss, dis_loss, fake_acc, real_acc = self.train_step_vanilla(batch)
 
                 with self.summary_writer.as_default():
                     tf.summary.scalar("generator_loss", gen_loss, step=train_step)
@@ -96,10 +96,10 @@ class GAN_Trainer():
             dif = tf.math.subtract(fake_sig, real_sig)
             interpolated_sig = tf.math.add(real_sig, tf.math.multiply(epsilon, dif))
 
-            real_out = self.discriminator(real_sig, training=True)
-            fake_out = self.discriminator(fake_sig, training=True)
+            _, real_out = self.discriminator(real_sig, training=True)
+            _, fake_out = self.discriminator(fake_sig, training=True)
 
-            interpolated_out = self.discriminator(interpolated_sig, training=True)
+            _, interpolated_out = self.discriminator(interpolated_sig, training=True)
             interpolated_gradients = tf.gradients(interpolated_out, [interpolated_sig])[0]
 
             critic_loss = wgangp_critic_loss(real_out, fake_out, interpolated_gradients)
@@ -116,7 +116,7 @@ class GAN_Trainer():
 
         with tf.GradientTape() as gen_tape:
             fake_sig = self.generator(generator_inputs, training=True)
-            fake_critic_out = self.discriminator(fake_sig, training=True)
+            _, fake_critic_out = self.discriminator(fake_sig, training=True)
             fake_critic_loss = -tf.reduce_mean(fake_critic_out)
 
         generator_gradients = gen_tape.gradient(fake_critic_loss, self.generator.trainable_variables)
@@ -126,24 +126,24 @@ class GAN_Trainer():
         return fake_critic_loss
 
     @tf.function
-    def train_step_vanilla(self, batch, train_step):
+    def train_step_vanilla(self, batch):
         generator_inputs = tf.random.normal([self.batch_size, self.noise_dim])
 
         with tf.GradientTape() as gen_tape, tf.GradientTape() as dis_tape:
             fake_sig = self.generator(generator_inputs, training=True)
 
-            real_out = self.discriminator(batch, training=True)
-            fake_out = self.discriminator(fake_sig, training=True)
+            real_out, _ = self.discriminator(batch, training=True)
+            fake_out, _ = self.discriminator(fake_sig, training=True)
 
             gen_loss = generator_loss(fake_out)
             dis_loss = discriminator_loss(real_out, fake_out)
+
+        fake_acc, real_acc = discriminator_accuracy(fake_out, real_out)
 
         gen_gradients = gen_tape.gradient(gen_loss, self.generator.trainable_variables)
         dis_gradients = dis_tape.gradient(dis_loss, self.discriminator.trainable_variables)
 
         self.generator_optimizer.apply_gradients(zip(gen_gradients, self.generator.trainable_variables))
         self.discriminator_optimizer.apply_gradients(zip(dis_gradients, self.discriminator.trainable_variables))
-
-        fake_acc, real_acc = discriminator_accuracy(fake_out, real_out)
 
         return gen_loss, dis_loss, fake_acc, real_acc
