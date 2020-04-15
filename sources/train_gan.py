@@ -35,7 +35,7 @@ class GAN_Trainer():
         self.summary_writer = tf.summary.create_file_writer(logdir=logdir)
 
     def train_wgangp(self, dataset):
-        test_seed = tf.random.normal([2, self.noise_dim])
+        test_seed = tf.random.normal([5, self.noise_dim])
         train_step = 1
         gen_loss = 0
         for epoch in range(self.n_epochs):

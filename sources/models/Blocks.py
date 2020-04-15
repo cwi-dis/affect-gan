@@ -7,14 +7,14 @@ class DownResBlock(layers.Layer):
         self.out_channels = channels
         self.in_act = initial_activation
         self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
         self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
 
         self.pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
 
         self.shortcut_conv = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
-                                           kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                           )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
         self.shortcut_pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
 
     def call(self, inputs, **kwargs):
@@ -66,13 +66,13 @@ class UpResBlock(layers.Layer):
         self.initial_activation = layers.LeakyReLU(alpha=0.2)
         self.up = layers.UpSampling1D(size=2)
         self.conv0 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
         self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
-                                   kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
 
         self.up_s = layers.UpSampling1D(size=2)
         self.upconv_s = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
-                                      kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                      )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
 
     def call(self, inputs, **kwargs):
         x_0 = inputs
@@ -155,6 +155,6 @@ class AttentionLayer(layers.Layer):
         x = self.attention0([q, v, k])
         x = self.attention_conv(x)
 
-        out = inputs + self.gamma * x
+        out = inputs + x
 
         return out
