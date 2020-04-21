@@ -12,24 +12,24 @@ class GAN_Trainer():
             generator,
             discriminator,
             logdir,
-            n_epochs=10,
-            iter_per_epoch=3000,
+            train_steps=100000,
             save_image_every_n_steps=250,
             n_critic=1,
             noise_dim=125
     ):
         self.mode = mode
         self.batch_size = batch_size
-        self.n_epochs = n_epochs
         self.n_critic = n_critic
-        self.iterations_per_epoch = iter_per_epoch
+        self.train_steps = train_steps
         self.noise_dim = noise_dim
         self.generator = generator
         self.discriminator = discriminator
         self.save_image_every_n_steps = save_image_every_n_steps
 
-        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.5, beta_2=0.9)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=0.0004, beta_1=0.5, beta_2=0.9)
+        dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.0008, 50000, 0.5)
+        gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000/n_critic, 0.5)
+        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.9)
+        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.5, beta_2=0.9)
         self.train = self.train_vanilla if mode is "vanilla_gan" else self.train_wgangp
 
         self.summary_writer = tf.summary.create_file_writer(logdir=logdir)
@@ -38,7 +38,7 @@ class GAN_Trainer():
         test_seed = tf.random.normal([5, self.noise_dim])
         train_step = 1
         gen_loss = 0
-        for epoch in range(self.n_epochs):
+        while train_step <= self.train_steps:
             for batch in dataset:
                 critic_loss = self.train_step_wgangp_critic(batch)
 
@@ -58,13 +58,12 @@ class GAN_Trainer():
                         tf.summary.image("Generated Signals", img, step=train_step)
 
                 train_step += 1
-            tf.print("End of epoch %d: train step %d" % (epoch, train_step))
 
     def train_vanilla(self, dataset):
         test_seed = tf.random.normal([2, self.noise_dim])
         train_step = 1
 
-        for epoch in range(self.n_epochs):
+        while train_step <= self.train_steps:
             for batch in dataset:
                 gen_loss, dis_loss, fake_acc, real_acc = self.train_step_vanilla(batch)
 
@@ -83,7 +82,6 @@ class GAN_Trainer():
                         tf.summary.image("Generated Signals", img, step=train_step)
 
                 train_step += 1
-            tf.print("End of epoch %d: train step %d" % (epoch, train_step))
 
     @tf.function
     def train_step_wgangp_critic(self, real_sig):

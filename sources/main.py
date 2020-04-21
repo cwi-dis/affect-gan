@@ -315,9 +315,7 @@ def run_gan(model_name):
     trainer = GAN_Trainer(
         mode=model_name,
         batch_size=hparams[config.HP_GAN_BATCHSIZE],
-        n_epochs=20,
         n_critic=3,
-        iter_per_epoch=1500,
         noise_dim=125,
         generator=generator,
         discriminator=discriminator,
@@ -360,5 +358,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()
