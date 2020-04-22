@@ -38,50 +38,52 @@ class GAN_Trainer():
         test_seed = tf.random.normal([5, self.noise_dim])
         train_step = 1
         gen_loss = 0
-        while train_step <= self.train_steps:
-            for batch in dataset:
-                critic_loss = self.train_step_wgangp_critic(batch)
+        for batch in dataset:
+            critic_loss = self.train_step_wgangp_critic(batch)
 
-                if train_step % self.n_critic == 0:
-                    gen_loss = self.train_step_wgangp_generator(batch)
+            if train_step % self.n_critic == 0:
+                gen_loss = self.train_step_wgangp_generator(batch)
 
+            with self.summary_writer.as_default():
+                tf.summary.scalar("critic_loss", critic_loss, step=train_step)
+                tf.summary.scalar("generator_loss", gen_loss, step=train_step)
+
+            if train_step % self.save_image_every_n_steps == 0 or train_step == 1:
+                tf.print("Current Train Step: %d, Critic Loss: %3f, Generator Loss: %3f" % (train_step, critic_loss, gen_loss))
+                gen_signals = self.generator(test_seed, training=False)
+                fig = plot_generated_signals(gen_signals, 1)
+                img = plot_to_image(fig)
                 with self.summary_writer.as_default():
-                    tf.summary.scalar("critic_loss", critic_loss, step=train_step)
-                    tf.summary.scalar("generator_loss", gen_loss, step=train_step)
+                    tf.summary.image("Generated Signals", img, step=train_step)
 
-                if train_step % self.save_image_every_n_steps == 0 or train_step == 1:
-                    tf.print("Current Train Step: %d, Critic Loss: %3f, Generator Loss: %3f" % (train_step, critic_loss, gen_loss))
-                    gen_signals = self.generator(test_seed, training=False)
-                    fig = plot_generated_signals(gen_signals, 1)
-                    img = plot_to_image(fig)
-                    with self.summary_writer.as_default():
-                        tf.summary.image("Generated Signals", img, step=train_step)
-
-                train_step += 1
+            train_step += 1
+            if train_step > self.train_steps:
+                break
 
     def train_vanilla(self, dataset):
         test_seed = tf.random.normal([2, self.noise_dim])
         train_step = 1
 
-        while train_step <= self.train_steps:
-            for batch in dataset:
-                gen_loss, dis_loss, fake_acc, real_acc = self.train_step_vanilla(batch)
+        for batch in dataset:
+            gen_loss, dis_loss, fake_acc, real_acc = self.train_step_vanilla(batch)
 
+            with self.summary_writer.as_default():
+                tf.summary.scalar("generator_loss", gen_loss, step=train_step)
+                tf.summary.scalar("discriminator_loss", dis_loss, step=train_step)
+                tf.summary.scalar("fake accuracy", fake_acc, step=train_step)
+                tf.summary.scalar("real accuracy", real_acc, step=train_step)
+
+            if train_step % self.save_image_every_n_steps == 0 or train_step == 1:
+                tf.print("Current Train Step: %d, Generator Loss: %3f, Discriminator Loss: %3f, Fake Acc.: %3f, Real Acc.: %3f" % (train_step, gen_loss, dis_loss, fake_acc, real_acc))
+                gen_signals = self.generator(test_seed, training=False)
+                fig = plot_generated_signals(gen_signals, 1)
+                img = plot_to_image(fig)
                 with self.summary_writer.as_default():
-                    tf.summary.scalar("generator_loss", gen_loss, step=train_step)
-                    tf.summary.scalar("discriminator_loss", dis_loss, step=train_step)
-                    tf.summary.scalar("fake accuracy", fake_acc, step=train_step)
-                    tf.summary.scalar("real accuracy", real_acc, step=train_step)
+                    tf.summary.image("Generated Signals", img, step=train_step)
 
-                if train_step % self.save_image_every_n_steps == 0 or train_step == 1:
-                    tf.print("Current Train Step: %d, Generator Loss: %3f, Discriminator Loss: %3f, Fake Acc.: %3f, Real Acc.: %3f" % (train_step, gen_loss, dis_loss, fake_acc, real_acc))
-                    gen_signals = self.generator(test_seed, training=False)
-                    fig = plot_generated_signals(gen_signals, 1)
-                    img = plot_to_image(fig)
-                    with self.summary_writer.as_default():
-                        tf.summary.image("Generated Signals", img, step=train_step)
-
-                train_step += 1
+            train_step += 1
+            if train_step > self.train_steps:
+                break
 
     @tf.function
     def train_step_wgangp_critic(self, real_sig):

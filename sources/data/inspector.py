@@ -8,6 +8,7 @@ import tensorflow as tf
 import itertools
 
 from data.dataloader import Dataloader
+from models.Blocks import get_positional_encoding
 from matplotlib.widgets import MultiCursor
 
 color_pallete = ["#e6194B", "#ffe119", "#4363d8", "#f58231", "#42d4f4", "#f032e6", "#fabebe", "#469990", "#e6beff", "#9A6324", "#000000", "#800000", "#aaffc3", "#000075", "#a9a9a9", "#ffffff", "#3cb44b"]
@@ -169,6 +170,17 @@ def video_viz(extended_labels):
     g.add_legend(title="SubjectID")
     plt.show()
 
+def positional_ecoding_viz():
+    pos_encoding = get_positional_encoding(50, 512)
+    print(pos_encoding.shape)
+
+    plt.pcolormesh(pos_encoding[0], cmap='RdBu')
+    plt.xlabel('Depth')
+    plt.xlim((0, 512))
+    plt.ylabel('Position')
+    plt.colorbar()
+    plt.show()
+
 if __name__ == '__main__':
     os.chdir("./..")
     dataloader = Dataloader("5000d", features=["bvp", "ecg", "rsp", "gsr", "skt"], label=["arousal", "valence"], normalized=True, range_clipped=True)
@@ -182,6 +194,7 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    plot_signals(data)
+    #plot_signals(data)
+    positional_ecoding_viz()
 
     #plot_label_heatmap(labels)

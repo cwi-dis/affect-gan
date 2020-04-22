@@ -1,3 +1,4 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras import layers
 
@@ -108,13 +109,15 @@ class UpResLayer(layers.Layer):
         x = self.up_resblock(x)
         return x
 
+
 class AttentionLayer(layers.Layer):
-    def __init__(self, channels_out, filters, kernel_size=3, use_input_as_value=False, **kwargs):
+    def __init__(self, channels_out, filters, kernel_size=3, use_input_as_value=False, use_positional_encoding=False, **kwargs):
         super().__init__(**kwargs)
         self.use_input_as_value = use_input_as_value
-
+        self.use_positional_encoding = use_positional_encoding
         self.act = layers.LeakyReLU()
         self.norm = layers.BatchNormalization()
+        self.positional_encoding = get_positional_encoding(500, channels_out)
         self.key_mat = layers.Conv1D(
             filters=filters,
             kernel_size=kernel_size,
@@ -147,6 +150,9 @@ class AttentionLayer(layers.Layer):
 
     def call(self, inputs, **kwargs):
         x = inputs
+        seq_length = inputs.shape.as_list()[1]
+        if self.use_positional_encoding:
+            x = x + self.positional_encoding[:, :seq_length, :]
 
         q = self.query_mat(x)
         k = self.key_mat(x)
@@ -158,3 +164,20 @@ class AttentionLayer(layers.Layer):
         out = inputs + x
 
         return out
+
+def get_positional_encoding(seq_length, seq_depth, with_batch_dim=True):
+    sequence_ids = tf.expand_dims(tf.range(seq_length, dtype=tf.float64), axis=-1)
+    depth_ids = tf.expand_dims(tf.range(seq_depth), axis=0)
+
+    angle_rates = 1 / tf.pow(10000, (2 * (depth_ids // 2)) / seq_depth)
+    angle_rads = tf.cast(sequence_ids * angle_rates, tf.float32)
+
+    even_mask = tf.tile([1., 0.], [seq_depth // 2])
+    odd_mask = tf.tile([0., 1.], [seq_depth // 2])
+
+    angle_rads = tf.sin(angle_rads)*tf.expand_dims(even_mask, axis=0) + tf.cos(angle_rads)*tf.expand_dims(odd_mask, axis=0)
+
+    if with_batch_dim:
+        angle_rads = tf.expand_dims(angle_rads, axis=0)
+
+    return angle_rads
