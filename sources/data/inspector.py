@@ -171,12 +171,12 @@ def video_viz(extended_labels):
     plt.show()
 
 def positional_ecoding_viz():
-    pos_encoding = get_positional_encoding(50, 512)
+    pos_encoding = get_positional_encoding(250, 6)
     print(pos_encoding.shape)
 
     plt.pcolormesh(pos_encoding[0], cmap='RdBu')
     plt.xlabel('Depth')
-    plt.xlim((0, 512))
+    plt.xlim((0, 6))
     plt.ylabel('Position')
     plt.colorbar()
     plt.show()

@@ -10,12 +10,12 @@ class Generator(tf.keras.Model):
         super(Generator, self).__init__(*args, **kwargs)
         
         self.expand = layers.Dense(units=125 * 20, use_bias=False)
-        self.up_0 = UpResLayer(channels_out=20, kernel_size=5, dropout_rate=0.0)
-        self.up_1 = UpResLayer(channels_out=10, kernel_size=5, dropout_rate=0.0)
-        self.non_local = AttentionLayer(channels_out=20, filters=5, kernel_size=5,
+        self.up_0 = UpResLayer(channels_out=20, kernel_size=5, dropout_rate=0.3, normalization="layer")
+        self.up_1 = UpResLayer(channels_out=10, kernel_size=7, dropout_rate=0.0, normalization="layer")
+        self.non_local = AttentionLayer(channels_out=20, filters=5, kernel_size=3,
                                         use_positional_encoding=True)
         self.act = layers.LeakyReLU(alpha=0.2)
-        self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=5, padding="same")
+        self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=7, padding="same")
 
     def call(self, inputs, training=None, mask=None):
         x = self.expand(inputs)
@@ -36,29 +36,31 @@ class Discriminator(tf.keras.Model):
     def __init__(self, *args, **kwargs):
         super(Discriminator, self).__init__(*args, **kwargs)
 
-        self.out_channels = 18
+        self.out_channels = 24
         self.downres0 = DownResLayer(
             channels_out=self.out_channels // 3,
-            dropout_rate=0.1,
+            dropout_rate=0.3,
             kernel_size=5,
             first_layer=True,
-            use_dropout=True
+            normalization="layer"
         )
         self.non_local = AttentionLayer(
             channels_out=self.out_channels // 3,
-            kernel_size=5,
+            kernel_size=3,
             filters=4,
             use_positional_encoding=True
         )
         self.downres1 = DownResLayer(
             channels_out=self.out_channels // 2,
             kernel_size=5,
-            use_dropout=False
+            dropout_rate=0.0,
+            normalization="layer"
         )
         self.downres2 = DownResLayer(
             channels_out=self.out_channels,
             kernel_size=5,
-            use_dropout=False
+            dropout_rate=0.0,
+            normalization="layer"
         )
 
         self.avg = layers.GlobalAveragePooling1D()
