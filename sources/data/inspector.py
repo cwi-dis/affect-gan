@@ -61,16 +61,17 @@ def plot_confusion_matrix(cm, class_names):
     plt.xlabel('Predicted label')
     return figure
 
-def plot_generated_signals(signals, n_signals):
-    n_samples=len(signals)
-    x = range(len(signals[0]))
+def plot_generated_signals(signals_0, signals_1):
+    n_samples=len(signals_0)
+    x = range(len(signals_0[0]))
+    n_signals = 1 if signals_1 is None else 2
     fig, axs = plt.subplots(n_samples, n_signals, sharex=True)
     for sig in range(n_samples):
         if n_signals == 1:
-            axs[sig].plot(x, signals[sig, :, 0])
+            axs[sig].plot(x, signals_0[sig, :, 0])
         else:
-            for phys_sig in range(n_signals):
-                axs[phys_sig, sig].plot(x, signals[sig, :, phys_sig])
+            axs[sig, 0].plot(x, signals_0[sig, :, 0])
+            axs[sig, 1].plot(x, signals_1[sig, :, 0])
     plt.tight_layout()
     return fig
 

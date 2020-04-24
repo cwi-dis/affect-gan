@@ -3,15 +3,17 @@ from util.CustomLosses import discriminator_loss, generator_loss, wgangp_critic_
 from util.CustomMetrics import discriminator_accuracy
 from data.inspector import plot_generated_signals, plot_to_image
 
+from models.TAGAN import Generator, Discriminator
+
 class GAN_Trainer():
 
     def __init__(
             self,
             mode,
             batch_size,
-            generator,
-            discriminator,
+            hparams,
             logdir,
+            num_classes,
             train_steps=100000,
             save_image_every_n_steps=250,
             n_critic=1,
@@ -22,10 +24,12 @@ class GAN_Trainer():
         self.n_critic = n_critic
         self.train_steps = train_steps
         self.noise_dim = noise_dim
-        self.generator = generator
-        self.discriminator = discriminator
+        self.num_classes = num_classes
+        self.conditional = num_classes != 0
         self.save_image_every_n_steps = save_image_every_n_steps
 
+        self.discriminator = Discriminator(self.conditional, hparams)
+        self.generator = Generator(n_signals=1)
         dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.0008, 50000, 0.5)
         gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000/n_critic, 0.5)
         self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.9)
@@ -35,23 +39,33 @@ class GAN_Trainer():
         self.summary_writer = tf.summary.create_file_writer(logdir=logdir)
 
     def train_wgangp(self, dataset):
-        test_seed = tf.random.normal([5, self.noise_dim])
+        test_seed_0 = tf.random.normal([5, self.noise_dim])
+        if self.conditional:
+            test_seed_1 = tf.concat([test_seed_0, tf.ones(shape=(5, 1), dtype=tf.float32)], axis=-1)
+            test_seed_0 = tf.concat([test_seed_0, tf.zeros(shape=(5, 1), dtype=tf.float32)], axis=-1)
         train_step = 1
-        gen_loss = 0
-        for batch in dataset:
-            critic_loss = self.train_step_wgangp_critic(batch)
+        gen_loss, gen_classification_loss = 0, 0
+        for batch, labels in dataset:
+            critic_loss, classification_loss = self.train_step_wgangp_critic(batch, labels)
 
             if train_step % self.n_critic == 0:
-                gen_loss = self.train_step_wgangp_generator(batch)
+                gen_loss, gen_classification_loss = self.train_step_wgangp_generator(batch)
 
             with self.summary_writer.as_default():
                 tf.summary.scalar("critic_loss", critic_loss, step=train_step)
                 tf.summary.scalar("generator_loss", gen_loss, step=train_step)
+                tf.summary.scalar("classloss.critic", classification_loss, step=train_step)
+                tf.summary.scalar("classloss.generator", gen_classification_loss, step=train_step)
 
             if train_step % self.save_image_every_n_steps == 0 or train_step == 1:
                 tf.print("Current Train Step: %d, Critic Loss: %3f, Generator Loss: %3f" % (train_step, critic_loss, gen_loss))
-                gen_signals = self.generator(test_seed, training=False)
-                fig = plot_generated_signals(gen_signals, 1)
+                if self.conditional:
+                    tf.print("BCE Loss: Critic: %3f, Generator: %3f" % (classification_loss, gen_classification_loss))
+                gen_signals_0 = self.generator(test_seed_0, training=False)
+                gen_signals_1 = None
+                if self.conditional:
+                    gen_signals_1 = self.generator(test_seed_1, training=False)
+                fig = plot_generated_signals(gen_signals_0, gen_signals_1)
                 img = plot_to_image(fig)
                 with self.summary_writer.as_default():
                     tf.summary.image("Generated Signals", img, step=train_step)
@@ -86,8 +100,11 @@ class GAN_Trainer():
                 break
 
     @tf.function
-    def train_step_wgangp_critic(self, real_sig):
+    def train_step_wgangp_critic(self, real_sig, real_labels):
         generator_inputs = tf.random.normal([self.batch_size, self.noise_dim])
+        generator_class_inputs = tf.cast(tf.random.uniform([self.batch_size, 1], maxval=self.num_classes, dtype=tf.int32), dtype=tf.float32)
+        if self.conditional:
+            generator_inputs = tf.concat([generator_inputs, generator_class_inputs], axis=-1)
         epsilon = tf.random.uniform(shape=[self.batch_size, 1, 1], minval=0, maxval=1)
 
         with tf.GradientTape(persistent=True) as tape:
@@ -96,34 +113,43 @@ class GAN_Trainer():
             dif = tf.math.subtract(fake_sig, real_sig)
             interpolated_sig = tf.math.add(real_sig, tf.math.multiply(epsilon, dif))
 
-            _, real_out = self.discriminator(real_sig, training=True)
-            _, fake_out = self.discriminator(fake_sig, training=True)
+            _, real_out, real_class_pred = self.discriminator(real_sig, training=True)
+            _, fake_out, fake_class_pred = self.discriminator(fake_sig, training=True)
 
-            _, interpolated_out = self.discriminator(interpolated_sig, training=True)
+            _, interpolated_out, __ = self.discriminator(interpolated_sig, training=True)
             interpolated_gradients = tf.gradients(interpolated_out, [interpolated_sig])[0]
 
             critic_loss = wgangp_critic_loss(real_out, fake_out, interpolated_gradients)
+            classification_loss = tf.reduce_mean(tf.metrics.binary_crossentropy(real_labels, real_class_pred))
+            if self.conditional:
+                critic_loss += classification_loss
 
         critic_gradients = tape.gradient(critic_loss, self.discriminator.trainable_variables)
         self.discriminator_optimizer.apply_gradients(zip(critic_gradients, self.discriminator.trainable_variables))
         del tape
 
-        return critic_loss
+        return critic_loss, classification_loss
 
     @tf.function
     def train_step_wgangp_generator(self, batch):
         generator_inputs = tf.random.normal([self.batch_size, self.noise_dim])
+        generator_class_inputs = tf.cast(tf.random.uniform([self.batch_size, 1], maxval=self.num_classes, dtype=tf.int32), dtype=tf.float32)
+        if self.conditional:
+            generator_inputs = tf.concat([generator_inputs, generator_class_inputs], axis=-1)
 
         with tf.GradientTape() as gen_tape:
             fake_sig = self.generator(generator_inputs, training=True)
-            _, fake_critic_out = self.discriminator(fake_sig, training=True)
+            _, fake_critic_out, class_pred = self.discriminator(fake_sig, training=True)
             fake_critic_loss = -tf.reduce_mean(fake_critic_out)
+            classification_loss = tf.reduce_mean(tf.metrics.binary_crossentropy(generator_class_inputs, class_pred))
+            if self.conditional:
+                fake_critic_loss += classification_loss
 
         generator_gradients = gen_tape.gradient(fake_critic_loss, self.generator.trainable_variables)
         self.generator_optimizer.apply_gradients(zip(generator_gradients, self.generator.trainable_variables))
         del gen_tape
 
-        return fake_critic_loss
+        return fake_critic_loss, classification_loss
 
     @tf.function
     def train_step_vanilla(self, batch):

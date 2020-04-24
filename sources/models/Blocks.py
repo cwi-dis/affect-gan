@@ -54,7 +54,7 @@ class DownResLayer(layers.Layer):
     def __init__(self, channels_out, dropout_rate=0.0, kernel_size=3, w_norm_clip=2, normalization=None, first_layer=False, **kwargs):
         super(DownResLayer, self).__init__(**kwargs)
         if first_layer:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, normalization)
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, normalization=normalization)
         else:
             self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU(), normalization=normalization)
         self.dropout = layers.Dropout(rate=dropout_rate)

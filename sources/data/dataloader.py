@@ -102,7 +102,7 @@ class Dataloader(object):
 
     def __call__(self, mode, batch_size=64, leave_out=None):
 
-        modes = ["train", "test", "eval", "inspect", "test_eval", "gan"]
+        modes = ["train", "test", "eval", "inspect", "test_eval", "gan", "cgan"]
         if mode not in modes:
             raise Exception("mode not found! supported modes are %s" % modes)
         #if mode is "eval" and leave_out is None:
@@ -145,6 +145,10 @@ class Dataloader(object):
         if mode == "gan":
             dataset = dataset.map(lambda features, labels: features)
             dataset = dataset.shuffle(buffer_size=30000)
+            dataset = dataset.repeat()
+
+        if mode == "cgan":
+            dataset = dataset.shuffle(buffer_size=3)
             dataset = dataset.repeat()
 
         if mode == "test_eval":

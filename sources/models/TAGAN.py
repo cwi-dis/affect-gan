@@ -33,9 +33,9 @@ class Generator(tf.keras.Model):
 
 
 class Discriminator(tf.keras.Model):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, conditional, *args, **kwargs):
         super(Discriminator, self).__init__(*args, **kwargs)
-
+        self.conditional = conditional
         self.out_channels = 24
         self.downres0 = DownResLayer(
             channels_out=self.out_channels // 3,
@@ -67,16 +67,22 @@ class Discriminator(tf.keras.Model):
 
         self.dense_output = layers.Dense(1)
 
+        self.dense_class_output = layers.Dense(1, activation="sigmoid")
+
     def call(self, inputs, training=None, mask=None):
         x = self.downres0(inputs, training=training)
         x = self.non_local(x, training=training)
         x = self.downres1(x, training=training)
         x = self.downres2(x, training=training)
 
-        #x = self.avg(x)
-        x = tf.reshape(x, shape=[-1, 63*self.out_channels])
-        x = self.dense_output(x)
-        return tf.keras.activations.sigmoid(x), x
+        x_s = tf.reshape(x, shape=[-1, 63*self.out_channels])
+        c = None
+        if self.conditional:
+            #c = self.avg(x)
+            c = self.dense_class_output(x_s)
+
+        x_s = self.dense_output(x_s)
+        return tf.keras.activations.sigmoid(x), x_s, c
 
     def model(self):
         x = layers.Input(shape=(500, 1))
