@@ -120,7 +120,9 @@ class GAN_Trainer():
             interpolated_gradients = tf.gradients(interpolated_out, [interpolated_sig])[0]
 
             critic_loss = wgangp_critic_loss(real_out, fake_out, interpolated_gradients)
-            classification_loss = tf.reduce_mean(tf.metrics.binary_crossentropy(real_labels, real_class_pred))
+            classification_loss_real = tf.reduce_mean(tf.metrics.binary_crossentropy(real_labels, real_class_pred))
+            classification_loss_gen = tf.reduce_mean(tf.metrics.binary_crossentropy(generator_class_inputs, fake_class_pred))
+            classification_loss = 0.6 * (classification_loss_real + classification_loss_gen)
             if self.conditional:
                 critic_loss += classification_loss
 
