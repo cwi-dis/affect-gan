@@ -130,45 +130,65 @@ class UpResLayer(layers.Layer):
 
 
 class AttentionLayer(layers.Layer):
-    def __init__(self, channels_out, filters, kernel_size=3, use_input_as_value=False, use_positional_encoding=False, **kwargs):
-        super().__init__(**kwargs)
-        self.use_input_as_value = use_input_as_value
+    def __init__(self, channels_out, filters_per_head, num_attention_heads=1, kernel_size=3, use_positional_encoding=False, **kwargs):
+        super(AttentionLayer, self).__init__(**kwargs)
         self.use_positional_encoding = use_positional_encoding
-        self.act = layers.LeakyReLU()
-        self.norm = layers.BatchNormalization()
+        self.num_heads = num_attention_heads
+        self.filters_per_head = filters_per_head
+
+        self.conv_filters = num_attention_heads * filters_per_head
         self.positional_encoding = get_positional_encoding(500, channels_out)
+
+        self.act = layers.LeakyReLU()
+
         self.key_mat = layers.Conv1D(
-            filters=filters,
+            filters=self.conv_filters,
             kernel_size=kernel_size,
             padding="same"
         )
         self.query_mat = layers.Conv1D(
-            filters=filters,
+            filters=self.conv_filters,
             kernel_size=kernel_size,
             padding="same"
         )
 
         self.value_mat = layers.Conv1D(
+            filters=self.conv_filters,
+            kernel_size=kernel_size,
+            padding="same"
+        )
+
+        self.attention_heads = [
+            layers.Attention(use_scale=True, causal=False)
+            for h in range(self.num_heads)
+        ]
+
+        self.attention_conv = layers.Conv1D(
             filters=channels_out,
             kernel_size=kernel_size,
             padding="same"
         )
 
-        self.attention0 = layers.Attention(
-            use_scale=False,
-            causal=False
-        )
-
-        self.attention_conv = layers.Conv1D(
-            filters=channels_out,
-            kernel_size=1,
-            padding="same"
-        )
-
         self.gamma = tf.Variable(initial_value=0.05, trainable=True, name="gamma")
+
+    def split_heads(self, x, batch_size):
+        x = tf.reshape(x, [batch_size, -1, self.num_heads, self.filters_per_head])
+        return tf.transpose(x, perm=[0, 2, 1, 3])
+
+    def scaled_dot_product_attention(self, q, k, v):
+        matmul_qk = tf.matmul(q, k, transpose_b=True)
+
+        dk = tf.cast(tf.shape(k)[-1], tf.float32)
+        scaled_attention_logits = matmul_qk / tf.math.sqrt(dk)
+
+        attention_weights = tf.nn.softmax(scaled_attention_logits, axis=-1)
+        output = tf.matmul(attention_weights, v)
+
+        return output, attention_weights
 
     def call(self, inputs, **kwargs):
         x = inputs
+        batch_size = inputs.shape.as_list()[0]
         seq_length = inputs.shape.as_list()[1]
         if self.use_positional_encoding:
             x = x + self.positional_encoding[:, :seq_length, :]
@@ -177,12 +197,19 @@ class AttentionLayer(layers.Layer):
         k = self.key_mat(x)
         v = self.value_mat(x)
 
-        x = self.attention0([q, v, k])
-        x = self.attention_conv(x)
+        q = self.split_heads(q, batch_size)
+        k = self.split_heads(k, batch_size)
+        v = self.split_heads(v, batch_size)
+
+        scaled_attention, attention_weights = self.scaled_dot_product_attention(q, k, v)
+        scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])  #(batch_size, seq_len_q, num_heads, depth)
+        concat_attention = tf.reshape(scaled_attention, (batch_size, -1, self.conv_filters))
+        x = self.attention_conv(concat_attention)
 
         out = inputs + x
 
         return out
+
 
 def get_positional_encoding(seq_length, seq_depth, with_batch_dim=True):
     sequence_ids = tf.expand_dims(tf.range(seq_length, dtype=tf.float64), axis=-1)
