@@ -130,11 +130,12 @@ class UpResLayer(layers.Layer):
 
 
 class AttentionLayer(layers.Layer):
-    def __init__(self, channels_out, filters_per_head, num_attention_heads=1, kernel_size=3, use_positional_encoding=False, **kwargs):
+    def __init__(self, batch_size, channels_out, filters_per_head, num_attention_heads=1, kernel_size=3, use_positional_encoding=False, **kwargs):
         super(AttentionLayer, self).__init__(**kwargs)
         self.use_positional_encoding = use_positional_encoding
         self.num_heads = num_attention_heads
         self.filters_per_head = filters_per_head
+        self.batch_size = batch_size
 
         self.conv_filters = num_attention_heads * filters_per_head
         self.positional_encoding = get_positional_encoding(500, channels_out)
@@ -171,8 +172,8 @@ class AttentionLayer(layers.Layer):
 
         self.gamma = tf.Variable(initial_value=0.05, trainable=True, name="gamma")
 
-    def split_heads(self, x, batch_size):
-        x = tf.reshape(x, [batch_size, -1, self.num_heads, self.filters_per_head])
+    def split_heads(self, x):
+        x = tf.reshape(x, [self.batch_size, -1, self.num_heads, self.filters_per_head])
         return tf.transpose(x, perm=[0, 2, 1, 3])
 
     def scaled_dot_product_attention(self, q, k, v):
@@ -197,13 +198,13 @@ class AttentionLayer(layers.Layer):
         k = self.key_mat(x)
         v = self.value_mat(x)
 
-        q = self.split_heads(q, batch_size)
-        k = self.split_heads(k, batch_size)
-        v = self.split_heads(v, batch_size)
+        q = self.split_heads(q)
+        k = self.split_heads(k)
+        v = self.split_heads(v)
 
         scaled_attention, attention_weights = self.scaled_dot_product_attention(q, k, v)
         scaled_attention = tf.transpose(scaled_attention, perm=[0, 2, 1, 3])  #(batch_size, seq_len_q, num_heads, depth)
-        concat_attention = tf.reshape(scaled_attention, (batch_size, -1, self.conv_filters))
+        concat_attention = tf.reshape(scaled_attention, (self.batch_size, -1, self.conv_filters))
         x = self.attention_conv(concat_attention)
 
         out = inputs + x
