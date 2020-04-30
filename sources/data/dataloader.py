@@ -120,21 +120,23 @@ class Dataloader(object):
         #print(f"Files loaded in mode %s: {files}")
         files = tf.data.Dataset.from_tensor_slices(files)
 
-        dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE, cycle_length=10, block_length=128)
+        dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE, cycle_length=25, block_length=128)
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video: (features, labels))
         if mode is not ("gan" or "inspect"):
             dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.2)))
+        else:
+            dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.05)))
         if self.range_clipped:
             dataset = dataset.filter(lambda features, _: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
 
-        if mode is "inspect":
-            dataset = dataset.shuffle(buffer_size=5000)
-            return dataset
-
         if not self.continuous_labels:
             dataset = dataset.map(with_categoric_labels)
+
+        if mode is "inspect":
+            dataset = dataset.shuffle(buffer_size=10000)
+            return dataset
 
         if len(self.labels) == 2:
             dataset = dataset.map(lambda data, labels: (data, (labels[0], labels[1])))

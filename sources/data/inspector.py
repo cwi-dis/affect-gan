@@ -5,7 +5,9 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import tensorflow as tf
+import tensorflow_datasets as tfds
 import itertools
+from sklearn.manifold import TSNE
 
 from data.dataloader import Dataloader
 from models.Blocks import get_positional_encoding
@@ -182,9 +184,31 @@ def positional_ecoding_viz():
     plt.colorbar()
     plt.show()
 
+def tsna_visualization(data):
+    data_sample = data.take(10000)
+
+    first = True
+    colors = []
+    for signal, label in data_sample:
+        if first:
+            tsne_data = tf.reshape(signal, shape=(1,-1))
+            first = False
+        else:
+            tsne_data = tf.concat([tsne_data, tf.reshape(signal, shape=(1, -1))], axis=0)
+        colors.append("blue" if label.numpy() == 0 else "red")
+
+    tsne = TSNE(n_components=2, perplexity=50, verbose=1, n_iter=5000)
+    tsne_results = tsne.fit_transform(tsne_data)
+
+    f, ax = plt.subplots(1)
+    plt.scatter(tsne_results[:,0], tsne_results[:,1], c=colors, alpha=0.2)
+    ax.legend()
+    plt.show()
+
+
 if __name__ == '__main__':
     os.chdir("./..")
-    dataloader = Dataloader("5000d", features=["bvp", "ecg", "rsp", "gsr", "skt"], label=["arousal", "valence"], normalized=True, range_clipped=True)
+    dataloader = Dataloader("5000d", features=["ecg"], label=["arousal"], normalized=True, range_clipped=True, continuous_labels=False)
     data = dataloader("inspect", 1)
 
     #labels = collect_labels(data)
@@ -196,6 +220,8 @@ if __name__ == '__main__':
     #video_viz(extended_labels)
 
     #plot_signals(data)
-    positional_ecoding_viz()
+    #positional_ecoding_viz()
+
+    tsna_visualization(data)
 
     #plot_label_heatmap(labels)

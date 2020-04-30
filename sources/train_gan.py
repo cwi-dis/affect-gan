@@ -1,3 +1,4 @@
+import os
 import tensorflow as tf
 from util.CustomLosses import discriminator_loss, generator_loss, wgangp_critic_loss
 from util.CustomMetrics import discriminator_accuracy
@@ -36,6 +37,7 @@ class GAN_Trainer():
         self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.5, beta_2=0.9)
         self.train = self.train_vanilla if mode is "vanilla_gan" else self.train_wgangp
 
+        self.model_path = os.path.join(logdir, "model")
         self.summary_writer = tf.summary.create_file_writer(logdir=logdir)
 
     def train_wgangp(self, dataset):
@@ -72,6 +74,7 @@ class GAN_Trainer():
 
             train_step += 1
             if train_step > self.train_steps:
+                self.discriminator.save(self.model_path)
                 break
 
     def train_vanilla(self, dataset):
