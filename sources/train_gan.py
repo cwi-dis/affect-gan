@@ -29,8 +29,8 @@ class GAN_Trainer():
         self.conditional = num_classes != 0
         self.save_image_every_n_steps = save_image_every_n_steps
 
-        self.discriminator = Discriminator(self.conditional, self.batch_size, hparams)
-        self.generator = Generator(n_signals=1, batch_size=self.batch_size)
+        self.discriminator = Discriminator(self.conditional, hparams)
+        self.generator = Generator(n_signals=1)
         dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.0008, 50000, 0.5)
         gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000/n_critic, 0.5)
         self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.9)

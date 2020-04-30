@@ -6,7 +6,7 @@ from models.Blocks import *
 
 class Generator(tf.keras.Model):
 
-    def __init__(self, n_signals, batch_size, *args, **kwargs):
+    def __init__(self, n_signals, *args, **kwargs):
         super(Generator, self).__init__(*args, **kwargs)
         
         self.expand = layers.Dense(units=125 * 20, use_bias=False)
@@ -17,8 +17,7 @@ class Generator(tf.keras.Model):
             kernel_size=3,
             filters_per_head=5,
             num_attention_heads=4,
-            use_positional_encoding=True,
-            batch_size=batch_size)
+            use_positional_encoding=True)
         self.act = layers.LeakyReLU(alpha=0.2)
         self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=7, padding="same")
 
@@ -38,7 +37,7 @@ class Generator(tf.keras.Model):
 
 
 class Discriminator(tf.keras.Model):
-    def __init__(self, conditional, batch_size, *args, **kwargs):
+    def __init__(self, conditional, *args, **kwargs):
         super(Discriminator, self).__init__(*args, **kwargs)
         self.conditional = conditional
         self.out_channels = 24
@@ -54,8 +53,7 @@ class Discriminator(tf.keras.Model):
             filters_per_head=4,
             num_attention_heads=4,
             kernel_size=3,
-            use_positional_encoding=True,
-            batch_size=batch_size
+            use_positional_encoding=True
         )
         self.downres1 = DownResLayer(
             channels_out=self.out_channels // 2,

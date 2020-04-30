@@ -352,9 +352,9 @@ def summary():
     #LateFuseCNN(hparams, 5).model().summary()
     #AttentionNET2(hparams).model().summary()
     Generator(n_signals=1).model().summary()
-    Discriminator(hparams).model().summary()
+    Discriminator(conditional=True).model().summary()
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()
