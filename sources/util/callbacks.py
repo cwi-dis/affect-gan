@@ -46,17 +46,7 @@ class MetricsCallback(callbacks.TensorBoard):
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
-        lr = self.model.optimizer.lr
-        #logs.update({'lr': tf.keras.backend.eval(lr)})
-        super(MetricsCallback, self).on_epoch_end(epoch, logs)
-
-    def on_train_begin(self, logs=None):
-        self.best_eval = 0
-        super(MetricsCallback, self).on_train_begin(logs)
-
-    def on_batch_end(self, batch, logs=None):
-        logs = logs or {}
-        current_acc = logs.get("val_Accuracy")
+        current_acc = logs.get("val_accuracy")
         if current_acc is None:
             logging.warning('Best result tracking metric val_Accuracy '
                             'which is not available. Available metrics are: %s',
@@ -65,7 +55,12 @@ class MetricsCallback(callbacks.TensorBoard):
             if np.greater(current_acc, self.best_eval):
                 self.best_eval = current_acc
         logs.update({"val_best": self.best_eval})
-        super(MetricsCallback, self).on_batch_end(batch, logs)
+        super(MetricsCallback, self).on_epoch_end(epoch, logs)
+
+    def on_train_begin(self, logs=None):
+        self.best_eval = 0
+        super(MetricsCallback, self).on_train_begin(logs)
+
 
     def _log_metrics(self, logs, prefix, step):
         """Writes metrics out as custom scalar summaries.
@@ -117,7 +112,7 @@ class CallbacksProducer:
 
         self.callbacks["base"] = MetricsCallback(
             logdir=self.logdir,
-            update_freq="batch"
+            update_freq="epoch"
         )
 
         #self.callbacks["lr_decay"] = callbacks.ReduceLROnPlateau(

@@ -350,7 +350,7 @@ def run_loso_cv(model_name):
 
             callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
 
-            model.fit(train_set, steps_per_epoch=50000, validation_data=eval_set, callbacks=callbacks)
+            model.fit(train_set, epochs=1000, steps_per_epoch=50, validation_data=eval_set, callbacks=callbacks)
 
             del train_set
             del eval_set
