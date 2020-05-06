@@ -9,6 +9,7 @@ import itertools
 import io
 import os
 from tensorboard.plugins.hparams import api as hp
+from tensorflow.python.platform import tf_logging as logging
 from util.misc import *
 from data.inspector import plot_confusion_matrix, plot_to_image
 
@@ -46,8 +47,25 @@ class MetricsCallback(callbacks.TensorBoard):
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
         lr = self.model.optimizer.lr
-        logs.update({'lr': tf.keras.backend.eval(lr)})
-        super().on_epoch_end(epoch, logs)
+        #logs.update({'lr': tf.keras.backend.eval(lr)})
+        super(MetricsCallback, self).on_epoch_end(epoch, logs)
+
+    def on_train_begin(self, logs=None):
+        self.best_eval = 0
+        super(MetricsCallback, self).on_train_begin(logs)
+
+    def on_batch_end(self, batch, logs=None):
+        logs = logs or {}
+        current_acc = logs.get("val_Accuracy")
+        if current_acc is None:
+            logging.warning('Best result tracking metric val_Accuracy '
+                            'which is not available. Available metrics are: %s',
+                            ','.join(list(logs.keys())))
+        else:
+            if np.greater(current_acc, self.best_eval):
+                self.best_eval = current_acc
+        logs.update({"val_best": self.best_eval})
+        super(MetricsCallback, self).on_batch_end(batch, logs)
 
     def _log_metrics(self, logs, prefix, step):
         """Writes metrics out as custom scalar summaries.
@@ -93,30 +111,31 @@ class MetricsCallback(callbacks.TensorBoard):
 
 class CallbacksProducer:
 
-    def __init__(self, hparams, logdir, run_name, val_data):
+    def __init__(self, hparams, logdir, run_name, val_data=None):
         self.callbacks = {}
         self.logdir = logdir
 
         self.callbacks["base"] = MetricsCallback(
-            logdir=self.logdir
+            logdir=self.logdir,
+            update_freq="batch"
         )
 
-        self.callbacks["lr_decay"] = callbacks.ReduceLROnPlateau(
-            monitor='loss',
-            factor=0.5,
-            patience=4,
-            min_lr=0.0001
-        )
+        #self.callbacks["lr_decay"] = callbacks.ReduceLROnPlateau(
+        #    monitor='loss',
+        #    factor=0.5,
+        #    patience=4,
+        #    min_lr=0.0001
+        #)
 
-        self.callbacks["early_stop"] = callbacks.EarlyStopping(
-            monitor="val_loss",
-            patience=8
-        )
+        #self.callbacks["early_stop"] = callbacks.EarlyStopping(
+        #    monitor="val_loss",
+        #    patience=8
+        #)
 
-        self.callbacks["confusion_matrix"] = ConfusionMatrixCallback(
-            val_data=val_data,
-            logdir=self.logdir
-        )
+        #self.callbacks["confusion_matrix"] = ConfusionMatrixCallback(
+        #    val_data=val_data,
+        #    logdir=self.logdir
+        #)
 
         if run_name is not None:
             self.callbacks["hparams"] = hp.KerasCallback(self.logdir, hparams, run_name)

@@ -323,6 +323,39 @@ def run_gan(model_name):
 
     trainer.train(dataset=dataset)
 
+def run_loso_cv(model_name):
+    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+    logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
+    dataloader = Dataloader(
+        "5000d", ["ecg", "bvp", "rsp", "gsr", "skt"],
+        range_clipped=True,
+        continuous_labels=False
+    )
+
+    for out_subject in config.OUT_SUBJECT.domain.values:
+        hparams = {config.OUT_SUBJECT: out_subject}
+        run_name = "subject-%d-out" % out_subject
+        for rerun in range(config.NUM_RERUNS):
+            train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject)
+            eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject)
+
+            if model_name == "AttentionNET":
+                model = AttentionNET(hparams)
+
+            model.compile(
+                optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.5, beta_2=0.9),
+                loss=[tf.keras.losses.BinaryCrossentropy(label_smoothing=0.1)],
+                metrics=["accuracy"]
+            )
+
+            callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
+
+            model.fit(train_set, steps_per_epoch=50000, validation_data=eval_set, callbacks=callbacks)
+
+            del train_set
+            del eval_set
+            del model
+
 def main():
     init_tf_gpus()
 
@@ -330,7 +363,8 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     #single_run(model_name="AttentionNET2")
-    run_gan(model_name="wgan-gp")
+    run_loso_cv(model_name="AttentionNET")
+    #run_gan(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 
 
@@ -350,11 +384,11 @@ def summary():
     #ChannelCNN(hparams, 5).model().summary()
     #DeepCNN(hparams).model().summary()
     #LateFuseCNN(hparams, 5).model().summary()
-    #AttentionNET2(hparams).model().summary()
-    Generator(n_signals=1).model().summary()
-    Discriminator(conditional=True).model().summary()
+    AttentionNET(hparams).model().summary()
+    #Generator(n_signals=1).model().summary()
+    #Discriminator(conditional=True).model().summary()
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()

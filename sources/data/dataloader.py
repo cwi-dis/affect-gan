@@ -47,9 +47,7 @@ class Dataloader(object):
         self.minmax = pd.read_csv("../Dataset/CASE_dataset/stats/minmax.csv", header=0, index_col=0, squeeze=True).astype("float32")
 
         self.excluded_label = tf.constant(5, tf.float32)
-        self.train_num = range(1, 27)
-        self.eval_num = [27, 28, 29, 30]
-        self.test_num = range(28, 31)
+        self.subject_labels = list(range(1, 31))
 
     def _decode(self, serialized_example):
         decoded_example = tf.io.parse_single_example(serialized_example,
@@ -108,16 +106,21 @@ class Dataloader(object):
         #if mode is "eval" and leave_out is None:
         #    raise Exception("leave-one-out evaluation undefined!")
 
-        if mode is "train" or "gan":
-            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.train_num]
-        elif mode is "eval" or "test_eval":
-            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.eval_num]
-        elif mode is "test":
-            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.test_num]
-        elif mode is "inspect":
+        if leave_out is None:
+            train_subject_ids = self.subject_labels[:28]
+            eval_subject_ids = self.subject_labels[28:]
+        else:
+            train_subject_ids = self.subject_labels[:leave_out] + self.subject_labels[leave_out+1:]
+            eval_subject_ids = self.subject_labels[leave_out:leave_out+1]
+
+        if (mode is "train") or (mode is "gan"):
+            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]
+        elif (mode is "eval") or (mode is "test_eval"):
+            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in eval_subject_ids]
+        else:
             files = [glob.glob("%s*.tfrecord" % self.path)]
 
-        #print(f"Files loaded in mode %s: {files}")
+        print(f"Files loaded in mode %s: {files}")
         files = tf.data.Dataset.from_tensor_slices(files)
 
         dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE, cycle_length=25, block_length=128)

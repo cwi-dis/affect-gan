@@ -3,29 +3,29 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 class DownResBlock(layers.Layer):
-    def __init__(self, channels, kernel_size, w_norm_clip, initial_activation=None, normalization=None):
+    def __init__(self, channels, kernel_size, w_norm_clip, initial_activation=None, normalization=None, downsample_rate=2):
         super(DownResBlock, self).__init__()
         self.out_channels = channels
         self.in_act = initial_activation
         self.norm0 = None
         self.norm1 = None
         if normalization is "layer":
-            self.norm0 = layers.LayerNormalization(axis=1)
-            self.norm1 = layers.LayerNormalization(axis=1)
+            self.norm0 = layers.LayerNormalization(axis=[1,2])
+            self.norm1 = layers.LayerNormalization(axis=[1,2])
         elif normalization is "batch":
             self.norm0 = layers.BatchNormalization()
             self.norm1 = layers.BatchNormalization()
 
         self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
                                    )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
-        self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
+        self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", strides=downsample_rate
                                    )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
 
-        self.pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
+        #self.pool = layers.AveragePooling1D(pool_size=downsample_rate, strides=downsample_rate, padding="same")
 
         self.shortcut_conv = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
                                            )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
-        self.shortcut_pool = layers.AveragePooling1D(pool_size=2, strides=2, padding="same")
+        self.shortcut_pool = layers.AveragePooling1D(pool_size=downsample_rate, strides=downsample_rate, padding="same")
 
     def call(self, inputs, **kwargs):
         x = inputs
@@ -39,7 +39,7 @@ class DownResBlock(layers.Layer):
         if self.norm1 is not None:
             x = self.norm1(x, training=kwargs["training"])
         x = self.conv2(x)
-        x = self.pool(x)
+        #x = self.pool(x)
 
         x_0 = self.shortcut_pool(inputs)
         if self.out_channels != input_channels:
@@ -51,12 +51,12 @@ class DownResBlock(layers.Layer):
 
 
 class DownResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.0, kernel_size=3, w_norm_clip=2, normalization=None, first_layer=False, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.0, kernel_size=3, w_norm_clip=2, normalization=None, first_layer=False, downsample_rate=2, **kwargs):
         super(DownResLayer, self).__init__(**kwargs)
         if first_layer:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, normalization=normalization)
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, normalization=normalization, downsample_rate=downsample_rate)
         else:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU(), normalization=normalization)
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU(), normalization=normalization, downsample_rate=downsample_rate)
         self.dropout = layers.Dropout(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):

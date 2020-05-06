@@ -1,8 +1,10 @@
 from tensorboard.plugins.hparams import api as hp
 
 INPUT_SIZE = 500
-RUNS = 2
+NUM_RERUNS = 2
 GLOBAL_LR = 0.0003
+OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([4, 14]))
+
 
 # BaseNET hparams
 HP_FILTERS = hp.HParam("filters", hp.Discrete([2, 4, 8]))

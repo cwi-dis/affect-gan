@@ -5,60 +5,49 @@ import config
 from models.Blocks import *
 
 
-class AttentionLayer(layers.Layer):
-    def __init__(self, filters, downsample=False, **kwargs):
-        super().__init__(**kwargs)
-        strides = 2 if downsample else 1
-        self.query_mat = layers.Conv1D(
-            filters=filters,
-            kernel_size=4,
-            strides=strides,
-            padding="same"
-        )
-        self.value_mat = layers.Conv1D(
-            filters=filters,
-            kernel_size=4,
-            strides=strides,
-            padding="same"
-        )
-
-        self.attention0 = layers.Attention(
-            use_scale=True,
-            causal=False
-        )
-
-    def call(self, inputs, **kwargs):
-        q = self.query_mat(inputs)
-        v = self.value_mat(inputs)
-
-        x = self.attention0([q, v])
-
-        return x
-
-
 class AttentionNET(tf.keras.Model):
 
     def __init__(self, hparams):
         super(AttentionNET, self).__init__()
-        self.use_last_layer = hparams[config.HP_ATT_EXTRA_LAYER]
-        self.upchannnel_attention = 2 if hparams[config.HP_ATT_UPCHANNEL] else 1
+
         self.downres0 = DownResLayer(
-            channels_out=hparams[config.HP_ATT_FILTERS],
-            first_layer=True,
-            use_dropout=True
+            channels_out=4,
+            dropout_rate=0.5,
+            kernel_size=5,
+            normalization="layer",
+            first_layer=True
         )
 
         self.attention_layer = AttentionLayer(
-            filters=hparams[config.HP_ATT_FILTERS] * self.upchannnel_attention,
-            downsample=hparams[config.HP_ATT_DOWNRESATT]
+            channels_out=4,
+            filters_per_head=3,
+            num_attention_heads=2,
+            kernel_size=5,
+            use_positional_encoding=True
         )
 
         self.downres1 = DownResLayer(
-            channels_out=hparams[config.HP_ATT_FILTERS] * 2 * self.upchannnel_attention
+            channels_out=5,
+            dropout_rate=0.25,
+            kernel_size=6,
+            normalization="layer",
+            downsample_rate=3
         )
 
-        self.downres_f = DownResLayer(
-            channels_out=hparams[config.HP_ATT_FILTERS] * 4 * self.upchannnel_attention
+        self.downres_2 = DownResLayer(
+            channels_out=6,
+            dropout_rate=0.0,
+            kernel_size=5,
+            normalization="layer",
+            downsample_rate=3
+        )
+
+        self.downres_3 = DownResLayer(
+            channels_out=6,
+            dropout_rate=0.0,
+            kernel_size=5,
+            normalization="layer",
+            downsample_rate=3
         )
 
         self.avg = layers.GlobalAveragePooling1D()
@@ -69,11 +58,11 @@ class AttentionNET(tf.keras.Model):
         x = self.downres0(inputs)
         x = self.attention_layer(x)
         x = self.downres1(x)
-        if self.use_last_layer:
-            x = self.downres_f(x)
+        x = self.downres_2(x)
+        x = self.downres_3(x)
         x = self.avg(x)
         return self.dense_output(x)
 
     def model(self):
-        x = layers.Input(shape=(500, 2))
+        x = layers.Input(shape=(500, 5), batch_size=128)
         return tf.keras.Model(inputs=[x], outputs=self.call(x))
