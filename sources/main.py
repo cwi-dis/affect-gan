@@ -335,7 +335,9 @@ def run_loso_cv(model_name):
     for out_subject in config.OUT_SUBJECT.domain.values:
         hparams = {config.OUT_SUBJECT: out_subject}
         run_name = "subject-%d-out" % out_subject
+        run_logdir = os.path.join(logdir, run_name)
         for rerun in range(config.NUM_RERUNS):
+            run_name = run_name + rerun
             train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject)
             eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject)
 
@@ -348,7 +350,7 @@ def run_loso_cv(model_name):
                 metrics=["accuracy"]
             )
 
-            callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
+            callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
 
             model.fit(train_set, epochs=1000, steps_per_epoch=50, validation_data=eval_set, callbacks=callbacks)
 
