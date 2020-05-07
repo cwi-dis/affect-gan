@@ -335,9 +335,8 @@ def run_loso_cv(model_name):
     for out_subject in config.OUT_SUBJECT.domain.values:
         hparams = {config.OUT_SUBJECT: out_subject}
         run_name = "subject-%d-out" % out_subject
-        run_logdir = os.path.join(logdir, run_name)
         for rerun in range(config.NUM_RERUNS):
-            run_name = run_name + rerun
+            run_logdir = os.path.join(logdir, run_name, ".%d"%rerun)
             train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject)
             eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject)
 
@@ -345,7 +344,7 @@ def run_loso_cv(model_name):
                 model = AttentionNET(hparams)
 
             model.compile(
-                optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.5, beta_2=0.9),
+                optimizer=tf.keras.optimizers.Adam(learning_rate=0.0006, beta_1=0.5, beta_2=0.9),
                 loss=[tf.keras.losses.BinaryCrossentropy(label_smoothing=0.1)],
                 metrics=["accuracy"]
             )
