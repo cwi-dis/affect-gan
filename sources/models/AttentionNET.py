@@ -15,7 +15,8 @@ class AttentionNET(tf.keras.Model):
             dropout_rate=0.5,
             kernel_size=5,
             normalization="layer",
-            first_layer=True
+            first_layer=True,
+            regularization=tf.keras.regularizers.l2(0.0005)
         )
 
         self.attention_layer = AttentionLayer(
@@ -23,7 +24,8 @@ class AttentionNET(tf.keras.Model):
             filters_per_head=3,
             num_attention_heads=2,
             kernel_size=5,
-            use_positional_encoding=True
+            use_positional_encoding=True,
+            regularization=tf.keras.regularizers.l2(0.0005)
         )
 
         self.downres1 = DownResLayer(
@@ -31,7 +33,8 @@ class AttentionNET(tf.keras.Model):
             dropout_rate=0.25,
             kernel_size=6,
             normalization="layer",
-            downsample_rate=3
+            downsample_rate=3,
+            regularization=tf.keras.regularizers.l2(0.0005)
         )
 
         self.downres_2 = DownResLayer(
@@ -39,7 +42,8 @@ class AttentionNET(tf.keras.Model):
             dropout_rate=0.0,
             kernel_size=5,
             normalization="layer",
-            downsample_rate=3
+            downsample_rate=3,
+            regularization=tf.keras.regularizers.l2(0.0005)
         )
 
         self.downres_3 = DownResLayer(

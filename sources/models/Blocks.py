@@ -3,7 +3,7 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 class DownResBlock(layers.Layer):
-    def __init__(self, channels, kernel_size, w_norm_clip, initial_activation=None, normalization=None, downsample_rate=2):
+    def __init__(self, channels, kernel_size, w_norm_clip, initial_activation=None, normalization=None, downsample_rate=2, regularization=None):
         super(DownResBlock, self).__init__()
         self.out_channels = channels
         self.in_act = initial_activation
@@ -17,14 +17,14 @@ class DownResBlock(layers.Layer):
             self.norm1 = layers.BatchNormalization()
 
         self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
-                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
-        self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", strides=downsample_rate
-                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                   kernel_regularizer=regularization)
+        self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", strides=downsample_rate,
+                                   kernel_regularizer=regularization)
 
         #self.pool = layers.AveragePooling1D(pool_size=downsample_rate, strides=downsample_rate, padding="same")
 
         self.shortcut_conv = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
-                                           )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                           kernel_regularizer=regularization)
         self.shortcut_pool = layers.AveragePooling1D(pool_size=downsample_rate, strides=downsample_rate, padding="same")
 
     def call(self, inputs, **kwargs):
@@ -51,12 +51,12 @@ class DownResBlock(layers.Layer):
 
 
 class DownResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.0, kernel_size=3, w_norm_clip=2, normalization=None, first_layer=False, downsample_rate=2, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.0, kernel_size=3, w_norm_clip=2, normalization=None, first_layer=False, downsample_rate=2, regularization=None, **kwargs):
         super(DownResLayer, self).__init__(**kwargs)
         if first_layer:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, normalization=normalization, downsample_rate=downsample_rate)
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, normalization=normalization, downsample_rate=downsample_rate, regularization=regularization)
         else:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU(), normalization=normalization, downsample_rate=downsample_rate)
+            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU(), normalization=normalization, downsample_rate=downsample_rate, regularization=regularization)
         self.dropout = layers.Dropout(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
@@ -130,7 +130,7 @@ class UpResLayer(layers.Layer):
 
 
 class AttentionLayer(layers.Layer):
-    def __init__(self, channels_out, filters_per_head, num_attention_heads=1, kernel_size=3, use_positional_encoding=False, **kwargs):
+    def __init__(self, channels_out, filters_per_head, num_attention_heads=1, kernel_size=3, use_positional_encoding=False, regularization=None, **kwargs):
         super(AttentionLayer, self).__init__(**kwargs)
         self.use_positional_encoding = use_positional_encoding
         self.num_heads = num_attention_heads
@@ -144,18 +144,21 @@ class AttentionLayer(layers.Layer):
         self.key_mat = layers.Conv1D(
             filters=self.conv_filters,
             kernel_size=kernel_size,
-            padding="same"
+            padding="same",
+            kernel_regularizer=regularization
         )
         self.query_mat = layers.Conv1D(
             filters=self.conv_filters,
             kernel_size=kernel_size,
-            padding="same"
+            padding="same",
+            kernel_regularizer=regularization
         )
 
         self.value_mat = layers.Conv1D(
             filters=self.conv_filters,
             kernel_size=kernel_size,
-            padding="same"
+            padding="same",
+            kernel_regularizer=regularization
         )
 
         self.attention_heads = [
@@ -166,7 +169,8 @@ class AttentionLayer(layers.Layer):
         self.attention_conv = layers.Conv1D(
             filters=channels_out,
             kernel_size=kernel_size,
-            padding="same"
+            padding="same",
+            kernel_regularizer=regularization
         )
 
         self.gamma = tf.Variable(initial_value=0.05, trainable=True, name="gamma")
