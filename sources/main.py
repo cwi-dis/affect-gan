@@ -19,6 +19,7 @@ from models.AttentionNET2 import AttentionNET as AttentionNET2
 from models.AttentionNETDual import AttentionNETDual
 from models.TAGAN import Generator, Discriminator
 from data.dataloader import Dataloader
+from data.datagenerator import DatasetGenerator
 from train_gan import GAN_Trainer
 
 from util.callbacks import CallbacksProducer
@@ -331,31 +332,37 @@ def run_loso_cv(model_name):
         range_clipped=True,
         continuous_labels=False
     )
+    datagenerator = DatasetGenerator("../Logs/wgan-gp-big/model_gen", batch_size=128).__call__()
 
     for out_subject in config.OUT_SUBJECT.domain.values:
-        hparams = {config.OUT_SUBJECT: out_subject}
-        run_name = "subject-%d-out" % out_subject
-        for rerun in range(config.NUM_RERUNS):
-            run_logdir = os.path.join(logdir, run_name, ".%d"%rerun)
-            train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject)
-            eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject)
+        for data_source in config.TRAIN_DATA.domain.values:
+            hparams = {config.OUT_SUBJECT: out_subject}
+            run_name = "subject-%d-out" % out_subject
+            for rerun in range(config.NUM_RERUNS):
+                print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
+                run_logdir = os.path.join(logdir, run_name, ".%d"%rerun)
+                if data_source is "real":
+                    train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject)
+                else:
+                    train_set = datagenerator
+                eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject)
 
-            if model_name == "AttentionNET":
-                model = AttentionNET(hparams)
+                if model_name == "AttentionNET":
+                    model = AttentionNET(hparams)
 
-            model.compile(
-                optimizer=tf.keras.optimizers.Adam(learning_rate=0.0006, beta_1=0.5, beta_2=0.9),
-                loss=[tf.keras.losses.BinaryCrossentropy(label_smoothing=0.1)],
-                metrics=["accuracy"]
-            )
+                model.compile(
+                    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0006, beta_1=0.5, beta_2=0.9),
+                    loss=[tf.keras.losses.BinaryCrossentropy(label_smoothing=0.1)],
+                    metrics=["accuracy"]
+                )
 
-            callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
+                callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
 
-            model.fit(train_set, epochs=1000, steps_per_epoch=50, validation_data=eval_set, callbacks=callbacks)
+                model.fit(train_set, epochs=1000, steps_per_epoch=50, validation_data=eval_set, callbacks=callbacks)
 
-            del train_set
-            del eval_set
-            del model
+                del train_set
+                del eval_set
+                del model
 
 def main():
     init_tf_gpus()
@@ -364,8 +371,8 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     #single_run(model_name="AttentionNET2")
-    #run_loso_cv(model_name="AttentionNET")
-    run_gan(model_name="wgan-gp")
+    run_loso_cv(model_name="AttentionNET")
+    #run_gan(model_name="wgan-gp")
     #train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 
@@ -392,5 +399,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()

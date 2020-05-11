@@ -110,8 +110,8 @@ class Dataloader(object):
             train_subject_ids = self.subject_labels[:28]
             eval_subject_ids = self.subject_labels[28:]
         else:
-            train_subject_ids = self.subject_labels[:leave_out] + self.subject_labels[leave_out+1:]
-            eval_subject_ids = self.subject_labels[leave_out:leave_out+1]
+            train_subject_ids = self.subject_labels[:leave_out-1] + self.subject_labels[leave_out:]
+            eval_subject_ids = self.subject_labels[leave_out-1:leave_out]
 
         if (mode is "train") or (mode is "gan"):
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]

@@ -3,7 +3,8 @@ from tensorboard.plugins.hparams import api as hp
 INPUT_SIZE = 500
 NUM_RERUNS = 2
 GLOBAL_LR = 0.0003
-OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([4, 14]))
+OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([29, 30]))
+TRAIN_DATA = hp.HParam("Train Data Type", hp.Discrete(["fake", "real"]))
 
 
 # BaseNET hparams
