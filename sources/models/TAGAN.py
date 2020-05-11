@@ -9,21 +9,21 @@ class Generator(tf.keras.Model):
     def __init__(self, n_signals, *args, **kwargs):
         super(Generator, self).__init__(*args, **kwargs)
         
-        self.expand = layers.Dense(units=125 * 20, use_bias=False)
-        self.up_0 = UpResLayer(channels_out=20, kernel_size=5, dropout_rate=0.3, normalization="layer")
-        self.up_1 = UpResLayer(channels_out=10, kernel_size=7, dropout_rate=0.0, normalization="layer")
+        self.expand = layers.Dense(units=125 * 30, use_bias=False)
+        self.up_0 = UpResLayer(channels_out=30, kernel_size=5, dropout_rate=0.3, normalization="layer")
         self.non_local = AttentionLayer(
-            channels_out=20,
-            kernel_size=3,
-            filters_per_head=5,
+            channels_out=30,
+            kernel_size=4,
+            filters_per_head=5*2,
             num_attention_heads=4,
             use_positional_encoding=True)
+        self.up_1 = UpResLayer(channels_out=15, kernel_size=7, dropout_rate=0.0, normalization="layer")
         self.act = layers.LeakyReLU(alpha=0.2)
-        self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=7, padding="same")
+        self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=5, padding="same")
 
     def call(self, inputs, training=None, mask=None):
         x = self.expand(inputs)
-        x = tf.reshape(x, shape=[-1, 125, 20])
+        x = tf.reshape(x, shape=[-1, 125, 30])
         x = self.up_0(x, training=training)
         x = self.non_local(x)
         x = self.up_1(x, training=training)
@@ -40,7 +40,7 @@ class Discriminator(tf.keras.Model):
     def __init__(self, conditional, *args, **kwargs):
         super(Discriminator, self).__init__(*args, **kwargs)
         self.conditional = conditional
-        self.out_channels = 24
+        self.out_channels = 42
         self.downres0 = DownResLayer(
             channels_out=self.out_channels // 3,
             dropout_rate=0.3,
@@ -87,8 +87,8 @@ class Discriminator(tf.keras.Model):
             c = self.dense_class_output(x_s)
 
         x_s = self.dense_output(x_s)
-        return tf.keras.activations.sigmoid(x), x_s, c
+        return tf.keras.activations.sigmoid(x_s), x_s, c
 
     def model(self):
-        x = layers.Input(shape=(500, 1), batch_size=2)
+        x = layers.Input(shape=(500, 5), batch_size=2)
         return tf.keras.Model(inputs=[x], outputs=self.call(x))

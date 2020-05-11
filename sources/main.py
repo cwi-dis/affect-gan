@@ -307,9 +307,9 @@ def run_gan(model_name):
     logdir = os.path.join("../Logs", model_name + run_id)
     hparams = config.OPT_PARAMS["gan"]
     dataloader = Dataloader(
-        "5000d", ["ecg"], range_clipped=True
+        "5000d", ["ecg", "bvp", "rsp", "gsr", "skt"], range_clipped=True
     )
-    dataset = dataloader("cgan", hparams[config.HP_GAN_BATCHSIZE])
+    dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE])
     trainer = GAN_Trainer(
         mode=model_name,
         batch_size=hparams[config.HP_GAN_BATCHSIZE],
@@ -364,8 +364,9 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     #single_run(model_name="AttentionNET2")
-    run_loso_cv(model_name="AttentionNET")
-    #run_gan(model_name="wgan-gp")
+    #run_loso_cv(model_name="AttentionNET")
+    run_gan(model_name="wgan-gp")
+    #train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 
 
@@ -385,11 +386,11 @@ def summary():
     #ChannelCNN(hparams, 5).model().summary()
     #DeepCNN(hparams).model().summary()
     #LateFuseCNN(hparams, 5).model().summary()
-    AttentionNET(hparams).model().summary()
-    #Generator(n_signals=1).model().summary()
-    #Discriminator(conditional=True).model().summary()
+    #AttentionNET(hparams).model().summary()
+    Generator(n_signals=5).model().summary()
+    Discriminator(conditional=True).model().summary()
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()

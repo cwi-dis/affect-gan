@@ -148,8 +148,8 @@ class Dataloader(object):
             dataset = dataset.shuffle(buffer_size=2)
 
         if mode == "gan":
-            dataset = dataset.map(lambda features, labels: features)
-            dataset = dataset.shuffle(buffer_size=30000)
+            #dataset = dataset.map(lambda features, labels: features)
+            dataset = dataset.shuffle(buffer_size=300)
             dataset = dataset.repeat()
 
         if mode == "cgan":

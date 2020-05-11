@@ -100,7 +100,7 @@ OPT_PARAMS = {
         HP_ATT2_FILTERS: 6,
         HP_ATT2_LAYERS: 3,
         HP_ATT2_OTHERFILTERS: 8,
-        HP_GAN_BATCHSIZE: 32
+        HP_GAN_BATCHSIZE: 64
     }
 }
 

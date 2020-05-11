@@ -16,7 +16,7 @@ class GAN_Trainer():
             logdir,
             num_classes,
             train_steps=100000,
-            save_image_every_n_steps=250,
+            save_image_every_n_steps=1000,
             n_critic=1,
             noise_dim=125
     ):
@@ -30,7 +30,7 @@ class GAN_Trainer():
         self.save_image_every_n_steps = save_image_every_n_steps
 
         self.discriminator = Discriminator(self.conditional, hparams)
-        self.generator = Generator(n_signals=1)
+        self.generator = Generator(n_signals=5)
         dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.0008, 50000, 0.5)
         gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000/n_critic, 0.5)
         self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.9)
@@ -42,10 +42,10 @@ class GAN_Trainer():
         self.summary_writer = tf.summary.create_file_writer(logdir=logdir)
 
     def train_wgangp(self, dataset):
-        test_seed_0 = tf.random.normal([5, self.noise_dim])
+        test_seed_0 = tf.random.normal([1, self.noise_dim])
         if self.conditional:
-            test_seed_1 = tf.concat([test_seed_0, tf.ones(shape=(5, 1), dtype=tf.float32)], axis=-1)
-            test_seed_0 = tf.concat([test_seed_0, tf.zeros(shape=(5, 1), dtype=tf.float32)], axis=-1)
+            test_seed_1 = tf.concat([test_seed_0, tf.ones(shape=(1, 1), dtype=tf.float32)], axis=-1)
+            test_seed_0 = tf.concat([test_seed_0, tf.zeros(shape=(1, 1), dtype=tf.float32)], axis=-1)
         train_step = 1
         gen_loss, gen_classification_loss = 0, 0
         for batch, labels in dataset:
@@ -135,7 +135,7 @@ class GAN_Trainer():
         self.discriminator_optimizer.apply_gradients(zip(critic_gradients, self.discriminator.trainable_variables))
         del tape
 
-        return critic_loss, classification_loss
+        return critic_loss-classification_loss, classification_loss
 
     @tf.function
     def train_step_wgangp_generator(self, batch):
