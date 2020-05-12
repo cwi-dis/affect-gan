@@ -3,7 +3,10 @@ import glob
 import tensorflow as tf
 import pandas as pd
 from scipy.signal import decimate
+from collections import defaultdict
+import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 
 from tensorflow.python.ops import math_ops
 
@@ -115,7 +118,7 @@ class Dataloader(object):
 
         if (mode is "train") or (mode is "gan"):
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]
-        elif (mode is "eval") or (mode is "test_eval"):
+        elif (mode is "eval") or (mode is "test_eval") or (mode is "inspect" and leave_out is not None):
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in eval_subject_ids]
         else:
             files = [glob.glob("%s*.tfrecord" % self.path)]
@@ -127,10 +130,8 @@ class Dataloader(object):
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video: (features, labels))
-        if mode is not ("gan" or "inspect"):
+        if (mode is not "gan") and (mode is not "inspect"):
             dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.2)))
-        else:
-            dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.05)))
         if self.range_clipped:
             dataset = dataset.filter(lambda features, _: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
 
@@ -138,7 +139,7 @@ class Dataloader(object):
             dataset = dataset.map(with_categoric_labels)
 
         if mode is "inspect":
-            dataset = dataset.shuffle(buffer_size=10000)
+            #dataset = dataset.shuffle(buffer_size=10000)
             return dataset
 
         if len(self.labels) == 2:
@@ -167,34 +168,62 @@ class Dataloader(object):
 
 if __name__ == '__main__':
     os.chdir("./..")
-    d = Dataloader("5000d", ["ecg", "bvp", "gsr", "skt", "rsp"], range_clipped=True)
+    labels = ["ecg", "bvp", "gsr", "skt", "rsp"]
+    d = Dataloader("5000d", ["ecg", "bvp", "gsr", "skt", "rsp"], label=["subject"],
+                   range_clipped=False, normalized=False, continuous_labels=True)
     d = d("inspect", 1)
 
-    for e in d.take(10):
-        print(e[0])
+    def dl():
+        return defaultdict(list)
+    def di():
+        return defaultdict(int)
 
-    #min = None
-    #max = None
+    with open("../Dataset/CASE_dataset/stats/mean.pickle", "rb") as f:
+        dmean = pickle.load(f)
+    with open("../Dataset/CASE_dataset/stats/max.pickle", "rb") as f:
+        dmax = pickle.load(f)
+    with open("../Dataset/CASE_dataset/stats/min.pickle", "rb") as f:
+        dmin = pickle.load(f)
+
+    dmeanf = defaultdict(di)
+    dmaxf = defaultdict(di)
+    dminf = defaultdict(di)
+
+    for subject in range(1, 31):
+        for label in labels:
+            dmeanf[subject][label] = np.mean(dmean[subject][label])
+
+            max_cutoff = np.mean(dmax[subject][label]) + 3 * np.std(dmax[subject][label])
+            dmaxf[subject][label] = np.max([mx for mx in dmax[subject][label] if mx <= max_cutoff])
+
+            min_cutoff = np.mean(dmin[subject][label]) - 3 * np.std(dmin[subject][label])
+            dminf[subject][label] = np.min([mn for mn in dmin[subject][label] if mn >= min_cutoff])
+
+    with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "wb") as f:
+        pickle.dump(dmeanf, f)
+    with open("../Dataset/CASE_dataset/stats/subj_max.pickle", "wb") as f:
+        pickle.dump(dmaxf, f)
+    with open("../Dataset/CASE_dataset/stats/subj_min.pickle", "wb") as f:
+        pickle.dump(dminf, f)
+
+    #dmean = defaultdict(dl)
+    #dmin = defaultdict(dl)
+    #dmax = defaultdict(dl)
 #
-    #for batch in d:
-    #    if min is None:
-    #        min = tf.reduce_min(batch[0], axis=0)
-    #        max = tf.reduce_max(batch[0], axis=0)
-    #    else:
-    #        mn = tf.abs(tf.reduce_min(batch[0])) > 6
-    #        mx = tf.reduce_max(batch[0]) > 6
-    #        if not (mn or mx):
-    #            min = tf.reduce_min(tf.concat([[min], [tf.reduce_min(batch[0], axis=0)]], axis=0), axis=0)
-    #            max = tf.reduce_max(tf.concat([[max], [tf.reduce_max(batch[0], axis=0)]], axis=0), axis=0)
-    #min = min.numpy()
-    #max = max.numpy()
-    #df = pd.DataFrame.from_dict(
-    #    {
-    #        "ecg": [min[0], max[0]],
-    #        "bvp": [min[1], max[1]],
-    #        "gsr": [min[2], max[2]],
-    #        "skt": [min[3], max[3]],
-    #        "rsp": [min[4], max[4]],
-    #    }, orient="index", columns=["min", "max"])
+    #for data, subject in d:
+    #    s = int(subject.numpy()[0])
+    #    mean = tf.reduce_mean(data, axis=0).numpy()
+    #    min = tf.reduce_min(data, axis=0).numpy()
+    #    max = tf.reduce_max(data, axis=0).numpy()
 #
-    #df.to_csv(f"../Dataset/CASE_dataset/stats/minmax.csv" )
+    #    for i, l in enumerate(labels):
+    #        dmean[s][l].append(mean[i])
+    #        dmin[s][l].append(min[i])
+    #        dmax[s][l].append(max[i])
+#
+    #with open("../Dataset/CASE_dataset/stats/mean.pickle", "wb") as f:
+    #    pickle.dump(dmean, f)
+    #with open("../Dataset/CASE_dataset/stats/max.pickle", "wb") as f:
+    #    pickle.dump(dmax, f)
+    #with open("../Dataset/CASE_dataset/stats/min.pickle", "wb") as f:
+    #    pickle.dump(dmin, f)

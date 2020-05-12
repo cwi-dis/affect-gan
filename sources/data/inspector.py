@@ -119,7 +119,7 @@ def collect_extended_labels(data, filename, force_recollect=False):
 
     labels = pd.DataFrame(labels)
 
-    labels.to_pickle(f"../../plots/data/{filename}.pkl")
+    labels.to_pickle(f"../plots/data/{filename}.pkl")
 
     return collect_extended_labels(data, filename)
 
@@ -162,7 +162,7 @@ def video_subject_viz(extended_labels):
     #    for video, video_data in data.groupby("video", as_index=False):
     #        axes[(subject-1) // 5, (subject-1) % 5].lineplot(data=video_data, x="valence", y="arousal", sort="false", hue="video", palette=sns.color_palette("bright, n_colors=11"))
 
-    g = sns.FacetGrid(extended_labels, col="subject",  hue="video", palette=sns.color_palette(color_pallete, n_colors=11), col_wrap=5, legend_out=True)
+    g = sns.FacetGrid(extended_labels, col="subject",  hue="video", palette=sns.color_palette(color_pallete, n_colors=11), col_wrap=2, legend_out=True)
     g.map(sns.lineplot, "valence", "arousal", sort=False)
     g.add_legend(title="VideoID")
     plt.show()
@@ -208,19 +208,21 @@ def tsna_visualization(data):
 
 if __name__ == '__main__':
     os.chdir("./..")
-    dataloader = Dataloader("5000d", features=["ecg"], label=["arousal"], normalized=True, range_clipped=True, continuous_labels=False)
+    dataloader = Dataloader("5000d", features=["ecg", "bvp", "gsr", "skt", "rsp"],
+                            label=["arousal", "valence", "subject", "video"],
+                            normalized=True, range_clipped=True, continuous_labels=True)
     data = dataloader("inspect", 1)
 
     #labels = collect_labels(data)
-    #extended_labels = collect_extended_labels(data, "extended_labels_CASE")
+    extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
     #print(extended_labels.describe())
 
     #valence_arousal_viz(extended_labels)
-    #video_subject_viz(extended_labels)
+    video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
     #plot_signals(data)
-    positional_ecoding_viz()
+    #positional_ecoding_viz()
 
     #tsna_visualization(data)
 
