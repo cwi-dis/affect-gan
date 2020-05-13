@@ -115,7 +115,21 @@ def downsampler(data_path):
         plt.show()
         break
 
+def tfrecord_normalize(data_path):
+    os.chdir(data_path)
+    files = glob.glob("*.tfrecord")
+
+    for file in files:
+        raw_data = tf.data.TFRecordDataset(file)
+        for record in raw_data.take(1):
+            example = tf.train.Example()
+            example.ParseFromString(record.numpy())
+            print(example)
+
+        break
+
 if __name__ == '__main__':
-    tfrecord_writer("../../Dataset/CASE_dataset/merged/", window_size=5000, stride=500, downsampling_rate=10)
+    #tfrecord_writer("../../Dataset/CASE_dataset/merged/", window_size=5000, stride=500, downsampling_rate=10)
+    tfrecord_normalize("../../Dataset/CASE_dataset/tfrecord_5000d")
     #statistics_writer("../../Dataset/CASE_dataset/merged/", range(1, 27))
     #downsampler("../../Dataset/CASE_dataset/merged/")
