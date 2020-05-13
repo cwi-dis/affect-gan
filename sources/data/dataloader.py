@@ -157,10 +157,10 @@ class Dataloader(object):
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video: (features, labels))
-        if (mode is not "gan") and (mode is not "inspect"):
-            dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.2)))
-        #if self.normalized:
-        #    dataset = dataset.filter(lambda features, _: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
+        if mode is not "inspect":
+            dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.01)))
+        if self.normalized:
+            dataset = dataset.filter(lambda features, _: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
 
         if not self.continuous_labels:
             dataset = dataset.map(with_categoric_labels)
@@ -197,12 +197,12 @@ if __name__ == '__main__':
     os.chdir("./..")
     labels = ["ecg", "bvp", "gsr", "skt", "rsp"]
     d = Dataloader("5000d", ["ecg", "bvp", "gsr", "skt", "rsp"], label=["subject"],
-                   normalized=True, continuous_labels=True)
+                   normalized=False, continuous_labels=True)
     d = d("inspect", 1)
 
     i = 0
-    for _, l in d.take(2):
-        print(l)
+    for _, l in d:
+        i += 1
 
     print(i)
 

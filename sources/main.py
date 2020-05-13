@@ -324,6 +324,39 @@ def run_gan(model_name):
 
     trainer.train(dataset=dataset)
 
+def train_loso_gans(model_name):
+    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+    logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
+    hparams = config.OPT_PARAMS["gan"]
+
+    dataloader = Dataloader(
+        "5000d", ["ecg", "bvp", "rsp"],
+        normalized=True,
+        continuous_labels=False
+    )
+
+    for out_subject in config.OUT_SUBJECT.domain.values:
+        run_name = "subject-%d-out" % out_subject
+        run_logdir = os.path.join(logdir, run_name)
+
+        dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=out_subject)
+        trainer = GAN_Trainer(
+            mode=model_name,
+            batch_size=hparams[config.HP_GAN_BATCHSIZE],
+            hparams=hparams,
+            logdir=run_logdir,
+            num_classes=2,
+            save_image_every_n_steps=1000,
+            n_critic=5,
+            noise_dim=125,
+            train_steps=120000
+        )
+
+        trainer.train(dataset=dataset)
+
+        del dataset
+        del trainer
+
 def run_loso_cv(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
@@ -371,9 +404,9 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     #single_run(model_name="AttentionNET2")
-    run_loso_cv(model_name="AttentionNET")
+    #run_loso_cv(model_name="AttentionNET")
     #run_gan(model_name="wgan-gp")
-    #train_loso_gans(model_name="wgan-gp")
+    train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 
 
