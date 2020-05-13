@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pickle
 
+from util.misc import di, dl
 from tensorflow.python.ops import math_ops
 
 def window_dataset(dataset):
@@ -23,12 +24,25 @@ def window_dataset(dataset):
 def with_categoric_labels(features, label, threshold=5.0):
     return features, math_ops.cast(label > threshold, label.dtype)
 
+def get_subject_data(subject, means, minmax):
+    s = tf.cast(subject, tf.int32).numpy() - 1
+    s_mean = means[:, s]
+    s_minmax = minmax[:, s]
+
+    return s_mean, s_minmax
 
 class Dataloader(object):
 
-    def __init__(self, datasetID, features=None, label=None, continuous_labels=True, normalized=True, range_clipped=False):
+    def __init__(self, datasetID, features=None, label=None, continuous_labels=True, normalized=True):
         if features is None:
             features = ["bvp"]
+        self.feature_index = {
+            "bvp": 0,
+            "ecg": 1,
+            "gsr": 2,
+            "rsp": 3,
+            "skt": 4
+        }
         path = "../Dataset/CASE_dataset/tfrecord_%s/" % datasetID
         if path is None or not os.path.exists(path):
             raise Exception("Data path does not exist:" + os.curdir +":"+path)
@@ -43,11 +57,18 @@ class Dataloader(object):
             self.labels = label
         self.continuous_labels = continuous_labels
         self.normalized = normalized
-        self.range_clipped = range_clipped
+        #self.range_clipped = range_clipped  #range clipping now included in normalization
 
-        self.means = pd.read_csv("../Dataset/CASE_dataset/stats/mean.csv", header=None, index_col=0, squeeze=True).astype("float32")
-        self.vars = pd.read_csv("../Dataset/CASE_dataset/stats/var.csv", header=None, index_col=0, squeeze=True).astype("float32")
-        self.minmax = pd.read_csv("../Dataset/CASE_dataset/stats/minmax.csv", header=0, index_col=0, squeeze=True).astype("float32")
+        #self.means = pd.read_csv("../Dataset/CASE_dataset/stats/mean.csv", header=None, index_col=0, squeeze=True).astype("float32")
+        #self.vars = pd.read_csv("../Dataset/CASE_dataset/stats/var.csv", header=None, index_col=0, squeeze=True).astype("float32")
+        #self.minmax = pd.read_csv("../Dataset/CASE_dataset/stats/minmax.csv", header=0, index_col=0, squeeze=True).astype("float32")
+
+        def di():
+            return defaultdict(int)
+        with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "rb") as handle:
+            self.subj_means = pd.DataFrame.from_dict(pickle.load(handle)).astype("float32")
+        with open("../Dataset/CASE_dataset/stats/subj_minmax.pickle", "rb") as handle:
+            self.subj_minmax = pd.DataFrame.from_dict(pickle.load(handle)).astype("float32")
 
         self.excluded_label = tf.constant(5, tf.float32)
         self.subject_labels = list(range(1, 31))
@@ -74,15 +95,25 @@ class Dataloader(object):
                                                      })
 
         subject = tf.cast(decoded_example["Subject"], tf.float32)
+        [s_means, s_minmax, ] = tf.py_function(get_subject_data, [subject, self.subj_means, self.subj_minmax], [tf.float32, tf.float32])
         video = tf.cast(decoded_example["VideoID"], tf.float32)
 
         features = []
         if self.normalized:
+            #Old Normalization:
+            #for feature in self.features:
+            #    znorm = (decoded_example[feature] - self.means[feature]) / tf.sqrt(self.vars[feature])
+            #    if self.range_clipped:
+            #        znorm = 2 * (znorm - self.minmax[min][feature]) / (self.minmax[max][feature] - self.minmax[min][feature]) - 1
+            #    features.append(znorm)
+
+            #Per subject Normalization:
             for feature in self.features:
-                znorm = (decoded_example[feature] - self.means[feature]) / tf.sqrt(self.vars[feature])
-                if self.range_clipped:
-                    znorm = 2 * (znorm - self.minmax[min][feature]) / (self.minmax[max][feature] - self.minmax[min][feature]) - 1
-                features.append(znorm)
+                i = self.feature_index[feature]
+                print(s_means)
+                standardized = decoded_example[feature] - s_means[i]
+                standardized = -1 + 2 * (standardized + s_minmax[i]) / (s_minmax[i] + s_minmax[i])
+                features.append(standardized)
         else:
             for feature in self.features:
                 features.append(decoded_example[feature])
@@ -132,14 +163,14 @@ class Dataloader(object):
         dataset = dataset.map(lambda features, labels, video: (features, labels))
         if (mode is not "gan") and (mode is not "inspect"):
             dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.2)))
-        if self.range_clipped:
-            dataset = dataset.filter(lambda features, _: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
+        #if self.normalized:
+        #    dataset = dataset.filter(lambda features, _: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
 
         if not self.continuous_labels:
             dataset = dataset.map(with_categoric_labels)
 
         if mode is "inspect":
-            #dataset = dataset.shuffle(buffer_size=10000)
+            dataset = dataset.shuffle(buffer_size=1000)
             return dataset
 
         if len(self.labels) == 2:
@@ -169,14 +200,42 @@ class Dataloader(object):
 if __name__ == '__main__':
     os.chdir("./..")
     labels = ["ecg", "bvp", "gsr", "skt", "rsp"]
-    d = Dataloader("5000d", ["ecg", "bvp", "gsr", "skt", "rsp"], label=["subject"],
-                   range_clipped=False, normalized=False, continuous_labels=True)
-    d = d("inspect", 1)
+    #d = Dataloader("5000d", ["ecg", "bvp", "gsr", "skt", "rsp"], label=["subject"],
+    #               normalized=True, continuous_labels=True)
+    #d = d("inspect", 1)
 
-    def dl():
-        return defaultdict(list)
-    def di():
-        return defaultdict(int)
+    i = 0
+    #for _,__ in d:
+    #    i += 1
+
+    print(i)
+
+    #with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "rb") as handle:
+    #    subj_means = pd.DataFrame.from_dict(pickle.load(handle)).astype("float32")
+    #with open("../Dataset/CASE_dataset/stats/subj_minmax.pickle", "rb") as handle:
+    #    subj_minmax = pd.DataFrame.from_dict(pickle.load(handle)).astype("float32")
+#
+    #print("Yes")
+    #with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "rb") as f:
+    #    dmean = pickle.load(f)
+    #with open("../Dataset/CASE_dataset/stats/subj_max.pickle", "rb") as f:
+    #    dmax = pickle.load(f)
+    #with open("../Dataset/CASE_dataset/stats/subj_min.pickle", "rb") as f:
+    #    dmin = pickle.load(f)
+#
+    #dabsmax = defaultdict(di)
+#
+    #for subject in range(1, 31):
+    #    for label in labels:
+    #        dmax[subject][label] -= dmean[subject][label]
+    #        dmin[subject][label] -= dmean[subject][label]
+    #        dabsmax[subject][label] = max(np.abs(dmax[subject][label]), np.abs(dmin[subject][label]))
+
+
+    print("Yes")
+#
+    #with open("../Dataset/CASE_dataset/stats/subj_min.pickle", "wb") as f:
+    #    pickle.dump(dabsmax, f)
 
     with open("../Dataset/CASE_dataset/stats/mean.pickle", "rb") as f:
         dmean = pickle.load(f)
@@ -198,14 +257,13 @@ if __name__ == '__main__':
 
             min_cutoff = np.mean(dmin[subject][label]) - 3 * np.std(dmin[subject][label])
             dminf[subject][label] = np.min([mn for mn in dmin[subject][label] if mn >= min_cutoff])
-
-    with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "wb") as f:
-        pickle.dump(dmeanf, f)
-    with open("../Dataset/CASE_dataset/stats/subj_max.pickle", "wb") as f:
-        pickle.dump(dmaxf, f)
-    with open("../Dataset/CASE_dataset/stats/subj_min.pickle", "wb") as f:
-        pickle.dump(dminf, f)
-
+#
+    #with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "wb") as f:
+    #    pickle.dump(dmeanf, f)
+    #with open("../Dataset/CASE_dataset/stats/subj_max.pickle", "wb") as f:
+    #    pickle.dump(dmaxf, f)
+    #with open("../Dataset/CASE_dataset/stats/subj_min.pickle", "wb") as f:
+    #    pickle.dump(dminf, f)
     #dmean = defaultdict(dl)
     #dmin = defaultdict(dl)
     #dmax = defaultdict(dl)

@@ -329,7 +329,7 @@ def run_loso_cv(model_name):
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
     dataloader = Dataloader(
         "5000d", ["ecg", "bvp", "rsp", "gsr", "skt"],
-        range_clipped=True,
+        normalized=True,
         continuous_labels=False
     )
     datagenerator = DatasetGenerator("../Logs/wgan-gp-big/model_gen", batch_size=128).__call__()
@@ -351,7 +351,7 @@ def run_loso_cv(model_name):
                     model = AttentionNET(hparams)
 
                 model.compile(
-                    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0006, beta_1=0.5, beta_2=0.9),
+                    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.5, beta_2=0.9),
                     loss=[tf.keras.losses.BinaryCrossentropy(label_smoothing=0.1)],
                     metrics=["accuracy"]
                 )

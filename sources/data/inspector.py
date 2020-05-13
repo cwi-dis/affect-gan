@@ -133,17 +133,16 @@ def plot_label_heatmap(labels):
 
 def plot_signal(signal):
     x = range(len(signal))
-    fig, (ax0, ax1, ax2, ax3, ax4) = plt.subplots(5, sharex=True)
-    ax0.plot(x, signal[:, 0])
-    ax1.plot(x, signal[:, 1])
-    ax2.plot(x, signal[:, 2])
-    ax3.plot(x, signal[:, 3])
-    ax4.plot(x, signal[:, 4])
-    multi = MultiCursor(fig.canvas, (ax0, ax1, ax2, ax3, ax4), color='r', lw=1)
+    n_signals = signal.shape[-1]
+    fig, axs = plt.subplots(n_signals, sharex=True)
+    for i, ax in enumerate(axs):
+        ax.plot(x, signal[:, i])
+    multi = MultiCursor(fig.canvas, axs, color='r', lw=1)
     plt.show()
 
 def plot_signals(data):
     for signal, label in data.take(10):
+        print(signal)
         print(label)
         plot_signal(signal)
 
@@ -208,20 +207,20 @@ def tsna_visualization(data):
 
 if __name__ == '__main__':
     os.chdir("./..")
-    dataloader = Dataloader("5000d", features=["ecg", "bvp", "gsr", "skt", "rsp"],
+    dataloader = Dataloader("5000d", features=["ecg", "gsr", "skt"],
                             label=["arousal", "valence", "subject", "video"],
-                            normalized=True, range_clipped=True, continuous_labels=True)
-    data = dataloader("inspect", 1)
+                            normalized=True, continuous_labels=True)
+    data = dataloader("inspect", 1, leave_out=2)
 
     #labels = collect_labels(data)
-    extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
+    #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
     #print(extended_labels.describe())
 
     #valence_arousal_viz(extended_labels)
-    video_subject_viz(extended_labels)
+    #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    #plot_signals(data)
+    plot_signals(data)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)
