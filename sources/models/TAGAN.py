@@ -73,7 +73,7 @@ class Discriminator(tf.keras.Model):
 
         self.dense_output = layers.Dense(1)
 
-        self.dense_class_output = layers.Dense(1, activation="sigmoid")
+        self.dense_class_output = layers.Dense(2, activation="softmax")
 
     def call(self, inputs, training=None, mask=None):
         x = self.expand(inputs)
