@@ -10,8 +10,8 @@ class DownResBlock(layers.Layer):
         self.norm0 = None
         self.norm1 = None
         if normalization is "layer":
-            self.norm0 = layers.LayerNormalization(axis=[2])
-            self.norm1 = layers.LayerNormalization(axis=[2])
+            self.norm0 = layers.LayerNormalization(axis=-1)
+            self.norm1 = layers.LayerNormalization(axis=-1)
         elif normalization is "batch":
             self.norm0 = layers.BatchNormalization()
             self.norm1 = layers.BatchNormalization()
@@ -76,21 +76,21 @@ class UpResBlock(layers.Layer):
         self.norm0 = None
         self.norm1 = None
         if normalization is "layer":
-            self.norm0 = layers.LayerNormalization(axis=2)
-            self.norm1 = layers.LayerNormalization(axis=2)
+            self.norm0 = layers.LayerNormalization(axis=-1)
+            self.norm1 = layers.LayerNormalization(axis=-1)
         elif normalization is "batch":
             self.norm0 = layers.BatchNormalization()
             self.norm1 = layers.BatchNormalization()
         self.initial_activation = layers.LeakyReLU(alpha=0.2)
         self.up = layers.UpSampling1D(size=2)
         self.conv0 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
-                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
         self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
-                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                   )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
 
         self.up_s = layers.UpSampling1D(size=2)
         self.upconv_s = layers.Conv1D(filters=channels, kernel_size=1, padding="same",
-                                      )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1,2]))
+                                      )#kernel_constraint=tf.keras.constraints.MaxNorm(max_value=w_norm_clip, axis=[0,1]))
 
     def call(self, inputs, **kwargs):
         x_0 = inputs
@@ -168,7 +168,7 @@ class AttentionLayer(layers.Layer):
             kernel_regularizer=regularization
         )
 
-        self.gamma = tf.Variable(initial_value=0.05, trainable=True, name="gamma")
+        self.gamma = tf.Variable(initial_value=0.01, trainable=True, name="gamma")
 
     def split_heads(self, x, batch_size):
         x = tf.reshape(x, [batch_size, -1, self.num_heads, self.filters_per_head])
@@ -205,7 +205,7 @@ class AttentionLayer(layers.Layer):
         concat_attention = tf.reshape(scaled_attention, (batch_size, -1, self.conv_filters))
         x = self.attention_conv(concat_attention)
 
-        out = inputs + x
+        out = inputs + self.gamma * x
 
         return out
 

@@ -66,7 +66,7 @@ def plot_confusion_matrix(cm, class_names):
     return figure
 
 def plot_generated_signals(signals_0, signals_1):
-    n_samples=5#len(signals_0)
+    n_samples=3#len(signals_0)
     x = range(len(signals_0[0]))
     n_signals = 1 if signals_1 is None else 2
     fig, axs = plt.subplots(n_samples, n_signals, sharex=True)
@@ -95,7 +95,7 @@ def collect_labels(data):
 
 def collect_extended_labels(data, filename, force_recollect=False):
 
-    filepath = f"../../plots/data/{filename}.pkl"
+    filepath = "../../plots/data/%s.pkl" % filename
 
     if os.path.exists(filepath) and not force_recollect:
         labels = pd.read_pickle(filepath)
@@ -121,7 +121,7 @@ def collect_extended_labels(data, filename, force_recollect=False):
 
     labels = pd.DataFrame(labels)
 
-    labels.to_pickle(f"../plots/data/{filename}.pkl")
+    labels.to_pickle("../../plots/data/%s.pkl" % filename)
 
     return collect_extended_labels(data, filename)
 

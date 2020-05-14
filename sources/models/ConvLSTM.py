@@ -15,8 +15,8 @@ class ConvLSTM(tf.keras.Model):
             padding="same", activation=layers.LeakyReLU())
         self.drop = layers.Dropout(rate=hparams[config.HP_DROPOUT_CL])
         self.avg = layers.AveragePooling1D(
-            pool_size=5,
-            strides=3,
+            pool_size=3,
+            strides=2,
             padding="same")
 
         self.lstm_layer = layers.LSTM(units=hparams[config.HP_LSTMCELLS_CL])

@@ -13,7 +13,7 @@ class AttentionNET(tf.keras.Model):
         self.downres0 = DownResLayer(
             channels_out=4,
             dropout_rate=0.5,
-            kernel_size=5,
+            kernel_size=4,
             normalization="layer",
             first_layer=True,
             regularization=tf.keras.regularizers.l2(0.0005)
@@ -23,13 +23,13 @@ class AttentionNET(tf.keras.Model):
             channels_out=4,
             filters_per_head=3,
             num_attention_heads=2,
-            kernel_size=5,
             use_positional_encoding=True,
-            regularization=tf.keras.regularizers.l2(0.0005)
+            regularization=tf.keras.regularizers.l2(0.0005),
+            kernel_size=4,
         )
 
         self.downres1 = DownResLayer(
-            channels_out=5,
+            channels_out=3,
             dropout_rate=0.25,
             kernel_size=6,
             normalization="layer",
@@ -38,9 +38,9 @@ class AttentionNET(tf.keras.Model):
         )
 
         self.downres_2 = DownResLayer(
-            channels_out=6,
+            channels_out=2,
             dropout_rate=0.0,
-            kernel_size=5,
+            kernel_size=6,
             normalization="layer",
             downsample_rate=3,
             regularization=tf.keras.regularizers.l2(0.0005)
@@ -49,7 +49,7 @@ class AttentionNET(tf.keras.Model):
         self.downres_3 = DownResLayer(
             channels_out=6,
             dropout_rate=0.0,
-            kernel_size=5,
+            kernel_size=3,
             normalization="layer",
             downsample_rate=3
         )
@@ -63,7 +63,7 @@ class AttentionNET(tf.keras.Model):
         x = self.attention_layer(x)
         x = self.downres1(x)
         x = self.downres_2(x)
-        x = self.downres_3(x)
+#        x = self.downres_3(x)
         x = self.avg(x)
         return self.dense_output(x)
 

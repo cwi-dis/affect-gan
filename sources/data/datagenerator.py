@@ -1,7 +1,7 @@
 import tensorflow as tf
 import os
 #from main import init_tf_gpus
-from models.TAGAN import *
+#from models.TAGAN import *
 
 
 class _DataGenerator:

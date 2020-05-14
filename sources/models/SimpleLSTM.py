@@ -16,7 +16,7 @@ class SimpleLSTM(tf.keras.Model):
         self.dense_output = layers.Dense(1, activation="sigmoid")
 
     def call(self, inputs, training=None, mask=None):
-        x2 = self.lstm_layer(inputs)
+        x2 = self.lstm_layer(inputs, training=training)
         return self.dense_output(x2)
 
     def model(self):

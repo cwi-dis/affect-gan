@@ -76,7 +76,7 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
         model = AttentionNETDual(hparams)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=0.0005),
+        optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=0.0008),
         loss=loss,
         metrics=metrics
     )
@@ -84,11 +84,11 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
     callback_dataset = dataloader("test_eval")
     callbacks = CallbacksProducer(hparams, logdir, run_name, callback_dataset).get_callbacks()
 
-    model.fit(train_dataset, epochs=30, validation_data=eval_dataset, callbacks=callbacks)
+    model.fit(train_dataset, epochs=30, validation_data=eval_dataset, validation_steps=45, callbacks=callbacks)
 
 
 def hp_sweep_run(logdir, model_name):
-    session_num = 0
+    session_num = 0 
 
     if model_name == "BaseNET":
         for filters in config.HP_FILTERS.domain.values:
@@ -295,9 +295,9 @@ def run_gan(model_name):
     logdir = os.path.join("../Logs", model_name + run_id)
     hparams = config.OPT_PARAMS["gan"]
     dataloader = Dataloader(
-        "5000d", ["ecg", "bvp", "rsp", "gsr", "skt"], range_clipped=True
+        "5000d", ["ecg", "bvp", "rsp"], continuous_labels=False
     )
-    dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE])
+    dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=1)
     trainer = GAN_Trainer(
         mode=model_name,
         batch_size=hparams[config.HP_GAN_BATCHSIZE],
@@ -305,8 +305,9 @@ def run_gan(model_name):
         logdir=logdir,
         num_classes=2,
         save_image_every_n_steps=250,
-        n_critic=3,
+        n_critic=5,
         noise_dim=125,
+        train_steps=2000
     )
 
     trainer.train(dataset=dataset)
@@ -356,8 +357,9 @@ def run_loso_cv(model_name):
 
     for out_subject in config.OUT_SUBJECT.domain.values:
         for data_source in config.TRAIN_DATA.domain.values:
-            hparams = {config.OUT_SUBJECT: out_subject}
-            run_name = "subject-%d-out" % out_subject
+            hparams = {config.OUT_SUBJECT: out_subject,
+                       config.TRAIN_DATA: data_source}
+            run_name = "subject-%d-out-%s" % (out_subject, data_source)
             for rerun in range(config.NUM_RERUNS):
                 print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
                 run_logdir = os.path.join(logdir, run_name, ".%d"%rerun)
@@ -378,7 +380,7 @@ def run_loso_cv(model_name):
 
                 callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
 
-                model.fit(train_set, epochs=1000, steps_per_epoch=50, validation_data=eval_set, callbacks=callbacks)
+                model.fit(train_set, epochs=200, steps_per_epoch=50, validation_data=eval_set, callbacks=callbacks)
 
                 del train_set
                 del eval_set
@@ -392,8 +394,8 @@ def main():
 
     #single_run(model_name="AttentionNET2")
     #run_loso_cv(model_name="AttentionNET")
-    #run_gan(model_name="wgan-gp")
-    train_loso_gans(model_name="wgan-gp")
+    run_gan(model_name="wgan-gp")
+    #train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 
 
