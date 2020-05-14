@@ -161,11 +161,6 @@ class AttentionLayer(layers.Layer):
             kernel_regularizer=regularization
         )
 
-        self.attention_heads = [
-            layers.Attention(use_scale=True, causal=False)
-            for h in range(self.num_heads)
-        ]
-
         self.attention_conv = layers.Conv1D(
             filters=channels_out,
             kernel_size=kernel_size,

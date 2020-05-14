@@ -10,8 +10,10 @@ import itertools
 from sklearn.manifold import TSNE
 
 from data.dataloader import Dataloader
+from data.datagenerator import DatasetGenerator
 from models.Blocks import get_positional_encoding
 from matplotlib.widgets import MultiCursor
+from util.misc import init_tf_gpus
 
 color_pallete = ["#e6194B", "#ffe119", "#4363d8", "#f58231", "#42d4f4", "#f032e6", "#fabebe", "#469990", "#e6beff", "#9A6324", "#000000", "#800000", "#aaffc3", "#000075", "#a9a9a9", "#ffffff", "#3cb44b"]
 
@@ -140,10 +142,12 @@ def plot_signal(signal):
     multi = MultiCursor(fig.canvas, axs, color='r', lw=1)
     plt.show()
 
-def plot_signals(data):
+def plot_signals(data, generated=False):
     for signal, label in data.take(10):
         print(signal)
         print(label)
+        if generated:
+            signal = signal[0]
         plot_signal(signal)
 
 
@@ -207,10 +211,13 @@ def tsna_visualization(data):
 
 if __name__ == '__main__':
     os.chdir("./..")
+    init_tf_gpus()
     dataloader = Dataloader("5000d", features=["ecg", "gsr", "skt"],
                             label=["arousal", "valence", "subject", "video"],
                             normalized=True, continuous_labels=True)
     data = dataloader("inspect", 1, leave_out=2)
+    datagenerator = DatasetGenerator("../Logs/loso-wgan-gp20200513-173228/subject-1-out/model_gen",
+                                     batch_size=1).__call__()
 
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
@@ -220,7 +227,7 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    plot_signals(data)
+    plot_signals(datagenerator, generated=True)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)

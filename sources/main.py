@@ -23,23 +23,10 @@ from data.datagenerator import DatasetGenerator
 from train_gan import GAN_Trainer
 
 from util.callbacks import CallbacksProducer
+from util.misc import init_tf_gpus
 from util.CustomLosses import CastingBinaryCrossentropy
 from util.CustomMetrics import *
 from tensorboard.plugins.hparams import api as hp
-
-
-def init_tf_gpus():
-    gpus = tf.config.experimental.list_physical_devices('GPU')
-    print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))
-
-    if gpus:
-        try:
-            for gpu in gpus:
-                tf.config.experimental.set_memory_growth(gpu, True)
-            logical_gpus = tf.config.experimental.list_logical_devices('GPU')
-            print("Physical GPUs available: %d  -- Logical GPUs available: %d" % (len(gpus), len(logical_gpus)))
-        except RuntimeError as e:
-            print(e)
 
 
 def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
