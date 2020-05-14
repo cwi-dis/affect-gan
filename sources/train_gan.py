@@ -45,8 +45,8 @@ class GAN_Trainer():
     def train_wgangp(self, dataset):
         test_seed_0 = tf.random.normal([1, self.noise_dim])
         if self.conditional:
-            test_seed_1 = tf.concat([test_seed_0, tf.ones(shape=(1, 1), dtype=tf.float32)], axis=-1)
-            test_seed_0 = tf.concat([test_seed_0, tf.zeros(shape=(1, 1), dtype=tf.float32)], axis=-1)
+            test_seed_1 = tf.concat([test_seed_0, [[0., 1.]]], axis=-1)
+            test_seed_0 = tf.concat([test_seed_0, [[1., 0.]]], axis=-1)
         train_step = 1
         gen_loss, gen_classification_loss = 0, 0
         for batch, labels in dataset:
