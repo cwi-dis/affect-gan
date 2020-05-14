@@ -47,7 +47,7 @@ class GAN_Trainer():
         if self.conditional:
             test_seed_1 = tf.concat([test_seed_0, [[0., 1.]]], axis=-1)
             test_seed_0 = tf.concat([test_seed_0, [[1., 0.]]], axis=-1)
-        train_step = 1
+        train_step = tf.Variable(1, trainable=False, dtype=tf.int32)
         gen_loss, gen_classification_loss = 0, 0
         for batch, labels in dataset:
             labels = tf.one_hot(labels, depth=self.num_classes)
@@ -75,7 +75,7 @@ class GAN_Trainer():
                 with self.summary_writer.as_default():
                     tf.summary.image("Generated Signals", img, step=train_step)
 
-            train_step += 1
+            train_step.assign_add(1)
             if train_step > self.train_steps:
                 self.discriminator.save(self.discriminator_path)
                 self.generator.save(self.generator_path)
