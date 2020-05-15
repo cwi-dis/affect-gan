@@ -37,9 +37,10 @@ class Generator(tf.keras.Model):
 
 
 class Discriminator(tf.keras.Model):
-    def __init__(self, conditional, *args, **kwargs):
+    def __init__(self, class_conditional, subject_conditional, *args, **kwargs):
         super(Discriminator, self).__init__(*args, **kwargs)
-        self.conditional = conditional
+        self.class_conditional = class_conditional
+        self.subject_conditional = subject_conditional
         self.out_channels = 24 * 2 
         self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=5, padding="same")
         self.downres0 = DownResLayer(
@@ -72,8 +73,8 @@ class Discriminator(tf.keras.Model):
         self.avg = layers.GlobalAveragePooling1D()
 
         self.dense_output = layers.Dense(1)
-
         self.dense_class_output = layers.Dense(2, activation="softmax")
+        self.dense_subject_output = layers.Dense(29, activation="softmax")
 
     def call(self, inputs, training=None, mask=None):
         x = self.expand(inputs)
@@ -84,12 +85,15 @@ class Discriminator(tf.keras.Model):
 
         x_s = tf.reshape(x, shape=[-1, 63*self.out_channels])
         c = None
-        if self.conditional:
-            #c = self.avg(x)
+        s = None
+        if self.class_conditional:
             c = self.dense_class_output(x_s)
+        if self.subject_conditional:
+            s = self.dense_subject_output(x_s)
 
         x_s = self.dense_output(x_s)
-        return tf.keras.activations.sigmoid(x_s), x_s, c
+
+        return tf.keras.activations.sigmoid(x_s), x_s, c, s
 
     def model(self):
         x = layers.Input(shape=(500, 5), batch_size=2)

@@ -293,20 +293,22 @@ def single_run(model_name):
 def run_gan(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", model_name + run_id)
+    leave_out = 1
     hparams = config.OPT_PARAMS["gan"]
     dataloader = Dataloader(
         "5000d", ["ecg", "bvp", "rsp"], continuous_labels=False
     )
-    dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=1)
+    dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=leave_out)
     trainer = GAN_Trainer(
         mode=model_name,
         batch_size=hparams[config.HP_GAN_BATCHSIZE],
         hparams=hparams,
         logdir=logdir,
         num_classes=2,
+        leave_out=leave_out,
         save_image_every_n_steps=250,
         n_critic=5,
-        noise_dim=125,
+        noise_dim=100,
         train_steps=2000
     )
 

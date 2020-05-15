@@ -21,8 +21,8 @@ def window_dataset(dataset):
     return windows
 
 
-def with_categoric_labels(features, label, threshold=5.0):
-    return features, math_ops.cast(label > threshold, label.dtype)
+def with_categoric_labels(features, label, subject, threshold=5.0):
+    return features, math_ops.cast(label > threshold, label.dtype), subject
 
 
 class Dataloader(object):
@@ -88,9 +88,9 @@ class Dataloader(object):
                                                                                                   allow_missing=True)
                                                      })
 
-        subject = tf.cast(decoded_example["Subject"], tf.float32)
         video = tf.cast(decoded_example["VideoID"], tf.float32)
 
+        subject = tf.cast(decoded_example["Subject"], tf.float32)
         subject_i = tf.cast(subject, tf.int32)
 
         features = []
@@ -126,7 +126,7 @@ class Dataloader(object):
 
         features = tf.stack(features, axis=1)
 
-        return features, labels, video
+        return features, labels, video, subject
 
     def __call__(self, mode, batch_size=64, leave_out=None):
 
@@ -155,34 +155,32 @@ class Dataloader(object):
 
         dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE, cycle_length=25, block_length=128)
         dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
-        dataset = dataset.filter(lambda _, __, video: tf.less(video, 10))
-        dataset = dataset.map(lambda features, labels, video: (features, labels))
+        dataset = dataset.filter(lambda _, __, video, ___: tf.less(video, 10))
+        dataset = dataset.map(lambda features, labels, video, subject: (features, labels, subject))
         if mode is not "inspect":
-            dataset = dataset.filter(lambda _, label: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.01)))
+            dataset = dataset.filter(lambda _, label, __: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.01)))
         if self.normalized:
-            dataset = dataset.filter(lambda features, _: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
+            dataset = dataset.filter(lambda features, _, __: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
 
         if not self.continuous_labels:
             dataset = dataset.map(with_categoric_labels)
+
+        if mode is not "gan":
+            dataset.map(lambda features, labels, subject: (features, labels))
 
         if mode is "inspect":
             dataset = dataset.shuffle(buffer_size=1000)
             return dataset
 
-        if len(self.labels) == 2:
-            dataset = dataset.map(lambda data, labels: (data, (labels[0], labels[1])))
-
-        if mode == "train":
-            dataset = dataset.shuffle(buffer_size=2)
-
         if mode == "gan":
-            #dataset = dataset.map(lambda features, labels: features)
             dataset = dataset.shuffle(buffer_size=300)
             dataset = dataset.repeat()
 
-        if mode == "cgan":
-            dataset = dataset.shuffle(buffer_size=3)
-            dataset = dataset.repeat()
+        if len(self.labels) == 2:
+            dataset = dataset.map(lambda data, labels, subject: (data, (labels[0], labels[1]), subject))
+
+        if mode == "train":
+            dataset = dataset.shuffle(buffer_size=2)
 
         if mode == "test_eval":
             return dataset.shuffle(1000, seed=42).batch(500).take(1)
