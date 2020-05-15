@@ -28,13 +28,11 @@ class GAN_Trainer():
         self.num_classes = num_classes
         self.conditional = num_classes != 0
         self.save_image_every_n_steps = save_image_every_n_steps
-        self.gen_class_bias_value = 1
 
         self.discriminator = Discriminator(self.conditional, hparams)
         self.generator = Generator(n_signals=3)
         dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000, 0.75, staircase=True)
         gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000/n_critic, 0.75, staircase=True)
-        self.gen_class_bias = tf.keras.optimizers.schedules.PiecewiseConstantDecay([25000, 50000, 75000, 100000], values=[0.0, 0.1, 0.25, 0.5])
         self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.9)
         self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.5, beta_2=0.9)
         self.train = self.train_vanilla if mode is "vanilla_gan" else self.train_wgangp
@@ -52,7 +50,6 @@ class GAN_Trainer():
         gen_loss, gen_classification_loss = 0, 0
         for batch, labels in dataset:
             labels = tf.one_hot(labels, depth=self.num_classes)
-            self.gen_class_bias_value = self.gen_class_bias(train_step)
             critic_loss, classification_loss = self.train_step_wgangp_critic(batch, labels)
 
             if train_step % self.n_critic == 0:
@@ -111,7 +108,7 @@ class GAN_Trainer():
     @tf.function
     def train_step_wgangp_critic(self, real_sig, real_labels):
         generator_inputs = tf.random.normal([self.batch_size, self.noise_dim])
-        generator_class_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 2], dtype=tf.float32))
+        generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size, 1], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
         if self.conditional:
             generator_inputs = tf.concat([generator_inputs, generator_class_inputs], axis=-1)
         epsilon = tf.random.uniform(shape=[self.batch_size, 1, 1], minval=0, maxval=1)
@@ -131,7 +128,7 @@ class GAN_Trainer():
             critic_loss = wgangp_critic_loss(real_out, fake_out, interpolated_gradients)
             classification_loss_real = tf.reduce_mean(tf.keras.losses.kld(real_labels, real_class_pred))
             classification_loss_gen = tf.reduce_mean(tf.keras.losses.kld(generator_class_inputs, fake_class_pred))
-            classification_loss = 0.5 * ((1-self.gen_class_bias_value) * classification_loss_real + self.gen_class_bias_value * classification_loss_gen)
+            classification_loss = (classification_loss_real-0.3)
             if self.conditional:
                 critic_loss += classification_loss
 
@@ -144,7 +141,7 @@ class GAN_Trainer():
     @tf.function
     def train_step_wgangp_generator(self):
         generator_inputs = tf.random.normal([self.batch_size*2, self.noise_dim])
-        generator_class_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size*2, 2], dtype=tf.float32))
+        generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size*2, 1], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
         if self.conditional:
             generator_inputs = tf.concat([generator_inputs, generator_class_inputs], axis=-1)
 
