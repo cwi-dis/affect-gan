@@ -64,8 +64,8 @@ class GAN_Trainer():
         gen_loss, gen_classification_loss, gen_subject_loss = 0, 0, 0
 
         for batch, labels, subject in dataset:
-            labels = tf.one_hot(labels, depth=self.num_classes)
-            subject = tf.one_hot(subject, depth=self.num_subjects)
+            labels = tf.one_hot(tf.cast(labels, tf.int32), depth=self.num_classes)
+            subject = tf.one_hot(tf.cast(subject, tf.int32), depth=self.num_subjects)
             critic_loss, classification_loss, subject_loss = self.train_step_wgangp_critic(batch, labels, subject)
 
             if train_step % self.n_critic == 0:
@@ -81,8 +81,10 @@ class GAN_Trainer():
 
             if train_step % self.save_image_every_n_steps == 0 or train_step == 1:
                 tf.print("Current Train Step: %d, Critic Loss: %3f, Generator Loss: %3f" % (train_step, critic_loss, gen_loss))
-                if self.conditional:
-                    tf.print("BCE Loss: Critic: %3f, Generator: %3f" % (classification_loss, gen_classification_loss))
+                if self.class_conditional:
+                    tf.print("Class Loss: Critic: %3f, Generator: %3f" % (classification_loss, gen_classification_loss))
+                if self.subject_conditional:
+                    tf.print("Subject Loss: Critic: %3f, Generator: %3f" % (subject_loss, gen_subject_loss))
                 gen_signals_0 = self.generator(test_seed_0, training=False)
                 gen_signals_1 = None
                 if self.conditional:

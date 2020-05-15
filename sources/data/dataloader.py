@@ -173,7 +173,7 @@ class Dataloader(object):
             return dataset
 
         if mode == "gan":
-            dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out),subject - 2, subject - 1)))
+            dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
             dataset = dataset.shuffle(buffer_size=300)
             dataset = dataset.repeat()
 
