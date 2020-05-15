@@ -108,7 +108,7 @@ class GAN_Trainer():
     @tf.function
     def train_step_wgangp_critic(self, real_sig, real_labels):
         generator_inputs = tf.random.normal([self.batch_size, self.noise_dim])
-        generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size, 1], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
+        generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
         if self.conditional:
             generator_inputs = tf.concat([generator_inputs, generator_class_inputs], axis=-1)
         epsilon = tf.random.uniform(shape=[self.batch_size, 1, 1], minval=0, maxval=1)
@@ -141,7 +141,7 @@ class GAN_Trainer():
     @tf.function
     def train_step_wgangp_generator(self):
         generator_inputs = tf.random.normal([self.batch_size*2, self.noise_dim])
-        generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size*2, 1], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
+        generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size*2], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
         if self.conditional:
             generator_inputs = tf.concat([generator_inputs, generator_class_inputs], axis=-1)
 
