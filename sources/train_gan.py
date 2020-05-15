@@ -65,10 +65,7 @@ class GAN_Trainer():
 
         for batch, labels, subject in dataset:
             labels = tf.one_hot(labels, depth=self.num_classes)
-            if tf.greater(subject, self.leave_out):
-                subject = tf.one_hot(subject - 2, depth=self.num_subjects)
-            else:
-                subject = tf.one_hot(subject - 1, depth=self.num_subjects)
+            subject = tf.one_hot(subject, depth=self.num_subjects)
             critic_loss, classification_loss, subject_loss = self.train_step_wgangp_critic(batch, labels, subject)
 
             if train_step % self.n_critic == 0:
