@@ -21,7 +21,7 @@ class AttentionNET(tf.keras.Model):
 
         self.attention_layer = AttentionLayer(
             channels_out=4,
-            filters_per_head=3,
+            filters_per_head=2,
             num_attention_heads=2,
             use_positional_encoding=True,
             regularization=tf.keras.regularizers.l2(0.0005),
@@ -56,7 +56,7 @@ class AttentionNET(tf.keras.Model):
 
         self.avg = layers.GlobalAveragePooling1D()
 
-        self.dense_output = layers.Dense(1, activation="sigmoid")
+        self.dense_output = layers.Dense(2, activation="softmax")
 
     def call(self, inputs, training=None, mask=None):
         x = self.downres0(inputs)

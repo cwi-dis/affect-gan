@@ -15,10 +15,10 @@ class GAN_Trainer():
             hparams,
             logdir,
             num_classes,
-            n_signals,
-            leave_out,
-            class_conditional,
-            subject_conditional,
+            n_signals=1,
+            leave_out=1,
+            class_conditional=True,
+            subject_conditional=True,
             train_steps=200000,
             save_image_every_n_steps=1000,
             n_critic=1
@@ -71,24 +71,22 @@ class GAN_Trainer():
             if train_step % self.n_critic == 0:
                 gen_loss, gen_classification_loss, gen_subject_loss = self.train_step_wgangp_generator()
 
-            with self.summary_writer.as_default():
-                tf.summary.scalar("critic_loss", critic_loss, step=train_step)
-                tf.summary.scalar("generator_loss", gen_loss, step=train_step)
-                tf.summary.scalar("classloss.critic", classification_loss, step=train_step)
-                tf.summary.scalar("classloss.generator", gen_classification_loss, step=train_step)
-                tf.summary.scalar("subjectloss.critic", subject_loss, step=train_step)
-                tf.summary.scalar("subjectloss.generator", gen_subject_loss, step=train_step)
+            if train_step % self.save_image_every_n_steps == 0:
+                with self.summary_writer.as_default():
+                    tf.summary.scalar("critic_loss", critic_loss, step=train_step)
+                    tf.summary.scalar("generator_loss", gen_loss, step=train_step)
+                    tf.summary.scalar("classloss.critic", classification_loss, step=train_step)
+                    tf.summary.scalar("classloss.generator", gen_classification_loss, step=train_step)
+                    tf.summary.scalar("subjectloss.critic", subject_loss, step=train_step)
+                    tf.summary.scalar("subjectloss.generator", gen_subject_loss, step=train_step)
 
-            if train_step % self.save_image_every_n_steps == 0 or train_step == 1:
                 tf.print("Current Train Step: %d, Critic Loss: %3f, Generator Loss: %3f" % (train_step, critic_loss, gen_loss))
                 if self.class_conditional:
                     tf.print("Class Loss: Critic: %3f, Generator: %3f" % (classification_loss, gen_classification_loss))
                 if self.subject_conditional:
                     tf.print("Subject Loss: Critic: %3f, Generator: %3f" % (subject_loss, gen_subject_loss))
                 gen_signals_0 = self.generator(test_seed_0, training=False)
-                gen_signals_1 = None
-                if self.conditional:
-                    gen_signals_1 = self.generator(test_seed_1, training=False)
+                gen_signals_1 = self.generator(test_seed_1, training=False)
                 fig = plot_generated_signals(gen_signals_0, gen_signals_1)
                 img = plot_to_image(fig)
                 with self.summary_writer.as_default():
@@ -125,7 +123,7 @@ class GAN_Trainer():
             if train_step > self.train_steps:
                 break
 
-    @tf.function
+    #@tf.function
     def train_step_wgangp_critic(self, real_sig, real_labels, subject):
         generator_inputs = tf.random.normal([self.batch_size, self.noise_dim])
         generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
@@ -158,7 +156,7 @@ class GAN_Trainer():
                 critic_loss += classification_loss_real
 
             if self.subject_conditional:
-                subject_loss_real = self.classification_loss_factor * tf.reduce_mean(tf.keras.losses.kld(generator_subject_inputs, real_subject_pred))
+                subject_loss_real = self.classification_loss_factor * tf.reduce_mean(tf.keras.losses.kld(subject, real_subject_pred))
                 critic_loss += subject_loss_real
 
         critic_gradients = tape.gradient(critic_loss, self.discriminator.trainable_variables)

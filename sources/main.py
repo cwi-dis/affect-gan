@@ -88,7 +88,7 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
 
 
 def hp_sweep_run(logdir, model_name):
-    session_num = 0 
+    session_num = 0
 
     if model_name == "BaseNET":
         for filters in config.HP_FILTERS.domain.values:
@@ -296,7 +296,7 @@ def run_gan(model_name):
     leave_out = 1
     hparams = config.OPT_PARAMS["gan"]
     dataloader = Dataloader(
-        "5000d", ["ecg", "bvp", "rsp"], continuous_labels=False
+        "5000d", ["ecg"], continuous_labels=False
     )
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=leave_out)
     trainer = GAN_Trainer(
@@ -308,7 +308,6 @@ def run_gan(model_name):
         leave_out=leave_out,
         save_image_every_n_steps=250,
         n_critic=5,
-        noise_dim=100,
         train_steps=2000
     )
 
@@ -351,32 +350,44 @@ def run_loso_cv(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
     dataloader = Dataloader(
-        "5000d", ["ecg", "bvp", "rsp", "gsr", "skt"],
+        "5000d", ["ecg"],
         normalized=True,
         continuous_labels=False
     )
-    datagenerator = DatasetGenerator("../Logs/wgan-gp-big/model_gen", batch_size=128).__call__()
+    generator_base_path = "../Logs"
+    datagenerator = DatasetGenerator(batch_size=128)
 
     for out_subject in config.OUT_SUBJECT.domain.values:
+        subject_label = "subject-%d-out" % out_subject
+        eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject)
+
         for data_source in config.TRAIN_DATA.domain.values:
             hparams = {config.OUT_SUBJECT: out_subject,
                        config.TRAIN_DATA: data_source}
-            run_name = "subject-%d-out-%s" % (out_subject, data_source)
+            run_name = "%s-%s" % (subject_label, data_source)
+            if data_source is "real":
+                train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject)
+            else:
+                train_label = data_source.split('_')
+                wgan_path = "loso-wgan-class" if train_label[1] is "cls" else "loso-wgan-class-subject"
+                wgan_path = os.path.join(generator_base_path, wgan_path, subject_label, "model_gen")
+                subj_cond = True if train_label[1] is "subjcls" else False
+                categorical_sampling = True if train_label[2] is "catg" else False
+                train_set = datagenerator(wgan_path,
+                                          class_conditioned=True,
+                                          subject_conditioned=subj_cond,
+                                          categorical_sampling=categorical_sampling,
+                                          no_subject_output=True)
             for rerun in range(config.NUM_RERUNS):
                 print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
                 run_logdir = os.path.join(logdir, run_name, ".%d"%rerun)
-                if data_source is "real":
-                    train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject)
-                else:
-                    train_set = datagenerator
-                eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject)
 
                 if model_name == "AttentionNET":
                     model = AttentionNET(hparams)
 
                 model.compile(
                     optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.5, beta_2=0.9),
-                    loss=[tf.keras.losses.BinaryCrossentropy(label_smoothing=0.1)],
+                    loss=[tf.keras.losses.KLD],
                     metrics=["accuracy"]
                 )
 
@@ -384,8 +395,6 @@ def run_loso_cv(model_name):
 
                 model.fit(train_set, epochs=200, steps_per_epoch=50, validation_data=eval_set, callbacks=callbacks)
 
-                del train_set
-                del eval_set
                 del model
 
 def main():
@@ -395,8 +404,8 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     #single_run(model_name="AttentionNET2")
-    #run_loso_cv(model_name="AttentionNET")
-    run_gan(model_name="wgan-gp")
+    run_loso_cv(model_name="AttentionNET")
+    #run_gan(model_name="wgan-gp")
     #train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 

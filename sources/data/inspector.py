@@ -137,18 +137,24 @@ def plot_signal(signal):
     x = range(len(signal))
     n_signals = signal.shape[-1]
     fig, axs = plt.subplots(n_signals, sharex=True)
-    for i, ax in enumerate(axs):
-        ax.plot(x, signal[:, i])
-    multi = MultiCursor(fig.canvas, axs, color='r', lw=1)
+    if n_signals == 1:
+        axs.plot(x, signal[:, 0])
+    else:
+        for i, ax in enumerate(axs):
+            ax.plot(x, signal[:, i])
+        multi = MultiCursor(fig.canvas, axs, color='r', lw=1)
     plt.show()
 
-def plot_signals(data, generated=False):
-    for signal, label in data.take(10):
-        print(signal)
+def plot_signals(data, generated=False, disc=None):
+    for signal, label, subject in data.take(100):
+        if disc:
+            _, v, labp, subp = disc(signal)
+            print(v)
+            print(np.around(labp, 2))
+            print(np.around(subp, 2))
         print(label)
-        if generated:
-            signal = signal[0]
-        plot_signal(signal)
+        print(np.around(subject, 2))
+        plot_signal(signal[0])
 
 
 def valence_arousal_viz(extended_labels):
@@ -212,13 +218,14 @@ def tsna_visualization(data):
 if __name__ == '__main__':
     os.chdir("./..")
     init_tf_gpus()
-    dataloader = Dataloader("5000d", features=["ecg", "gsr", "skt"],
-                            label=["arousal", "valence", "subject", "video"],
-                            normalized=True, continuous_labels=True)
-    data = dataloader("inspect", 1, leave_out=2)
-    datagenerator = DatasetGenerator("../Logs/loso-wgan-gp20200513-173228/subject-1-out/model_gen",
-                                     batch_size=1).__call__()
-
+    dataloader = Dataloader("5000d", features=["ecg"],
+                            label=["arousal"],
+                            normalized=True, continuous_labels=False)
+    data = dataloader("eval", 1, leave_out=21)
+    datagenerator = DatasetGenerator("../Logs/wgan-gp20200517-135001/model_gen",
+                                     batch_size=1, noise_dim=100,
+                                     class_conditioned=True, subject_conditioned=True).__call__()
+    disc = tf.keras.models.load_model("../Logs/wgan-gp20200517-135001/model_dis")
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
     #print(extended_labels.describe())
@@ -227,7 +234,7 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    plot_signals(datagenerator, generated=True)
+    plot_signals(data, generated=False, disc=None)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)
