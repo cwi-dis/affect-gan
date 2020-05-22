@@ -1,10 +1,10 @@
 from tensorboard.plugins.hparams import api as hp
 
 INPUT_SIZE = 500
-NUM_RERUNS = 5
+NUM_RERUNS = 7 
 GLOBAL_LR = 0.0003
-OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([28]))
 TRAIN_DATA = hp.HParam("Train Data Type", hp.Discrete(["real", "fake_cls_catg", "fake_subjcls_catg", "fake_cls_intp", "fake_subjcls_intp"]))
+OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([3]))#, 8, 12, 14, 19, 23, 28]))
 
 
 # BaseNET hparams
@@ -67,7 +67,7 @@ HP_GAN_BATCHSIZE = hp.HParam("Batchsize", hp.Discrete([8, 16, 32, 64]))
 
 OPT_PARAMS = {
     "BaseNET": {
-        HP_FILTERS: 8,
+        HP_FILTERS: 4,
         HP_DROPOUT: 0.4,
         HP_KERNEL: 5,
         HP_DILATION: 1,

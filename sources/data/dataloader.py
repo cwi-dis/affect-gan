@@ -123,6 +123,7 @@ class Dataloader(object):
                 labels.append(value)
 
         features = tf.stack(features, axis=1)
+        features.set_shape([500, len(self.features)])
 
         return features, labels, video, subject
 
@@ -168,7 +169,7 @@ class Dataloader(object):
 
         if mode == "gan":
             dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
-            dataset = dataset.shuffle(buffer_size=300)
+            dataset = dataset.shuffle(buffer_size=30000)
             dataset = dataset.repeat()
 
         if one_hot:
@@ -179,10 +180,11 @@ class Dataloader(object):
         #    dataset = dataset.map(lambda data, labels: (data, (labels[0], labels[1])))
 
         if mode == "train":
-            dataset = dataset.shuffle(buffer_size=2)
+            dataset = dataset.shuffle(buffer_size=30000)
+            dataset = dataset.repeat()
 
         if mode == "test_eval":
-            return dataset.shuffle(1000, seed=42).batch(500).take(1)
+            return dataset.shuffle(1000, seed=42).batch(500000).take(1)
         
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)
@@ -193,87 +195,12 @@ class Dataloader(object):
 if __name__ == '__main__':
     os.chdir("./..")
     labels = ["ecg"]
-    d = Dataloader("5000d", ["ecg", "bvp"], label=["arousal"],
-                   normalized=False, continuous_labels=False)
-    d = d("eval", 1, 1)
+    d = Dataloader("5000d", ["ecg"], label=["arousal"],
+                   normalized=True, continuous_labels=False)
+    d = d("gan", 64, 3)
 
     i = 0
-    p = 0
     for _, l, s in d:
-        p += l
         i += 1
-
-    print(p/i)
     print(i)
 
-    #with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "rb") as handle:
-    #    subj_means = pd.DataFrame.from_dict(pickle.load(handle)).astype("float32")
-    #with open("../Dataset/CASE_dataset/stats/subj_minmax.pickle", "rb") as handle:
-    #    subj_minmax = pd.DataFrame.from_dict(pickle.load(handle)).astype("float32")
-#
-    #print("Yes")
-    #with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "rb") as f:
-    #    dmean = pickle.load(f)
-    #with open("../Dataset/CASE_dataset/stats/subj_max.pickle", "rb") as f:
-    #    dmax = pickle.load(f)
-    #with open("../Dataset/CASE_dataset/stats/subj_min.pickle", "rb") as f:
-    #    dmin = pickle.load(f)
-#
-    #dabsmax = defaultdict(di)
-#
-    #for subject in range(1, 31):
-    #    for label in labels:
-    #        dabsmax[subject][label] = max(np.abs(dmax[subject][label]), np.abs(dmin[subject][label]))
-#
-#
-    #with open("../Dataset/CASE_dataset/stats/subj_minmax.pickle", "wb") as f:
-    #    pickle.dump(dabsmax, f)
-
-    #with open("../Dataset/CASE_dataset/stats/mean.pickle", "rb") as f:
-    #    dmean = pickle.load(f)
-    #with open("../Dataset/CASE_dataset/stats/max.pickle", "rb") as f:
-    #    dmax = pickle.load(f)
-    #with open("../Dataset/CASE_dataset/stats/min.pickle", "rb") as f:
-    #    dmin = pickle.load(f)
-#
-    #dmeanf = defaultdict(di)
-    #dmaxf = defaultdict(di)
-    #dminf = defaultdict(di)
-#
-    #for subject in range(1, 31):
-    #    for label in labels:
-    #        dmeanf[subject][label] = np.mean(dmean[subject][label])
-#
-    #        max_cutoff = np.mean(dmax[subject][label]) + 2 * np.std(dmax[subject][label])
-    #        dmaxf[subject][label] = np.max([mx for mx in dmax[subject][label] if mx <= max_cutoff]) - dmeanf[subject][label]
-#
-    #        min_cutoff = np.mean(dmin[subject][label]) - 2 * np.std(dmin[subject][label])
-    #        dminf[subject][label] = np.min([mn for mn in dmin[subject][label] if mn >= min_cutoff]) - dmeanf[subject][label]
-#
-    #with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "wb") as f:
-    #    pickle.dump(dmeanf, f)
-    #with open("../Dataset/CASE_dataset/stats/subj_max.pickle", "wb") as f:
-    #    pickle.dump(dmaxf, f)
-    #with open("../Dataset/CASE_dataset/stats/subj_min.pickle", "wb") as f:
-    #    pickle.dump(dminf, f)
-    #dmean = defaultdict(dl)
-    #dmin = defaultdict(dl)
-    #dmax = defaultdict(dl)
-#
-    #for data, subject in d:
-    #    s = int(subject.numpy()[0])
-    #    mean = tf.reduce_mean(data, axis=0).numpy()
-    #    min = tf.reduce_min(data, axis=0).numpy()
-    #    max = tf.reduce_max(data, axis=0).numpy()
-#
-    #    for i, l in enumerate(labels):
-    #        dmean[s][l].append(mean[i])
-    #        dmin[s][l].append(min[i])
-    #        dmax[s][l].append(max[i])
-#
-    #with open("../Dataset/CASE_dataset/stats/mean.pickle", "wb") as f:
-    #    pickle.dump(dmean, f)
-    #with open("../Dataset/CASE_dataset/stats/max.pickle", "wb") as f:
-    #    pickle.dump(dmax, f)
-    #with open("../Dataset/CASE_dataset/stats/min.pickle", "wb") as f:
-    #    pickle.dump(dmin, f)

@@ -293,10 +293,11 @@ def single_run(model_name):
 def run_gan(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", model_name + run_id)
-    leave_out = 1
+    leave_out = 3 
     hparams = config.OPT_PARAMS["gan"]
     dataloader = Dataloader(
-        "5000d", ["ecg"], continuous_labels=False
+        "5000d", ["ecg"], continuous_labels=False,
+        normalized=True
     )
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=leave_out)
     trainer = GAN_Trainer(
@@ -305,10 +306,13 @@ def run_gan(model_name):
         hparams=hparams,
         logdir=logdir,
         num_classes=2,
+        n_signals=1,
         leave_out=leave_out,
-        save_image_every_n_steps=250,
+        class_conditional=True,
+        subject_conditional=True,
+        save_image_every_n_steps=1500,
         n_critic=5,
-        train_steps=2000
+        train_steps=200000
     )
 
     trainer.train(dataset=dataset)
@@ -319,7 +323,7 @@ def train_loso_gans(model_name):
     hparams = config.OPT_PARAMS["gan"]
 
     dataloader = Dataloader(
-        "5000d", ["ecg", "bvp", "rsp"],
+        "5000d", ["ecg"],
         normalized=True,
         continuous_labels=False
     )
@@ -327,7 +331,7 @@ def train_loso_gans(model_name):
     for out_subject in config.OUT_SUBJECT.domain.values:
         run_name = "subject-%d-out" % out_subject
         run_logdir = os.path.join(logdir, run_name)
-
+        tf.print("Training GAN sans subject %d." % out_subject)
         dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=out_subject)
         trainer = GAN_Trainer(
             mode=model_name,
@@ -335,10 +339,13 @@ def train_loso_gans(model_name):
             hparams=hparams,
             logdir=run_logdir,
             num_classes=2,
-            save_image_every_n_steps=1000,
+            n_signals=1,
+            leave_out=out_subject,
+            class_conditional=True,
+            subject_conditional=False,
+            save_image_every_n_steps=1500,
             n_critic=5,
-            noise_dim=125,
-            train_steps=120000
+            train_steps=150000
         )
 
         trainer.train(dataset=dataset)
@@ -404,8 +411,8 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     #single_run(model_name="AttentionNET2")
-    run_loso_cv(model_name="AttentionNET")
-    #run_gan(model_name="wgan-gp")
+    #run_loso_cv(model_name="AttentionNET")
+    run_gan(model_name="wgan-gp")
     #train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="AttentionNET")
 

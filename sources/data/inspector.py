@@ -66,7 +66,7 @@ def plot_confusion_matrix(cm, class_names):
     return figure
 
 def plot_generated_signals(signals_0, signals_1):
-    n_samples=3#len(signals_0)
+    n_samples=5#len(signals_0)
     x = range(len(signals_0[0]))
     n_signals = 1 if signals_1 is None else 2
     fig, axs = plt.subplots(n_samples, n_signals, sharex=True)
@@ -74,8 +74,8 @@ def plot_generated_signals(signals_0, signals_1):
         if n_signals == 1:
             axs[sig].plot(x, signals_0[sig, :, 0])
         else:
-            axs[sig, 0].plot(x, signals_0[0, :, sig])
-            axs[sig, 1].plot(x, signals_1[0, :, sig])
+            axs[sig, 0].plot(x, signals_0[sig, :, 0])
+            axs[sig, 1].plot(x, signals_1[sig, :, 0])
     plt.tight_layout()
     return fig
 

@@ -38,11 +38,11 @@ class GAN_Trainer():
 
         self.discriminator = Discriminator(self.class_conditional, self.subject_conditional, hparams)
         self.generator = Generator(n_signals=n_signals)
-        dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000, 0.75, staircase=True)
-        gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000/n_critic, 0.75, staircase=True)
         self.classification_loss_factor = 0.25 if (self.class_conditional and self.subject_conditional) else 0.5
-        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.9)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.5, beta_2=0.9)
+        dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.0008, 50000, 0.8)
+        gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000/n_critic, 0.8)
+        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.99)
+        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.9, beta_2=0.99)
         self.train = self.train_vanilla if mode is "vanilla_gan" else self.train_wgangp
 
         self.discriminator_path = os.path.join(logdir, "model_dis")
@@ -62,10 +62,9 @@ class GAN_Trainer():
 
         train_step = 1
         gen_loss, gen_classification_loss, gen_subject_loss = 0, 0, 0
-
         for batch, labels, subject in dataset:
-            labels = tf.one_hot(tf.cast(labels, tf.int32), depth=self.num_classes)
-            subject = tf.one_hot(tf.cast(subject, tf.int32), depth=self.num_subjects)
+            labels = tf.squeeze(tf.one_hot(tf.cast(labels, tf.int32), depth=self.num_classes))
+            subject = tf.squeeze(tf.one_hot(tf.cast(subject, tf.int32), depth=self.num_subjects))
             critic_loss, classification_loss, subject_loss = self.train_step_wgangp_critic(batch, labels, subject)
 
             if train_step % self.n_critic == 0:
@@ -91,6 +90,10 @@ class GAN_Trainer():
                 img = plot_to_image(fig)
                 with self.summary_writer.as_default():
                     tf.summary.image("Generated Signals", img, step=train_step)
+
+            if train_step % 50000 == 0:
+                self.discriminator.save(os.path.join(self.discriminator_path, "%d"%train_step))
+                self.generator.save(os.path.join(self.generator_path, "%d"%train_step))
 
             train_step += 1
             if train_step > self.train_steps:
@@ -128,6 +131,8 @@ class GAN_Trainer():
         generator_inputs = tf.random.normal([self.batch_size, self.noise_dim])
         generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
         generator_subject_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=self.num_subjects, dtype=tf.int32), depth=self.num_subjects)
+        #generator_class_inputs = real_labels
+        #generator_subject_inputs = subject
         if self.class_conditional:
             generator_inputs = tf.concat([generator_inputs, generator_class_inputs], axis=-1)
         if self.subject_conditional:
@@ -152,12 +157,12 @@ class GAN_Trainer():
             classification_loss_real = 0
             subject_loss_real = 0
             if self.class_conditional:
-                classification_loss_real = self.classification_loss_factor * tf.reduce_mean(tf.keras.losses.kld(real_labels, real_class_pred))
-                critic_loss += classification_loss_real
+                classification_loss_real = tf.reduce_mean(tf.keras.losses.kld(real_labels, real_class_pred))
+                critic_loss += 0.75 * classification_loss_real
 
             if self.subject_conditional:
-                subject_loss_real = self.classification_loss_factor * tf.reduce_mean(tf.keras.losses.kld(subject, real_subject_pred))
-                critic_loss += subject_loss_real
+                subject_loss_real = tf.reduce_mean(tf.keras.losses.kld(subject, real_subject_pred))
+                critic_loss += 0.01 * subject_loss_real
 
         critic_gradients = tape.gradient(critic_loss, self.discriminator.trainable_variables)
         self.discriminator_optimizer.apply_gradients(zip(critic_gradients, self.discriminator.trainable_variables))
@@ -184,12 +189,12 @@ class GAN_Trainer():
             subject_loss = 0
 
             if self.class_conditional:
-                classification_loss = self.classification_loss_factor * tf.reduce_mean(tf.keras.losses.kld(generator_class_inputs, class_pred))
-                fake_critic_loss += classification_loss
+                classification_loss = tf.reduce_mean(tf.keras.losses.kld(generator_class_inputs, class_pred))
+                fake_critic_loss += 0.8 * classification_loss
 
             if self.subject_conditional:
-                subject_loss = self.classification_loss_factor * tf.reduce_mean(tf.keras.losses.kld(generator_subject_inputs, subject_pred))
-                fake_critic_loss += subject_loss
+                subject_loss = tf.reduce_mean(tf.keras.losses.kld(generator_subject_inputs, subject_pred))
+                fake_critic_loss += 0.2 * subject_loss
 
         generator_gradients = gen_tape.gradient(fake_critic_loss, self.generator.trainable_variables)
         self.generator_optimizer.apply_gradients(zip(generator_gradients, self.generator.trainable_variables))
