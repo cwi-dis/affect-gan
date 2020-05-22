@@ -126,7 +126,7 @@ class Dataloader(object):
 
         return features, labels, video, subject
 
-    def __call__(self, mode, batch_size=64, leave_out=None):
+    def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False):
 
         modes = ["train", "test", "eval", "inspect", "test_eval", "gan", "cgan"]
         if mode not in modes:
@@ -156,23 +156,23 @@ class Dataloader(object):
         dataset = dataset.filter(lambda _, __, video, ___: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video, subject: (features, labels, subject))
         if mode is not "inspect":
-            dataset = dataset.filter(lambda _, label, __: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.01)))
+            dataset = dataset.filter(lambda _, label, __: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.05)))
         if self.normalized:
             dataset = dataset.filter(lambda features, _, __: tf.less_equal(tf.reduce_max(features), 1) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1))
-        dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
 
         if not self.continuous_labels:
             dataset = dataset.map(with_categoric_labels)
 
         if mode is "inspect":
             dataset = dataset.shuffle(buffer_size=10000)
-            return dataset
 
         if mode == "gan":
+            dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
             dataset = dataset.shuffle(buffer_size=300)
             dataset = dataset.repeat()
 
-        dataset = dataset.map(lambda data, label, subject: (data, tf.one_hot(tf.cast(label, tf.int32), depth=2)))
+        if one_hot:
+            dataset = dataset.map(lambda data, label, subject: (data, tf.one_hot(tf.cast(label, tf.int32), depth=2)))
 
         #Fix for dual output classification
         #if len(self.labels) == 2:
@@ -192,15 +192,18 @@ class Dataloader(object):
 
 if __name__ == '__main__':
     os.chdir("./..")
-    labels = ["ecg", "bvp", "gsr", "skt", "rsp"]
-    d = Dataloader("5000d", ["ecg", "bvp", "gsr", "skt", "rsp"], label=["arousal"],
-                   normalized=True, continuous_labels=False)
-    d = d("train", 1, 2)
+    labels = ["ecg"]
+    d = Dataloader("5000d", ["ecg", "bvp"], label=["arousal"],
+                   normalized=False, continuous_labels=False)
+    d = d("eval", 1, 1)
 
     i = 0
-    for _, l in d.take(2):
-        print(l)
+    p = 0
+    for _, l, s in d:
+        p += l
+        i += 1
 
+    print(p/i)
     print(i)
 
     #with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "rb") as handle:

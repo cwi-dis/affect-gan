@@ -218,13 +218,13 @@ def tsna_visualization(data):
 if __name__ == '__main__':
     os.chdir("./..")
     init_tf_gpus()
-    dataloader = Dataloader("5000d", features=["ecg"],
+    dataloader = Dataloader("5000d", features=["ecg", "gsr"],
                             label=["arousal"],
                             normalized=True, continuous_labels=False)
-    data = dataloader("eval", 1, leave_out=21)
-    datagenerator = DatasetGenerator("../Logs/wgan-gp20200517-135001/model_gen",
-                                     batch_size=1, noise_dim=100,
-                                     class_conditioned=True, subject_conditioned=True).__call__()
+    data = dataloader("inspect", 1, leave_out=2)
+    #datagenerator = DatasetGenerator("../Logs/wgan-gp20200517-135001/model_gen",
+    #                                 batch_size=1, noise_dim=100,
+    #                                 class_conditioned=True, subject_conditioned=True).__call__()
     disc = tf.keras.models.load_model("../Logs/wgan-gp20200517-135001/model_dis")
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)

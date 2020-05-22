@@ -11,60 +11,49 @@ class AttentionNET(tf.keras.Model):
         super(AttentionNET, self).__init__()
 
         self.downres0 = DownResLayer(
-            channels_out=4,
+            channels_out=2,
             dropout_rate=0.5,
-            kernel_size=4,
+            kernel_size=5,
             normalization="layer",
             first_layer=True,
             regularization=tf.keras.regularizers.l2(0.0005)
         )
 
+        self.max_pool0 = layers.MaxPool1D(pool_size=2, strides=2)
+
         self.attention_layer = AttentionLayer(
-            channels_out=4,
+            channels_out=2,
             filters_per_head=2,
-            num_attention_heads=2,
+            num_attention_heads=1,
             use_positional_encoding=True,
             regularization=tf.keras.regularizers.l2(0.0005),
-            kernel_size=4,
+            kernel_size=6,
         )
 
+        self.max_pool1 = layers.MaxPool1D(pool_size=2, strides=2)
+
         self.downres1 = DownResLayer(
-            channels_out=3,
+            channels_out=4,
             dropout_rate=0.25,
             kernel_size=6,
             normalization="layer",
-            downsample_rate=3,
+            downsample_rate=2,
             regularization=tf.keras.regularizers.l2(0.0005)
         )
 
-        self.downres_2 = DownResLayer(
-            channels_out=2,
-            dropout_rate=0.0,
-            kernel_size=6,
-            normalization="layer",
-            downsample_rate=3,
-            regularization=tf.keras.regularizers.l2(0.0005)
-        )
-
-        self.downres_3 = DownResLayer(
-            channels_out=6,
-            dropout_rate=0.0,
-            kernel_size=3,
-            normalization="layer",
-            downsample_rate=3
-        )
-
-        self.avg = layers.GlobalAveragePooling1D()
+        self.final_pool = layers.MaxPool1D(pool_size=2, strides=2)
+        self.dense_dropout = layers.Dropout(0.5)
 
         self.dense_output = layers.Dense(2, activation="softmax")
 
     def call(self, inputs, training=None, mask=None):
         x = self.downres0(inputs)
+        x = self.max_pool0(x)
         x = self.attention_layer(x)
+        x = self.max_pool1(x)
         x = self.downres1(x)
-        x = self.downres_2(x)
-#        x = self.downres_3(x)
-        x = self.avg(x)
+        x = self.final_pool(x)
+
         return self.dense_output(x)
 
     def model(self):
