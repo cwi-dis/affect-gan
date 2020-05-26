@@ -1,4 +1,5 @@
 import tensorflow as tf
+import numpy as np
 import os
 #from main import init_tf_gpus
 #from models.TAGAN import *
@@ -17,6 +18,8 @@ class _DataGenerator:
             filepath=self.file_path
         )
 
+        self.last_seed = None
+
     def __call__(self, *args, **kwargs):
         while True:
             seed = tf.random.normal(shape=[self.batch_size, self.noise_dim])
@@ -33,22 +36,50 @@ class _DataGenerator:
             gen_sig = self.generator(seed, training=False)
             yield gen_sig, generator_class_inputs, generator_subject_inputs
 
+    def get(self, arousal_seed, subject_seed, noise_seed_reuse):
+        if noise_seed_reuse and self.last_seed is not None:
+            seed = self.last_seed
+        else:
+            seed = tf.random.normal(shape=[1, self.noise_dim])
+            self.last_seed = seed
+        if self.class_conditioned:
+            seed = tf.concat([seed, tf.cast(arousal_seed, tf.float32)], axis=-1)
+        if self.subject_conditioned:
+            seed = tf.concat([seed, tf.cast(subject_seed, tf.float32)], axis=-1)
+
+        gen_sig = self.generator(seed, training=False)
+
+        return tf.squeeze(gen_sig)
+
 
 class DatasetGenerator:
-    def __init__(self, batch_size):
+    def __init__(self, batch_size, generator_path, class_conditioned, subject_conditioned, categorical_sampling, no_subject_output=False,):
         self.batch_size = batch_size
+        self.no_subject_output = no_subject_output
 
-    def __call__(self, generator_path, class_conditioned, subject_conditioned, categorical_sampling, no_subject_output=False, *args, **kwargs):
         noise_dim = 100 if subject_conditioned else 129
+        self.generator = _DataGenerator(generator_path, batch_size, noise_dim, class_conditioned, subject_conditioned, categorical_sampling)
+
+    def __call__(self, *args, **kwargs):
         datagenerator = tf.data.Dataset.from_generator(
-            generator=_DataGenerator(generator_path, self.batch_size, noise_dim, class_conditioned, subject_conditioned, categorical_sampling),
+            generator= self.generator,
             output_types=(tf.float32, tf.float32, tf.float32),
             output_shapes=((self.batch_size, 500, 1), (self.batch_size, 2), (self.batch_size, 29))
         )
 
-        if no_subject_output:
+        if self.no_subject_output:
             datagenerator = datagenerator.map(lambda signal, label, subject: (signal, label))
+
         return datagenerator
+
+    def get(self, arousal_value, subject_value, sub0, sub1, noise_seed_reuse=False):
+        arousal_seed = tf.expand_dims([arousal_value, 1-arousal_value], axis=0)
+        subject_seed = np.zeros(29)
+        subject_seed[sub0] = subject_value
+        subject_seed[sub1] = 1 - subject_value
+        subject_seed = tf.expand_dims(subject_seed, axis=0)
+
+        return self.generator.get(arousal_seed, subject_seed, noise_seed_reuse)
 
 
 def _main():

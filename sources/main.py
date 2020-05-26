@@ -151,7 +151,7 @@ def hp_sweep_run(logdir, model_name):
                                     config.HP_LR_CL: lr
                                 }
 
-                                #dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
+                                # dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
                                 run_name = "run-%d" % session_num
                                 run_logdir = os.path.join(logdir, run_name)
                                 print('--- Starting trial: %s' % run_name)
@@ -239,7 +239,7 @@ def hp_sweep_run(logdir, model_name):
                             run_logdir = os.path.join(logdir, run_name)
                             print('--- Starting trial: %s' % run_name)
                             print({h.name: hparams[h] for h in hparams})
-                            print("--- Restart %d of %d" % (r+1, config.RUNS))
+                            print("--- Restart %d of %d" % (r + 1, config.RUNS))
                             run(model_name, hparams, run_logdir, run_name)
                             session_num += 1
 
@@ -258,7 +258,7 @@ def hp_sweep_run(logdir, model_name):
                         run_logdir = os.path.join(logdir, run_name)
                         print('--- Starting trial: %s' % run_name)
                         print({h.name: hparams[h] for h in hparams})
-                        print("--- Restart %d of %d" % (r+1, config.RUNS))
+                        print("--- Restart %d of %d" % (r + 1, config.RUNS))
                         run(model_name, hparams, run_logdir, run_name)
                     session_num += 1
 
@@ -278,7 +278,7 @@ def hp_sweep_run(logdir, model_name):
                         run_logdir = os.path.join(logdir, run_name)
                         print('--- Starting trial: %s' % run_name)
                         print({h.name: hparams[h] for h in hparams})
-                        print("--- Restart %d of %d" % (r+1, config.RUNS))
+                        print("--- Restart %d of %d" % (r + 1, config.RUNS))
                         run(model_name, hparams, run_logdir, run_name)
                     session_num += 1
 
@@ -293,7 +293,7 @@ def single_run(model_name):
 def run_gan(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", model_name + run_id)
-    leave_out = 3 
+    leave_out = 3
     hparams = config.OPT_PARAMS["gan"]
     dataloader = Dataloader(
         "5000d", ["ecg"], continuous_labels=False,
@@ -316,6 +316,7 @@ def run_gan(model_name):
     )
 
     trainer.train(dataset=dataset)
+
 
 def train_loso_gans(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -353,6 +354,7 @@ def train_loso_gans(model_name):
         del dataset
         del trainer
 
+
 def run_loso_cv(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
@@ -362,7 +364,6 @@ def run_loso_cv(model_name):
         continuous_labels=False
     )
     generator_base_path = "../Logs"
-    datagenerator = DatasetGenerator(batch_size=128)
 
     for out_subject in config.OUT_SUBJECT.domain.values:
         subject_label = "subject-%d-out" % out_subject
@@ -380,14 +381,15 @@ def run_loso_cv(model_name):
                 wgan_path = os.path.join(generator_base_path, wgan_path, subject_label, "model_gen")
                 subj_cond = True if train_label[1] is "subjcls" else False
                 categorical_sampling = True if train_label[2] is "catg" else False
-                train_set = datagenerator(wgan_path,
-                                          class_conditioned=True,
-                                          subject_conditioned=subj_cond,
-                                          categorical_sampling=categorical_sampling,
-                                          no_subject_output=True)
+                train_set = DatasetGenerator(batch_size=128,
+                                             generator_path=wgan_path,
+                                             class_conditioned=True,
+                                             subject_conditioned=subj_cond,
+                                             categorical_sampling=categorical_sampling,
+                                             no_subject_output=True).__call__()
             for rerun in range(config.NUM_RERUNS):
                 print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
-                run_logdir = os.path.join(logdir, run_name, ".%d"%rerun)
+                run_logdir = os.path.join(logdir, run_name, ".%d" % rerun)
 
                 if model_name == "AttentionNET":
                     model = AttentionNET(hparams)
@@ -404,40 +406,43 @@ def run_loso_cv(model_name):
 
                 del model
 
+            del train_set
+
+
 def main():
     init_tf_gpus()
 
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", run_id)
 
-    #single_run(model_name="AttentionNET2")
-    #run_loso_cv(model_name="AttentionNET")
+    # single_run(model_name="AttentionNET2")
+    # run_loso_cv(model_name="AttentionNET")
     run_gan(model_name="wgan-gp")
-    #train_loso_gans(model_name="wgan-gp")
-    #hp_sweep_run(logdir, model_name="AttentionNET")
+    # train_loso_gans(model_name="wgan-gp")
+    # hp_sweep_run(logdir, model_name="AttentionNET")
 
 
 def summary():
     hparams = config.OPT_PARAMS["gan"]
-    #hparams = {
+    # hparams = {
     #    config.HP_DEEP_LAYERS: 4,
     #    config.HP_DEEP_CHANNELS: 2,
     #    config.HP_DEEP_KERNEL_SIZE: 3,
     #    config.HP_LOSS_TYPE: "BCE"
-    #}
+    # }
 
-    #ResNET(num_classes=1).model().summary()
-    #SimpleLSTM(hparams).model().summary()
-    #BaseNET1(hparams).model().summary()
-    #ConvLSTM(hparams).model().summary()
-    #ChannelCNN(hparams, 5).model().summary()
-    #DeepCNN(hparams).model().summary()
-    #LateFuseCNN(hparams, 5).model().summary()
-    #AttentionNET(hparams).model().summary()
+    # ResNET(num_classes=1).model().summary()
+    # SimpleLSTM(hparams).model().summary()
+    # BaseNET1(hparams).model().summary()
+    # ConvLSTM(hparams).model().summary()
+    # ChannelCNN(hparams, 5).model().summary()
+    # DeepCNN(hparams).model().summary()
+    # LateFuseCNN(hparams, 5).model().summary()
+    # AttentionNET(hparams).model().summary()
     Generator(n_signals=5).model().summary()
     Discriminator(conditional=True).model().summary()
 
 
 if __name__ == '__main__':
-    #summary()
+    # summary()
     main()

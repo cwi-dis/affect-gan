@@ -2,6 +2,7 @@ import numpy as np
 import os
 import io
 import pandas as pd
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import seaborn as sns
 import tensorflow as tf
@@ -12,7 +13,7 @@ from sklearn.manifold import TSNE
 from data.dataloader import Dataloader
 from data.datagenerator import DatasetGenerator
 from models.Blocks import get_positional_encoding
-from matplotlib.widgets import MultiCursor
+from matplotlib.widgets import MultiCursor, Slider, Button, TextBox
 from util.misc import init_tf_gpus
 
 color_pallete = ["#e6194B", "#ffe119", "#4363d8", "#f58231", "#42d4f4", "#f032e6", "#fabebe", "#469990", "#e6beff", "#9A6324", "#000000", "#800000", "#aaffc3", "#000075", "#a9a9a9", "#ffffff", "#3cb44b"]
@@ -214,6 +215,81 @@ def tsna_visualization(data):
     ax.legend()
     plt.show()
 
+def interactive_signal_plot(datagen):
+    mpl.rcParams['font.family'] = 'Avenir'
+    mpl.rcParams['font.size'] = 8
+    mpl.rcParams['axes.linewidth'] = 2
+    mpl.rcParams['axes.spines.top'] = False
+    mpl.rcParams['axes.spines.right'] = False
+    mpl.rcParams['xtick.major.size'] = 10
+    mpl.rcParams['xtick.major.width'] = 2
+    mpl.rcParams['ytick.major.size'] = 10
+    mpl.rcParams['ytick.major.width'] = 2
+    fig = plt.figure(figsize=(8, 4))
+
+    ax = fig.add_subplot(111)
+    fig.subplots_adjust(bottom=0.2, top=0.75)
+
+    ax_subject = fig.add_axes([0.3, 0.85, 0.4, 0.05])
+    ax_subject.spines['top'].set_visible(True)
+    ax_subject.spines['right'].set_visible(True)
+
+    ax_arousal = fig.add_axes([0.3, 0.92, 0.4, 0.05])
+    ax_arousal.spines['top'].set_visible(True)
+    ax_arousal.spines['right'].set_visible(True)
+
+    ax_seed_button = fig.add_axes([0.75, 0.85, 0.1, 0.08])
+    ax_seed_button.spines['top'].set_visible(True)
+    ax_seed_button.spines['right'].set_visible(True)
+
+    ax_text0 = fig.add_axes([0.1, 0.92, 0.1, 0.05])
+    ax_text0.spines['top'].set_visible(True)
+    ax_text0.spines['right'].set_visible(True)
+
+    ax_text1 = fig.add_axes([0.1, 0.85, 0.1, 0.05])
+    ax_text1.spines['top'].set_visible(True)
+    ax_text1.spines['right'].set_visible(True)
+
+    slider_subject = Slider(ax=ax_subject, label='Subject ', valmin=0, valmax=1.0, valinit=0,
+                 valfmt='%1.2f', valstep=0.05, facecolor='#cc7000')
+    slider_arousal = Slider(ax=ax_arousal, label='Arousal ', valmin=0, valmax=1.0, valinit=0,
+                 valfmt='%1.2f', valstep=0.05, facecolor='#cc7000')
+    seed_button = Button(ax=ax_seed_button, label="New Seed")
+    sub_0_text = TextBox(ax=ax_text0, label="Sub. 0 ID", initial="4", label_pad=0.05)
+    sub_1_text = TextBox(ax=ax_text1, label="Sub. 1 ID", initial="18", label_pad=0.05)
+
+    sig = datagen.get(arousal_value=0, subject_value=0, sub0=4, sub1=18)
+
+    scale = range(500)
+    fig_sig, = ax.plot(scale, sig)
+
+    def slider_update(val):
+        arousal_val = slider_arousal.val
+        subject_val = slider_subject.val
+        sub0 = int(sub_0_text.text)
+        sub1 = int(sub_1_text.text)
+        new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=True)
+        fig_sig.set_data(scale, new_sig)
+        fig.canvas.draw_idle()
+
+    def seed_button_click(v):
+        arousal_val = slider_arousal.val
+        subject_val = slider_subject.val
+        sub0 = int(sub_0_text.text)
+        sub1 = int(sub_1_text.text)
+        new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=False)
+        fig_sig.set_data(scale, new_sig)
+        fig.canvas.draw_idle()
+
+
+    slider_subject.on_changed(slider_update)
+    slider_arousal.on_changed(slider_update)
+    seed_button.on_clicked(seed_button_click)
+    sub_0_text.on_submit(slider_update)
+    sub_1_text.on_submit(slider_update)
+
+    plt.show()
+
 
 if __name__ == '__main__':
     os.chdir("./..")
@@ -221,11 +297,14 @@ if __name__ == '__main__':
     dataloader = Dataloader("5000d", features=["ecg", "gsr"],
                             label=["arousal"],
                             normalized=True, continuous_labels=False)
-    data = dataloader("inspect", 1, leave_out=2)
-    #datagenerator = DatasetGenerator("../Logs/wgan-gp20200517-135001/model_gen",
-    #                                 batch_size=1, noise_dim=100,
-    #                                 class_conditioned=True, subject_conditioned=True).__call__()
-    disc = tf.keras.models.load_model("../Logs/wgan-gp20200517-135001/model_dis")
+    data = dataloader("inspect", 1, leave_out=6)
+    datagenerator = DatasetGenerator(batch_size=1,
+                                     generator_path="../Logs/wgan-gp-test/model_gen/200000",
+                                     class_conditioned=True,
+                                     subject_conditioned=True,
+                                     categorical_sampling=False,
+                                     no_subject_output=True)
+    #disc = tf.keras.models.load_model("../Logs/wgan-gp20200517-135001/model_dis")
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
     #print(extended_labels.describe())
@@ -234,7 +313,8 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    plot_signals(data, generated=False, disc=None)
+    #plot_signals(data, generated=False, disc=None)
+    interactive_signal_plot(datagenerator)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)
