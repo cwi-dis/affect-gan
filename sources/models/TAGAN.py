@@ -10,15 +10,15 @@ class Generator(tf.keras.Model):
         super(Generator, self).__init__(*args, **kwargs)
         self.n_multiplier = 2
         self.expand = layers.Dense(units=125 * 30, use_bias=False)
-        self.up_0 = UpResLayer(channels_out=30, kernel_size=6, dropout_rate=0.0, normalization=None)
+        self.up_0 = UpResLayer(channels_out=30, kernel_size=6, dropout_rate=0.2, normalization=None)
         self.non_local = AttentionLayer(
             name="att0",
             channels_out=30,
             kernel_size=6,
             filters_per_head=10,
             num_attention_heads=3,
-            use_positional_encoding=True)
-        self.up_1 = UpResLayer(channels_out=15, kernel_size=8, dropout_rate=0.0, normalization=None)
+            use_positional_encoding=False)
+        self.up_1 = UpResLayer(channels_out=15, kernel_size=8, dropout_rate=0.2, normalization=None)
         self.act = layers.LeakyReLU(alpha=0.2)
         self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=10, padding="same")
 
@@ -45,24 +45,24 @@ class Discriminator(tf.keras.Model):
         self.out_channels = 24
         self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=5, padding="same")
         self.downres0 = DownResLayer(
-            name="att0",
             channels_out=self.out_channels // 3,
             dropout_rate=0.5,
-            kernel_size=4,
+            kernel_size=5,
             first_layer=True,
             normalization="layer"
         )
         self.non_local = AttentionLayer(
+            name="att0",
             channels_out=self.out_channels // 3,
             filters_per_head=8,
             num_attention_heads=2,
-            kernel_size=4,
+            kernel_size=5,
             use_positional_encoding=True,
         )
         self.downres1 = DownResLayer(
             channels_out=self.out_channels // 2,
             kernel_size=6,
-            dropout_rate=0.2,
+            dropout_rate=0.25,
             normalization="layer"
         )
         self.downres2 = DownResLayer(

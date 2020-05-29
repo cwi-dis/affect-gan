@@ -20,7 +20,6 @@ def window_dataset(dataset):
     windows = window_ds.flat_map(sub_to_batch)
     return windows
 
-
 @tf.function
 def with_categoric_labels(features, label, subject, threshold=5.0):
     return features, math_ops.cast(label > threshold, label.dtype), subject
@@ -149,7 +148,7 @@ class Dataloader(object):
         else:
             files = [glob.glob("%s*.tfrecord" % self.path)]
 
-        print(f"Files loaded in mode %s: {files}")
+        #print("Files loaded in mode %s:"%files)
         files = tf.data.Dataset.from_tensor_slices(files)
 
         dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE, cycle_length=25, block_length=128)
@@ -167,7 +166,7 @@ class Dataloader(object):
         if mode is "inspect":
             dataset = dataset.shuffle(buffer_size=10000)
 
-        if mode == "gan":
+        if mode is "gan":
             dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
             dataset = dataset.shuffle(buffer_size=30000)
             dataset = dataset.repeat()

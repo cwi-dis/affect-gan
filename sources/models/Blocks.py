@@ -10,8 +10,8 @@ class DownResBlock(layers.Layer):
         self.norm0 = None
         self.norm1 = None
         if normalization is "layer":
-            self.norm0 = layers.LayerNormalization(axis=[1,2])
-            self.norm1 = layers.LayerNormalization(axis=[1,2])
+            self.norm0 = layers.LayerNormalization(axis=[1])
+            self.norm1 = layers.LayerNormalization(axis=[1])
         elif normalization is "batch":
             self.norm0 = layers.BatchNormalization()
             self.norm1 = layers.BatchNormalization()
@@ -76,8 +76,8 @@ class UpResBlock(layers.Layer):
         self.norm0 = None
         self.norm1 = None
         if normalization is "layer":
-            self.norm0 = layers.LayerNormalization(axis=[1,2])
-            self.norm1 = layers.LayerNormalization(axis=[1,2])
+            self.norm0 = layers.LayerNormalization(axis=[1])
+            self.norm1 = layers.LayerNormalization(axis=[1])
         elif normalization is "batch":
             self.norm0 = layers.BatchNormalization()
             self.norm1 = layers.BatchNormalization()
@@ -168,7 +168,7 @@ class AttentionLayer(layers.Layer):
             kernel_regularizer=regularization
         )
 
-        self.gamma = tf.Variable(initial_value=0.01, trainable=True, name="gamma")
+        self.gamma = tf.Variable(initial_value=0.2, trainable=True, name="gamma")
 
     def split_heads(self, x, batch_size):
         x = tf.reshape(x, [batch_size, -1, self.num_heads, self.filters_per_head])
@@ -214,7 +214,7 @@ def get_positional_encoding(seq_length, seq_depth, with_batch_dim=True):
     sequence_ids = tf.expand_dims(tf.range(seq_length, dtype=tf.float64), axis=-1)
     depth_ids = tf.expand_dims(tf.range(2, seq_depth + 2), axis=0)
 
-    angle_rates = 1 / tf.pow(500, (2 * (depth_ids // 2)) / seq_depth)
+    angle_rates = 1 / tf.pow(tf.cast(500, tf.float64), (2 * (depth_ids // 2)) / seq_depth)
     angle_rads = tf.cast(sequence_ids * angle_rates, tf.float32)
 
     even_mask = tf.tile([1., 0.], [seq_depth // 2])

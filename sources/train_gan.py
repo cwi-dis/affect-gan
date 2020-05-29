@@ -40,14 +40,18 @@ class GAN_Trainer():
         self.generator = Generator(n_signals=n_signals)
         self.classification_loss_factor = 0.25 if (self.class_conditional and self.subject_conditional) else 0.5
         dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.0008, 50000, 0.8)
-        gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 50000/n_critic, 0.8)
+        gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.002, 50000/n_critic, 0.8)
         self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.99)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.9, beta_2=0.99)
+        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.5, beta_2=0.99)
         self.train = self.train_vanilla if mode is "vanilla_gan" else self.train_wgangp
 
         self.discriminator_path = os.path.join(logdir, "model_dis")
         self.generator_path = os.path.join(logdir, "model_gen")
         self.summary_writer = tf.summary.create_file_writer(logdir=logdir)
+        self.da = 0.75
+        self.ds = 0.025
+        self.ga = 0.8
+        self.gs = 0.3
 
     def train_wgangp(self, dataset):
         test_seed_0 = tf.random.normal([5, self.noise_dim])
@@ -61,7 +65,6 @@ class GAN_Trainer():
             test_seed_0 = tf.concat([test_seed_0, subject_seed], axis=-1)
 
         train_step = 1
-        gen_loss, gen_classification_loss, gen_subject_loss = 0, 0, 0
         for batch, labels, subject in dataset:
             labels = tf.squeeze(tf.one_hot(tf.cast(labels, tf.int32), depth=self.num_classes))
             subject = tf.squeeze(tf.one_hot(tf.cast(subject, tf.int32), depth=self.num_subjects))
@@ -78,8 +81,8 @@ class GAN_Trainer():
                     tf.summary.scalar("classloss.generator", gen_classification_loss, step=train_step)
                     tf.summary.scalar("subjectloss.critic", subject_loss, step=train_step)
                     tf.summary.scalar("subjectloss.generator", gen_subject_loss, step=train_step)
-                    tf.summary.scalar("Gen. attention Gamma", self.generator.get_layer("att0").gamma)
-                    tf.summary.scalar("Critic attention Gamma", self.discriminator.get_layer("att0").gamma)
+                    tf.summary.scalar("Gen. attention Gamma", self.generator.get_layer("att0").gamma, step=train_step)
+                    tf.summary.scalar("Critic attention Gamma", self.discriminator.get_layer("att0").gamma, step=train_step)
 
                 tf.print("Current Train Step: %d, Critic Loss: %3f, Generator Loss: %3f" % (train_step, critic_loss, gen_loss))
                 if self.class_conditional:
@@ -128,7 +131,7 @@ class GAN_Trainer():
             if train_step > self.train_steps:
                 break
 
-    #@tf.function
+    @tf.function
     def train_step_wgangp_critic(self, real_sig, real_labels, subject):
         generator_inputs = tf.random.normal([self.batch_size, self.noise_dim])
         generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=self.num_classes, dtype=tf.int32), depth=self.num_classes)
@@ -156,21 +159,21 @@ class GAN_Trainer():
 
             critic_loss = wgangp_critic_loss(real_out, fake_out, interpolated_gradients)
 
-            classification_loss_real = 0
+            classification_loss_real = 0 
             subject_loss_real = 0
             if self.class_conditional:
                 classification_loss_real = tf.reduce_mean(tf.keras.losses.kld(real_labels, real_class_pred))
-                critic_loss += 0.75 * classification_loss_real
+                critic_loss += self.da * classification_loss_real
 
             if self.subject_conditional:
                 subject_loss_real = tf.reduce_mean(tf.keras.losses.kld(subject, real_subject_pred))
-                critic_loss += 0.01 * subject_loss_real
+                critic_loss += self.ds * subject_loss_real
 
         critic_gradients = tape.gradient(critic_loss, self.discriminator.trainable_variables)
         self.discriminator_optimizer.apply_gradients(zip(critic_gradients, self.discriminator.trainable_variables))
         del tape
 
-        return critic_loss-classification_loss_real-subject_loss_real, classification_loss_real, subject_loss_real
+        return critic_loss-classification_loss_real-subject_loss_real, tf.cast(classification_loss_real, tf.float32),tf.cast(subject_loss_real, tf.float32)
 
     @tf.function
     def train_step_wgangp_generator(self):
@@ -192,17 +195,17 @@ class GAN_Trainer():
 
             if self.class_conditional:
                 classification_loss = tf.reduce_mean(tf.keras.losses.kld(generator_class_inputs, class_pred))
-                fake_critic_loss += 0.8 * classification_loss
+                fake_critic_loss += self.ga * classification_loss
 
             if self.subject_conditional:
                 subject_loss = tf.reduce_mean(tf.keras.losses.kld(generator_subject_inputs, subject_pred))
-                fake_critic_loss += 0.2 * subject_loss
+                fake_critic_loss += self.gs * subject_loss
 
         generator_gradients = gen_tape.gradient(fake_critic_loss, self.generator.trainable_variables)
         self.generator_optimizer.apply_gradients(zip(generator_gradients, self.generator.trainable_variables))
         del gen_tape
 
-        return fake_critic_loss-classification_loss-subject_loss, classification_loss, subject_loss
+        return fake_critic_loss-classification_loss-subject_loss, tf.cast(classification_loss, tf.float32), tf.cast(subject_loss, tf.float32)
 
     @tf.function
     def train_step_vanilla(self, batch):
