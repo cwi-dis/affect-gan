@@ -68,15 +68,14 @@ def plot_confusion_matrix(cm, class_names):
 
 def plot_generated_signals(signals_0, signals_1):
     n_samples=5#len(signals_0)
+    colors = ["blue", "red", "green"]
     x = range(len(signals_0[0]))
-    n_signals = 1 if signals_1 is None else 2
+    n_signals = len(signals_0[0][0])
     fig, axs = plt.subplots(n_samples, n_signals, sharex=True)
-    for sig in range(n_samples):
-        if n_signals == 1:
-            axs[sig].plot(x, signals_0[sig, :, 0])
-        else:
-            axs[sig, 0].plot(x, signals_0[sig, :, 0])
-            axs[sig, 1].plot(x, signals_1[sig, :, 0])
+    for sample in range(n_samples):
+        for sig in range(n_signals):
+            axs[sample, 0].plot(x, signals_0[sample, :, 0], color=colors[sig])
+            axs[sample, 1].plot(x, signals_1[sample, :, 0], color=colors[sig])
     plt.tight_layout()
     return fig
 
@@ -297,7 +296,7 @@ if __name__ == '__main__':
     dataloader = Dataloader("5000d", features=["ecg", "gsr"],
                             label=["arousal"],
                             normalized=True, continuous_labels=False)
-    data = dataloader("inspect", 1, leave_out=6)
+    data = dataloader("inspect", 1, leave_out=5)
     datagenerator = DatasetGenerator(batch_size=1,
                                      generator_path="../Logs/wgan-gp-test/model_gen/200000",
                                      class_conditioned=True,
@@ -313,8 +312,8 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    #plot_signals(data, generated=False, disc=None)
-    interactive_signal_plot(datagenerator)
+    plot_signals(data, generated=False, disc=None)
+    #interactive_signal_plot(datagenerator)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)

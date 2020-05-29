@@ -295,8 +295,9 @@ def run_gan(model_name):
     logdir = os.path.join("../Logs", model_name + run_id)
     leave_out = 3
     hparams = config.OPT_PARAMS["gan"]
+    labels = config.LABELS
     dataloader = Dataloader(
-        "5000d", ["ecg"], continuous_labels=False,
+        "5000d", labels, continuous_labels=False,
         normalized=True
     )
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=leave_out)
@@ -306,7 +307,7 @@ def run_gan(model_name):
         hparams=hparams,
         logdir=logdir,
         num_classes=2,
-        n_signals=1,
+        n_signals=len(labels),
         leave_out=leave_out,
         class_conditional=True,
         subject_conditional=True,

@@ -5,7 +5,7 @@ NUM_RERUNS = 7
 GLOBAL_LR = 0.0003
 TRAIN_DATA = hp.HParam("Train Data Type", hp.Discrete(["real", "fake_cls_catg", "fake_subjcls_catg", "fake_cls_intp", "fake_subjcls_intp"]))
 OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([3]))#, 8, 12, 14, 19, 23, 28]))
-
+LABELS = ["ecg", "gsr"]
 
 # BaseNET hparams
 HP_FILTERS = hp.HParam("filters", hp.Discrete([2, 4, 8]))
