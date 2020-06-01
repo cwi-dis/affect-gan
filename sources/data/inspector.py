@@ -306,7 +306,7 @@ if __name__ == '__main__':
                             normalized=True, continuous_labels=False)
     data = dataloader("inspect", 1, leave_out=5)
     datagenerator = DatasetGenerator(batch_size=1,
-                                     generator_path="../Logs/wgan-tests/09.2sig-big/model_gen/100000",
+                                     generator_path="../Logs/wgan-tests/10.2sig-small-sd/model_gen/150000",
                                      class_conditioned=True,
                                      subject_conditioned=True,
                                      categorical_sampling=False,

@@ -4,21 +4,22 @@ import tensorflow.keras.layers as layers
 import config
 from models.Blocks import *
 
+
 class Generator(tf.keras.Model):
 
     def __init__(self, n_signals, *args, **kwargs):
         super(Generator, self).__init__(*args, **kwargs)
         self.n_multiplier = 2
-        self.expand = layers.Dense(units=125 * 30, use_bias=False)
-        self.up_0 = UpResLayer(channels_out=30, kernel_size=6, dropout_rate=0.1, normalization=None)
+        self.expand = layers.Dense(units=125 * 50, use_bias=False)
+        self.up_0 = UpResLayer(channels_out=50, kernel_size=6, dropout_rate=0.1, normalization=None)
         self.non_local = AttentionLayer(
             name="att0",
-            channels_out=30,
+            channels_out=50,
             kernel_size=6,
-            filters_per_head=10,
-            num_attention_heads=3,
+            filters_per_head=15,
+            num_attention_heads=4,
             use_positional_encoding=False)
-        self.up_1 = UpResLayer(channels_out=15, kernel_size=8, dropout_rate=0, normalization=None)
+        self.up_1 = UpResLayer(channels_out=25, kernel_size=8, dropout_rate=0, normalization=None)
         self.act = layers.LeakyReLU(alpha=0.2)
         self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=10, padding="same")
 
@@ -29,7 +30,7 @@ class Generator(tf.keras.Model):
         x = self.non_local(x)
         x = self.act(self.up_1(x, training=training))
         x = self.final_conv(x)
-        #x = tf.keras.activations.tanh(x)
+        # x = tf.keras.activations.tanh(x)
         return x
 
     def model(self):
@@ -42,9 +43,10 @@ class Discriminator(tf.keras.Model):
         super(Discriminator, self).__init__(*args, **kwargs)
         self.class_conditional = class_conditional
         self.subject_conditional = subject_conditional
-        self.out_channels = 24
+        self.out_channels = 48
 
-        self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=5, padding="same")
+        self.signal_dropout = layers.SpatialDropout1D(rate=0.1)
+        self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=8, padding="same")
         self.downres0 = DownResLayer(
             channels_out=self.out_channels // 3,
             dropout_rate=0.2,
@@ -55,9 +57,9 @@ class Discriminator(tf.keras.Model):
         self.non_local = AttentionLayer(
             name="att0",
             channels_out=self.out_channels // 3,
-            filters_per_head=6,
+            filters_per_head=10,
             num_attention_heads=2,
-            kernel_size=5,
+            kernel_size=6,
             use_positional_encoding=True,
         )
         self.downres1 = DownResLayer(
@@ -76,7 +78,7 @@ class Discriminator(tf.keras.Model):
         self.avg = layers.GlobalAveragePooling1D()
 
         self.dense = layers.Dense(256, activation=layers.LeakyReLU(0.2))
-        
+
         self.dense_output = layers.Dense(1)
         self.dense_class_output = layers.Dense(2, activation="softmax")
         self.dense_subject_output = layers.Dense(29, activation="softmax")
@@ -89,7 +91,7 @@ class Discriminator(tf.keras.Model):
         x = self.downres1(x, training=training)
         x = self.downres2(x, training=training)
 
-        x_s = tf.reshape(x, shape=[-1, 63*self.out_channels])
+        x_s = tf.reshape(x, shape=[-1, 63 * self.out_channels])
         x_s = self.dense(x_s)
 
         c = 0
