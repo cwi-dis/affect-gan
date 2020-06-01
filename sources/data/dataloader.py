@@ -158,7 +158,7 @@ class Dataloader(object):
         if mode is not "inspect":
             dataset = dataset.filter(lambda _, label, __: tf.reduce_all(tf.greater(tf.abs(label - self.excluded_label), 0.05)))
         if self.normalized:
-            dataset = dataset.filter(lambda features, _, __: not(tf.less_equal(tf.reduce_max(features), 1.2) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1.2)))
+            dataset = dataset.filter(lambda features, _, __: tf.less_equal(tf.reduce_max(features), 1.2) and tf.less_equal(tf.abs(tf.reduce_min(features)), 1.2))
 
         if not self.continuous_labels:
             dataset = dataset.map(with_categoric_labels)

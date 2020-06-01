@@ -312,7 +312,7 @@ def run_gan(model_name):
         class_conditional=True,
         subject_conditional=True,
         save_image_every_n_steps=1500,
-        n_critic=5,
+        n_critic=10,
         train_steps=200000
     )
 
@@ -440,10 +440,10 @@ def summary():
     # DeepCNN(hparams).model().summary()
     # LateFuseCNN(hparams, 5).model().summary()
     # AttentionNET(hparams).model().summary()
-    Generator(n_signals=5).model().summary()
-    Discriminator(conditional=True).model().summary()
+    Generator(n_signals=2).model().summary()
+    Discriminator(True, True).model().summary()
 
 
 if __name__ == '__main__':
-    # summary()
+    #summary()
     main()

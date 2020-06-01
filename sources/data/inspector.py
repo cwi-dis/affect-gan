@@ -74,8 +74,8 @@ def plot_generated_signals(signals_0, signals_1):
     fig, axs = plt.subplots(n_samples, n_signals, sharex=True)
     for sample in range(n_samples):
         for sig in range(n_signals):
-            axs[sample, 0].plot(x, signals_0[sample, :, 0], color=colors[sig])
-            axs[sample, 1].plot(x, signals_1[sample, :, 0], color=colors[sig])
+            axs[sample, 0].plot(x, signals_0[sample, :, sig], color=colors[sig])
+            axs[sample, 1].plot(x, signals_1[sample, :, sig], color=colors[sig])
     plt.tight_layout()
     return fig
 
