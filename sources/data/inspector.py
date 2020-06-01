@@ -224,6 +224,7 @@ def interactive_signal_plot(datagen):
     mpl.rcParams['xtick.major.width'] = 2
     mpl.rcParams['ytick.major.size'] = 10
     mpl.rcParams['ytick.major.width'] = 2
+    colors = ["blue", "red", "green"]
     fig = plt.figure(figsize=(8, 4))
 
     ax = fig.add_subplot(111)
@@ -260,7 +261,12 @@ def interactive_signal_plot(datagen):
     sig = datagen.get(arousal_value=0, subject_value=0, sub0=4, sub1=18)
 
     scale = range(500)
-    fig_sig, = ax.plot(scale, sig)
+    n_signals = len(sig[0])
+
+    fig_sig = []
+    for i in range(n_signals):
+        f, = ax.plot(scale, sig[:, i], color=colors[i])
+        fig_sig.append(f)
 
     def slider_update(val):
         arousal_val = slider_arousal.val
@@ -268,7 +274,8 @@ def interactive_signal_plot(datagen):
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
         new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=True)
-        fig_sig.set_data(scale, new_sig)
+        for i in range(n_signals):
+            fig_sig[i].set_data(scale, new_sig[:, i])
         fig.canvas.draw_idle()
 
     def seed_button_click(v):
@@ -277,7 +284,8 @@ def interactive_signal_plot(datagen):
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
         new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=False)
-        fig_sig.set_data(scale, new_sig)
+        for i in range(n_signals):
+            fig_sig[i].set_data(scale, new_sig[:, i])
         fig.canvas.draw_idle()
 
 
@@ -298,7 +306,7 @@ if __name__ == '__main__':
                             normalized=True, continuous_labels=False)
     data = dataloader("inspect", 1, leave_out=5)
     datagenerator = DatasetGenerator(batch_size=1,
-                                     generator_path="../Logs/wgan-gp-test/model_gen/200000",
+                                     generator_path="../Logs/wgan-tests/09.2sig-big/model_gen/100000",
                                      class_conditioned=True,
                                      subject_conditioned=True,
                                      categorical_sampling=False,
@@ -312,8 +320,8 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    plot_signals(data, generated=False, disc=None)
-    #interactive_signal_plot(datagenerator)
+    #plot_signals(data, generated=False, disc=None)
+    interactive_signal_plot(datagenerator)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)

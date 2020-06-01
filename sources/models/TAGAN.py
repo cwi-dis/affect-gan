@@ -10,7 +10,7 @@ class Generator(tf.keras.Model):
         super(Generator, self).__init__(*args, **kwargs)
         self.n_multiplier = 2
         self.expand = layers.Dense(units=125 * 50, use_bias=False)
-        self.up_0 = UpResLayer(channels_out=50, kernel_size=6, dropout_rate=0.2, normalization=None)
+        self.up_0 = UpResLayer(channels_out=50, kernel_size=6, dropout_rate=0.1, normalization=None)
         self.non_local = AttentionLayer(
             name="att0",
             channels_out=50,
@@ -42,11 +42,13 @@ class Discriminator(tf.keras.Model):
         super(Discriminator, self).__init__(*args, **kwargs)
         self.class_conditional = class_conditional
         self.subject_conditional = subject_conditional
-        self.out_channels = 60
-        self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=5, padding="same")
+        self.out_channels = 48
+
+        self.signal_dropout = layers.SpatialDropout1D(rate=0.2)
+        self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=8, padding="same")
         self.downres0 = DownResLayer(
             channels_out=self.out_channels // 3,
-            dropout_rate=0.4,
+            dropout_rate=0.2,
             kernel_size=6,
             first_layer=True,
             normalization="layer"
@@ -54,8 +56,8 @@ class Discriminator(tf.keras.Model):
         self.non_local = AttentionLayer(
             name="att0",
             channels_out=self.out_channels // 3,
-            filters_per_head=16,
-            num_attention_heads=4,
+            filters_per_head=10,
+            num_attention_heads=2,
             kernel_size=6,
             use_positional_encoding=True,
         )
@@ -81,7 +83,8 @@ class Discriminator(tf.keras.Model):
         self.dense_subject_output = layers.Dense(29, activation="softmax")
 
     def call(self, inputs, training=None, mask=None):
-        x = self.expand(inputs)
+        x = self.signal_dropout(inputs)
+        x = self.expand(x)
         x = self.downres0(x, training=training)
         x = self.non_local(x, training=training)
         x = self.downres1(x, training=training)

@@ -64,7 +64,7 @@ class DatasetGenerator:
         datagenerator = tf.data.Dataset.from_generator(
             generator= self.generator,
             output_types=(tf.float32, tf.float32, tf.float32),
-            output_shapes=((self.batch_size, 500, 1), (self.batch_size, 2), (self.batch_size, 29))
+            output_shapes=((self.batch_size, 500, None), (self.batch_size, 2), (self.batch_size, 29))
         )
 
         if self.no_subject_output:

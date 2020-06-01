@@ -57,7 +57,7 @@ class DownResLayer(layers.Layer):
             self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, normalization=normalization, downsample_rate=downsample_rate, regularization=regularization)
         else:
             self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU(), normalization=normalization, downsample_rate=downsample_rate, regularization=regularization)
-        self.dropout = layers.Dropout(rate=dropout_rate)
+        self.dropout = layers.SpatialDropout1D(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
         x = inputs
@@ -121,7 +121,7 @@ class UpResLayer(layers.Layer):
                  use_initial_activation=True, normalization=None, **kwargs):
         super(UpResLayer, self).__init__(**kwargs)
         self.up_resblock = UpResBlock(channels_out, kernel_size, w_norm_clip, use_initial_activation, normalization)
-        self.dropout = layers.Dropout(rate=dropout_rate)
+        self.dropout = layers.SpatialDropout1D(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
         x = self.dropout(inputs)
