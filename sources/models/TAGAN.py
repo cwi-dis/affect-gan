@@ -24,7 +24,7 @@ class Generator(tf.keras.Model):
 
     def call(self, inputs, training=None, mask=None):
         x = self.expand(inputs)
-        x = tf.reshape(x, shape=[-1, 125, 50])
+        x = tf.reshape(x, shape=[-1, 125, 30])
         x = self.up_0(x, training=training)
         x = self.non_local(x)
         x = self.act(self.up_1(x, training=training))
@@ -82,8 +82,7 @@ class Discriminator(tf.keras.Model):
         self.dense_subject_output = layers.Dense(29, activation="softmax")
 
     def call(self, inputs, training=None, mask=None):
-        x = self.signal_dropout(inputs, training=training)
-        x = self.expand(x)
+        x = self.expand(inputs)
         x = self.downres0(x, training=training)
         x = self.non_local(x, training=training)
         x = self.downres1(x, training=training)

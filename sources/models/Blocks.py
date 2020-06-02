@@ -3,12 +3,13 @@ import tensorflow as tf
 from tensorflow.keras import layers
 
 class DownResBlock(layers.Layer):
-    def __init__(self, channels, kernel_size, w_norm_clip, initial_activation=None, normalization=None, downsample_rate=2, regularization=None):
+    def __init__(self, channels, kernel_size, initial_activation=None, normalization=None, downsample_rate=2, regularization=None):
         super(DownResBlock, self).__init__()
         self.out_channels = channels
         self.in_act = initial_activation
         self.norm0 = None
         self.norm1 = None
+
         if normalization is "layer":
             self.norm0 = layers.LayerNormalization(axis=[1])
             self.norm1 = layers.LayerNormalization(axis=[1])
@@ -51,13 +52,13 @@ class DownResBlock(layers.Layer):
 
 
 class DownResLayer(layers.Layer):
-    def __init__(self, channels_out, dropout_rate=0.0, kernel_size=3, w_norm_clip=2, normalization=None, first_layer=False, downsample_rate=2, regularization=None, **kwargs):
+    def __init__(self, channels_out, dropout_rate=0.0, kernel_size=3, normalization=None, first_layer=False, downsample_rate=2, regularization=None, **kwargs):
         super(DownResLayer, self).__init__(**kwargs)
         if first_layer:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, normalization=normalization, downsample_rate=downsample_rate, regularization=regularization)
+            self.down_resblock = DownResBlock(channels_out, kernel_size, normalization=normalization, downsample_rate=downsample_rate, regularization=regularization)
         else:
-            self.down_resblock = DownResBlock(channels_out, kernel_size, w_norm_clip, initial_activation=layers.LeakyReLU(), normalization=normalization, downsample_rate=downsample_rate, regularization=regularization)
-        self.dropout = layers.SpatialDropout1D(rate=dropout_rate)
+            self.down_resblock = DownResBlock(channels_out, kernel_size, initial_activation=layers.LeakyReLU(), normalization=normalization, downsample_rate=downsample_rate, regularization=regularization)
+        self.dropout = layers.Dropout(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
         x = inputs
@@ -121,7 +122,7 @@ class UpResLayer(layers.Layer):
                  use_initial_activation=True, normalization=None, **kwargs):
         super(UpResLayer, self).__init__(**kwargs)
         self.up_resblock = UpResBlock(channels_out, kernel_size, w_norm_clip, use_initial_activation, normalization)
-        self.dropout = layers.SpatialDropout1D(rate=dropout_rate)
+        self.dropout = layers.Dropout(rate=dropout_rate)
 
     def call(self, inputs, **kwargs):
         x = self.dropout(inputs)

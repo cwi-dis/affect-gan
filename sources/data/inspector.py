@@ -71,7 +71,7 @@ def plot_generated_signals(signals_0, signals_1):
     colors = ["blue", "red", "green"]
     x = range(len(signals_0[0]))
     n_signals = len(signals_0[0][0])
-    fig, axs = plt.subplots(n_samples, n_signals, sharex=True)
+    fig, axs = plt.subplots(n_samples, 2, sharex=True)
     for sample in range(n_samples):
         for sig in range(n_signals):
             axs[sample, 0].plot(x, signals_0[sample, :, sig], color=colors[sig])
@@ -134,9 +134,12 @@ def plot_label_heatmap(labels):
 
 
 def plot_signal(signal):
+    colors = ["blue", "red", "green"]
     x = range(len(signal))
     n_signals = signal.shape[-1]
-    fig, axs = plt.subplots(n_signals, sharex=True)
+    fig, axs = plt.subplots(1, sharex=True)
+    #for i in range(n_signals):
+    #    axs.plot(x, signal[:, i], color=colors[i])
     if n_signals == 1:
         axs.plot(x, signal[:, 0])
     else:
@@ -306,7 +309,7 @@ if __name__ == '__main__':
                             normalized=True, continuous_labels=False)
     data = dataloader("inspect", 1, leave_out=5)
     datagenerator = DatasetGenerator(batch_size=1,
-                                     generator_path="../Logs/wgan-tests/10.2sig-small-sd/model_gen/150000",
+                                     generator_path="../Logs/wgan-tests/11.2sig/model_gen/200000",
                                      class_conditioned=True,
                                      subject_conditioned=True,
                                      categorical_sampling=False,
@@ -320,8 +323,8 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    #plot_signals(data, generated=False, disc=None)
-    interactive_signal_plot(datagenerator)
+    plot_signals(data, generated=False, disc=None)
+    #interactive_signal_plot(datagenerator)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)

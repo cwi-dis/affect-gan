@@ -17,7 +17,7 @@ from models.LateFuseCNN import LateFuseCNN
 from models.AttentionNET import AttentionNET
 from models.AttentionNET2 import AttentionNET as AttentionNET2
 from models.AttentionNETDual import AttentionNETDual
-from models.TAGAN import Generator, Discriminator
+from models.TAGANdual import Generator, Discriminator
 from data.dataloader import Dataloader
 from data.datagenerator import DatasetGenerator
 from train_gan import GAN_Trainer
@@ -312,7 +312,7 @@ def run_gan(model_name):
         class_conditional=True,
         subject_conditional=True,
         save_image_every_n_steps=1500,
-        n_critic=10,
+        n_critic=5,
         train_steps=200000
     )
 
@@ -323,9 +323,10 @@ def train_loso_gans(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
     hparams = config.OPT_PARAMS["gan"]
+    labels = config.LABELS
 
     dataloader = Dataloader(
-        "5000d", ["ecg"],
+        "5000d", labels,
         normalized=True,
         continuous_labels=False
     )
@@ -341,13 +342,13 @@ def train_loso_gans(model_name):
             hparams=hparams,
             logdir=run_logdir,
             num_classes=2,
-            n_signals=1,
+            n_signals=len(labels),
             leave_out=out_subject,
             class_conditional=True,
             subject_conditional=False,
             save_image_every_n_steps=1500,
-            n_critic=5,
-            train_steps=150000
+            n_critic=6,
+            train_steps=200000
         )
 
         trainer.train(dataset=dataset)
@@ -418,8 +419,8 @@ def main():
 
     # single_run(model_name="AttentionNET2")
     # run_loso_cv(model_name="AttentionNET")
-    run_gan(model_name="wgan-gp")
-    # train_loso_gans(model_name="wgan-gp")
+    #run_gan(model_name="wgan-gp")
+    train_loso_gans(model_name="wgan-gp")
     # hp_sweep_run(logdir, model_name="AttentionNET")
 
 
@@ -445,5 +446,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()
