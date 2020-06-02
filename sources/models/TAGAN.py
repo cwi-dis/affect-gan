@@ -55,7 +55,7 @@ class Discriminator(tf.keras.Model):
         self.non_local = AttentionLayer(
             name="att0",
             channels_out=self.out_channels // 3,
-            filters_per_head=6,
+            filters_per_head=8,
             num_attention_heads=2,
             kernel_size=5,
             use_positional_encoding=True,
