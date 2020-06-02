@@ -11,15 +11,15 @@ class Generator(tf.keras.Model):
         super(Generator, self).__init__(*args, **kwargs)
         self.n_multiplier = 2
         self.expand = layers.Dense(units=125 * 40, use_bias=False)
-        self.up_0 = UpResLayer(channels_out=40, kernel_size=6, dropout_rate=0.1, normalization=None)
+        self.up_0 = UpResLayer(channels_out=40, kernel_size=6, dropout_rate=0.2, normalization=None)
         self.non_local = AttentionLayer(
             name="att0",
             channels_out=40,
             kernel_size=6,
-            filters_per_head=20,
-            num_attention_heads=2,
+            filters_per_head=10,
+            num_attention_heads=4,
             use_positional_encoding=False)
-        self.up_1 = UpResLayer(channels_out=20, kernel_size=8, dropout_rate=0, normalization=None)
+        self.up_1 = UpResLayer(channels_out=20, kernel_size=8, dropout_rate=0.2, normalization=None)
         self.act = layers.LeakyReLU(alpha=0.2)
         self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=10, padding="same")
 
@@ -45,17 +45,18 @@ class Discriminator(tf.keras.Model):
         self.subject_conditional = subject_conditional
         self.out_channels = 36
 
-        self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=8, padding="same")
+        self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=5, padding="same")
         self.downres0 = DownResLayer(
             channels_out=self.out_channels // 3,
-            dropout_rate=0.25,
+            dropout_rate=0.4,
             kernel_size=6,
+            first_layer=True,
             normalization="layer"
         )
         self.non_local = AttentionLayer(
             name="att0",
             channels_out=self.out_channels // 3,
-            filters_per_head=6,
+            filters_per_head=8,
             num_attention_heads=3,
             kernel_size=5,
             use_positional_encoding=True
@@ -68,7 +69,7 @@ class Discriminator(tf.keras.Model):
         )
         self.downres2 = DownResLayer(
             channels_out=self.out_channels,
-            kernel_size=4,
+            kernel_size=6,
             dropout_rate=0.0,
             normalization=None
         )
