@@ -9,6 +9,7 @@ class Generator(tf.keras.Model):
     def __init__(self, n_signals, *args, **kwargs):
         super(Generator, self).__init__(*args, **kwargs)
         self.n_multiplier = 2
+        self.n_signals = n_signals
         self.expand = layers.Dense(units=125 * 30, use_bias=False)
         self.up_0 = UpResLayer(channels_out=30, kernel_size=6, dropout_rate=0.1, normalization=None)
         self.non_local = AttentionLayer(
@@ -47,7 +48,7 @@ class Discriminator(tf.keras.Model):
         self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=5, padding="same")
         self.downres0 = DownResLayer(
             channels_out=self.out_channels // 3,
-            dropout_rate=0.2,
+            dropout_rate=0.25,
             kernel_size=6,
             first_layer=True,
             normalization="layer"
@@ -63,7 +64,7 @@ class Discriminator(tf.keras.Model):
         self.downres1 = DownResLayer(
             channels_out=self.out_channels // 2,
             kernel_size=6,
-            dropout_rate=0.2,
+            dropout_rate=0.25,
             normalization="layer"
         )
         self.downres2 = DownResLayer(

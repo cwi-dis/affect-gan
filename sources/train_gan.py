@@ -4,7 +4,7 @@ from util.CustomLosses import discriminator_loss, generator_loss, wgangp_critic_
 from util.CustomMetrics import discriminator_accuracy
 from data.inspector import plot_generated_signals, plot_to_image
 
-from models.TAGAN import Generator, Discriminator
+from models.TAGANdual import Generator, Discriminator
 
 class GAN_Trainer():
 
@@ -98,7 +98,7 @@ class GAN_Trainer():
 
             if train_step % 50000 == 0:
                 if train_step == 100000:
-                    self.n_critic -= 2
+                    self.n_critic = 5
                 self.discriminator.save(os.path.join(self.discriminator_path, "%d"%train_step))
                 self.generator.save(os.path.join(self.generator_path, "%d"%train_step))
 

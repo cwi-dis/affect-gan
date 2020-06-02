@@ -345,9 +345,9 @@ def train_loso_gans(model_name):
             n_signals=len(labels),
             leave_out=out_subject,
             class_conditional=True,
-            subject_conditional=False,
+            subject_conditional=True,
             save_image_every_n_steps=1500,
-            n_critic=6,
+            n_critic=8,
             train_steps=200000
         )
 
@@ -360,8 +360,9 @@ def train_loso_gans(model_name):
 def run_loso_cv(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
+    labels = config.LABELS
     dataloader = Dataloader(
-        "5000d", ["ecg"],
+        "5000d", labels,
         normalized=True,
         continuous_labels=False
     )
@@ -418,9 +419,9 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     # single_run(model_name="AttentionNET2")
-    # run_loso_cv(model_name="AttentionNET")
-    #run_gan(model_name="wgan-gp")
-    train_loso_gans(model_name="wgan-gp")
+    #run_loso_cv(model_name="AttentionNET")
+    run_gan(model_name="wgan-gp")
+    #train_loso_gans(model_name="wgan-gp")
     # hp_sweep_run(logdir, model_name="AttentionNET")
 
 
@@ -446,5 +447,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()

@@ -11,8 +11,8 @@ class DownResBlock(layers.Layer):
         self.norm1 = None
 
         if normalization is "layer":
-            self.norm0 = layers.LayerNormalization(axis=[1])
-            self.norm1 = layers.LayerNormalization(axis=[1])
+            self.norm0 = layers.LayerNormalization(axis=-1)
+            self.norm1 = layers.LayerNormalization(axis=-1)
         elif normalization is "batch":
             self.norm0 = layers.BatchNormalization()
             self.norm1 = layers.BatchNormalization()
@@ -77,8 +77,8 @@ class UpResBlock(layers.Layer):
         self.norm0 = None
         self.norm1 = None
         if normalization is "layer":
-            self.norm0 = layers.LayerNormalization(axis=[1])
-            self.norm1 = layers.LayerNormalization(axis=[1])
+            self.norm0 = layers.LayerNormalization(axis=-1)
+            self.norm1 = layers.LayerNormalization(axis=-1)
         elif normalization is "batch":
             self.norm0 = layers.BatchNormalization()
             self.norm1 = layers.BatchNormalization()
