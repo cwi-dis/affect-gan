@@ -11,7 +11,7 @@ class Generator(tf.keras.Model):
         self.n_multiplier = 2
         self.n_signals = n_signals
         self.expand = layers.Dense(units=125 * 30, use_bias=False)
-        self.up_0 = UpResLayer(channels_out=30, kernel_size=6, dropout_rate=0.1, normalization=None)
+        self.up_0 = UpResLayer(channels_out=30, kernel_size=6, dropout_rate=0.2, normalization=None)
         self.non_local = AttentionLayer(
             name="att0",
             channels_out=30,
@@ -19,7 +19,7 @@ class Generator(tf.keras.Model):
             filters_per_head=10,
             num_attention_heads=3,
             use_positional_encoding=False)
-        self.up_1 = UpResLayer(channels_out=15, kernel_size=8, dropout_rate=0, normalization=None)
+        self.up_1 = UpResLayer(channels_out=15, kernel_size=8, dropout_rate=0.2, normalization=None)
         self.act = layers.LeakyReLU(alpha=0.2)
         self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=10, padding="same")
 
@@ -48,7 +48,7 @@ class Discriminator(tf.keras.Model):
         self.expand = layers.Conv1D(filters=self.out_channels // 4, kernel_size=5, padding="same")
         self.downres0 = DownResLayer(
             channels_out=self.out_channels // 3,
-            dropout_rate=0.25,
+            dropout_rate=0.4,
             kernel_size=6,
             first_layer=True,
             normalization="layer"

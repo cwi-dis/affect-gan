@@ -304,12 +304,12 @@ def interactive_signal_plot(datagen):
 if __name__ == '__main__':
     os.chdir("./..")
     init_tf_gpus()
-    dataloader = Dataloader("5000d", features=["ecg", "gsr"],
-                            label=["arousal"],
-                            normalized=True, continuous_labels=False)
-    data = dataloader("inspect", 1, leave_out=5)
+    #dataloader = Dataloader("5000d", features=["ecg", "gsr"],
+    #                        label=["arousal"],
+    #                        normalized=True, continuous_labels=False)
+    #data = dataloader("inspect", 1, leave_out=5)
     datagenerator = DatasetGenerator(batch_size=1,
-                                     generator_path="../Logs/wgan-tests/11.2sig/model_gen/200000",
+                                     generator_path="../Logs/wgan-tests/06.gen-no-pe/model_gen/200000",
                                      class_conditioned=True,
                                      subject_conditioned=True,
                                      categorical_sampling=False,
@@ -324,8 +324,8 @@ if __name__ == '__main__':
     #video_viz(extended_labels)
 
     #plot_signals(data, generated=False, disc=None)
-    #interactive_signal_plot(datagenerator)
-    positional_ecoding_viz()
+    interactive_signal_plot(datagenerator)
+    #positional_ecoding_viz()
 
     #tsna_visualization(data)
 

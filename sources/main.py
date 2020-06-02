@@ -17,7 +17,7 @@ from models.LateFuseCNN import LateFuseCNN
 from models.AttentionNET import AttentionNET
 from models.AttentionNET2 import AttentionNET as AttentionNET2
 from models.AttentionNETDual import AttentionNETDual
-from models.TAGANdual import Generator, Discriminator
+from models.TAGAN import Generator, Discriminator
 from data.dataloader import Dataloader
 from data.datagenerator import DatasetGenerator
 from train_gan import GAN_Trainer
@@ -447,5 +447,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()
