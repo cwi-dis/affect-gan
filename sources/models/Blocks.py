@@ -17,8 +17,9 @@ class DownResBlock(layers.Layer):
             self.norm0 = layers.BatchNormalization()
             self.norm1 = layers.BatchNormalization()
 
-        self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", activation=layers.LeakyReLU(),
+        self.conv1 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same",
                                    kernel_regularizer=regularization)
+        self.conv1act = layers.LeakyReLU()
         self.conv2 = layers.Conv1D(filters=channels, kernel_size=kernel_size, padding="same", strides=downsample_rate,
                                    kernel_regularizer=regularization)
 
@@ -33,12 +34,13 @@ class DownResBlock(layers.Layer):
         input_channels = inputs.shape.as_list()[-1]
 
         if self.in_act is not None:
-            x = self.in_act(x)
             if self.norm0 is not None:
                 x = self.norm0(x, training=kwargs["training"])
+            x = self.in_act(x)
         x = self.conv1(x)
         if self.norm1 is not None:
             x = self.norm1(x, training=kwargs["training"])
+        x = self.conv1act(x)
         x = self.conv2(x)
         #x = self.pool(x)
 
@@ -99,9 +101,9 @@ class UpResBlock(layers.Layer):
         input_channels = inputs.shape.as_list()[-1]
 
         if self.use_initial_activation:
-            x = self.initial_activation(x)
             if self.norm0 is not None:
                 x = self.norm0(x, training=kwargs["training"])
+            x = self.initial_activation(x)
         x = self.up(x)
         x = self.conv0(x)
         if self.norm1 is not None:
@@ -164,7 +166,7 @@ class AttentionLayer(layers.Layer):
 
         self.attention_conv = layers.Conv1D(
             filters=channels_out,
-            kernel_size=kernel_size,
+            kernel_size=1,
             padding="same",
             kernel_regularizer=regularization
         )
@@ -221,7 +223,7 @@ def get_positional_encoding(seq_length, seq_depth, with_batch_dim=True):
     even_mask = tf.tile([1., 0.], [seq_depth // 2])
     odd_mask = tf.tile([0., 1.], [seq_depth // 2])
 
-    angle_rads = tf.sin(angle_rads)*tf.expand_dims(even_mask, axis=0) + tf.cos(angle_rads)*tf.expand_dims(odd_mask, axis=0)
+    angle_rads = (tf.sin(angle_rads)*tf.expand_dims(even_mask, axis=0) + tf.cos(angle_rads)*tf.expand_dims(odd_mask, axis=0)) / 2
 
     if with_batch_dim:
         angle_rads = tf.expand_dims(angle_rads, axis=0)

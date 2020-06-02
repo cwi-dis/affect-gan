@@ -186,12 +186,12 @@ def video_viz(extended_labels):
     plt.show()
 
 def positional_ecoding_viz():
-    pos_encoding = get_positional_encoding(250, 10)
+    pos_encoding = get_positional_encoding(250, 40)
     print(pos_encoding.shape)
 
     plt.pcolormesh(pos_encoding[0], cmap='RdBu')
     plt.xlabel('Depth')
-    plt.xlim((0, 10))
+    plt.xlim((0, 40))
     plt.ylabel('Position')
     plt.colorbar()
     plt.show()
@@ -323,9 +323,9 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    plot_signals(data, generated=False, disc=None)
+    #plot_signals(data, generated=False, disc=None)
     #interactive_signal_plot(datagenerator)
-    #positional_ecoding_viz()
+    positional_ecoding_viz()
 
     #tsna_visualization(data)
 

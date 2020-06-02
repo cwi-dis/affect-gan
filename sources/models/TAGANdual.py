@@ -73,8 +73,6 @@ class Discriminator(tf.keras.Model):
             normalization=None
         )
 
-        self.avg = layers.GlobalAveragePooling1D()
-
         self.dense = layers.Dense(256, activation=layers.LeakyReLU(0.2))
 
         self.dense_output = layers.Dense(1)
