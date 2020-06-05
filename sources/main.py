@@ -410,7 +410,7 @@ def run_loso_cv(model_name):
                 model.compile(
                     optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.9, beta_2=0.99),
                     loss=[tf.keras.losses.KLD],
-                    metrics=["accuracy", MCC()]
+                    metrics=["accuracy", MCC(), WF1()]
                 )
 
                 callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()

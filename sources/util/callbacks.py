@@ -45,6 +45,7 @@ class MetricsCallback(callbacks.TensorBoard):
         super(MetricsCallback, self).__init__(logdir, *args, **kwargs)
         self.best_eval = 0
         self.best_mcc = 0
+        self.best_wf1 = 0
 
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
@@ -68,6 +69,16 @@ class MetricsCallback(callbacks.TensorBoard):
             if np.greater(current_mcc, self.best_mcc):
                 self.best_mcc = current_mcc
         logs.update({"mcc_best": self.best_mcc})
+
+        current_wf1 = logs.get("val_WF1")
+        if current_wf1 is None:
+            logging.warning('Best result tracking metric val_WF1 '
+                            'which is not available. Available metrics are: %s',
+                            ','.join(list(logs.keys())))
+        else:
+            if np.greater(current_wf1, self.best_wf1):
+                self.best_wf1 = current_wf1
+        logs.update({"wf1_best": self.best_wf1})
 
         super(MetricsCallback, self).on_epoch_end(epoch, logs)
 
