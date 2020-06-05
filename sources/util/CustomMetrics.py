@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow_addons as tfa
 from tensorflow.python.ops import math_ops
 
 
@@ -23,4 +24,16 @@ class CastingBinaryAccuracy(tf.keras.metrics.BinaryAccuracy):
     def update_state(self, y_true, y_pred, sample_weight=None):
         y_true = math_ops.cast(y_true > self.true_threshold, y_true.dtype)
         super(CastingBinaryAccuracy, self).update_state(y_true, y_pred, sample_weight)
+
+
+class MCC(tfa.metrics.MatthewsCorrelationCoefficient):
+    def __init__(self, **kwargs):
+        super(MCC, self).__init__(num_classes=1, **kwargs)
+
+    def update_state(self, y_true, y_pred, sample_weight=None):
+        y_true = tf.argmax(y_true, axis=-1)
+        y_pred = tf.argmax(y_pred, axis=-1)
+        tf.print(tf.shape(y_true))
+        super(MCC, self).update_state(y_true, y_pred, sample_weight)
+
 

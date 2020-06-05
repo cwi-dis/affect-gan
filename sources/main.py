@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import os
 import tensorflow as tf
+import tensorflow_addons as tfa
 from datetime import datetime
 import config
 import multiprocessing
@@ -46,18 +47,24 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
             loss = [CastingBinaryCrossentropy(), CastingBinaryCrossentropy()]
             metrics = [CastingBinaryAccuracy(), CastingBinaryAccuracy()]
             labels = ["arousal", "valence"]
+        elif hparams[config.HP_LOSS_TYPE] == "KLD":
+            continuous_labels = False
+            loss = tf.keras.losses.KLDivergence()
+            metrics = ["accuracy", MCC()]
+            labels = ["arousal"]
     except:
         continuous_labels = True
         loss = CastingBinaryCrossentropy()
         metrics = [CastingBinaryAccuracy()]
         labels = ["arousal"]
 
-    dataloader = Dataloader("5000d", ["bvp", "ecg", "rsp", "gsr", "skt"], labels, continuous_labels=continuous_labels)
-    train_dataset = dataloader("train", 128)
-    eval_dataset = dataloader("eval", 128)
+    features = config.FEATURES
+    dataloader = Dataloader("5000d", features, labels, continuous_labels=continuous_labels, normalized=True)
+    train_dataset = dataloader("train", 128, leave_out=hparams[config.OUT_SUBJECT])
+    eval_dataset = dataloader("eval", 128, leave_out=hparams[config.OUT_SUBJECT])
 
     if model_name == "BaseNET":
-        model = BaseNET1(hparams, dense_shape)  # ResNET(num_classes=1)
+        model = BaseNET1(hparams)  # ResNET(num_classes=1)
     if model_name == "SimpleLSTM":
         model = SimpleLSTM(hparams)
     if model_name == "ConvLSTM":
@@ -76,15 +83,14 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
         model = AttentionNETDual(hparams)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(clipnorm=1, learning_rate=0.0008),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.75),
         loss=loss,
         metrics=metrics
     )
 
-    callback_dataset = dataloader("test_eval")
-    callbacks = CallbacksProducer(hparams, logdir, run_name, callback_dataset).get_callbacks()
+    callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
 
-    model.fit(train_dataset, epochs=30, validation_data=eval_dataset, validation_steps=45, callbacks=callbacks)
+    model.fit(train_dataset, epochs=50, validation_data=eval_dataset, callbacks=callbacks)
 
 
 def hp_sweep_run(logdir, model_name):
@@ -92,28 +98,23 @@ def hp_sweep_run(logdir, model_name):
 
     if model_name == "BaseNET":
         for filters in config.HP_FILTERS.domain.values:
-            for dropout in config.HP_DROPOUT.domain.values:
-                for kernel_size in config.HP_KERNEL.domain.values:
-                    for dilation in config.HP_DILATION.domain.values:
-                        for pool in config.HP_POOL.domain.values:
-                            for lr in config.HP_LR.domain.values:
-                                hparams = {
-                                    config.HP_FILTERS: filters,
-                                    config.HP_DROPOUT: dropout,
-                                    config.HP_KERNEL: kernel_size,
-                                    config.HP_DILATION: dilation,
-                                    config.HP_POOL: pool,
-                                    config.HP_LR: lr
-                                }
+            for leave_out in config.OUT_SUBJECT.domain.values:
+                for r in range(config.NUM_RERUNS):
+                    hparams = {
+                        config.HP_FILTERS: filters,
+                        config.OUT_SUBJECT: leave_out,
+                        config.HP_LOSS_TYPE: "KLD"
+                    }
 
-                                dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
-                                run_name = "run-%d" % session_num
-                                run_logdir = os.path.join(logdir, run_name)
-                                print('--- Starting trial: %s' % run_name)
-                                print({h.name: hparams[h] for h in hparams})
+                    #dense_shape = tf.math.ceil(config.INPUT_SIZE / pool) * filters
+                    run_name = "run-%d" % session_num
+                    run_logdir = os.path.join(logdir, run_name, str(r))
+                    print('--- Starting trial: %s' % run_name)
+                    print({h.name: hparams[h] for h in hparams})
+                    print("--- Restart %d of %d" % (r + 1, config.NUM_RERUNS))
 
-                                run(model_name, hparams, run_logdir, run_name, dense_shape)
-                                session_num += 1
+                    run(model_name, hparams, run_logdir, run_name)
+                session_num += 1
 
     if model_name == "SimpleLSTM":
         for cells in config.HP_CELLS_LSTM.domain.values:
@@ -420,13 +421,13 @@ def main():
 
     # single_run(model_name="AttentionNET2")
     #run_loso_cv(model_name="AttentionNET")
-    run_gan(model_name="wgan-gp")
+    #run_gan(model_name="wgan-gp")
     #train_loso_gans(model_name="wgan-gp")
-    # hp_sweep_run(logdir, model_name="AttentionNET")
+    hp_sweep_run(logdir, model_name="BaseNET")
 
 
 def summary():
-    hparams = config.OPT_PARAMS["gan"]
+    hparams = config.OPT_PARAMS["BaseNET"]
     # hparams = {
     #    config.HP_DEEP_LAYERS: 4,
     #    config.HP_DEEP_CHANNELS: 2,
@@ -436,16 +437,16 @@ def summary():
 
     # ResNET(num_classes=1).model().summary()
     # SimpleLSTM(hparams).model().summary()
-    # BaseNET1(hparams).model().summary()
+    BaseNET1(hparams).model().summary()
     # ConvLSTM(hparams).model().summary()
     # ChannelCNN(hparams, 5).model().summary()
     # DeepCNN(hparams).model().summary()
     # LateFuseCNN(hparams, 5).model().summary()
     # AttentionNET(hparams).model().summary()
-    Generator(n_signals=2).model().summary()
-    Discriminator(True, True).model().summary()
+    #Generator(n_signals=2).model().summary()
+    #Discriminator(True, True).model().summary()
 
 
 if __name__ == '__main__':
-    summary()
-    #main()
+    #summary()
+    main()

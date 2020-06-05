@@ -151,8 +151,9 @@ class Dataloader(object):
         #print("Files loaded in mode %s:"%files)
         files = tf.data.Dataset.from_tensor_slices(files)
 
-        dataset = files.interleave(tf.data.TFRecordDataset, num_parallel_calls=tf.data.experimental.AUTOTUNE, cycle_length=25, block_length=128)
-        dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+        dataset = files.interleave(lambda f: tf.data.TFRecordDataset(f).map(self._decode, num_parallel_calls=1),
+                                   num_parallel_calls=tf.data.experimental.AUTOTUNE, block_length=16)
+        #dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video, ___: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video, subject: (features, labels, subject))
         if mode is not "inspect":
@@ -180,7 +181,7 @@ class Dataloader(object):
 
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=30000)
-            dataset = dataset.repeat()
+            #dataset = dataset.repeat()
 
         if mode == "test_eval":
             return dataset.shuffle(1000, seed=42).batch(500000).take(1)

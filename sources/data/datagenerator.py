@@ -49,7 +49,7 @@ class _DataGenerator:
 
         gen_sig = self.generator(seed, training=False)
 
-        return tf.squeeze(gen_sig)
+        return gen_sig
 
 
 class DatasetGenerator:

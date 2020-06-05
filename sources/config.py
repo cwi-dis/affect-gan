@@ -5,7 +5,7 @@ NUM_RERUNS = 7
 GLOBAL_LR = 0.0003
 TRAIN_DATA = hp.HParam("Train Data Type", hp.Discrete(["real", "fake_cls_catg", "fake_subjcls_catg", "fake_cls_intp", "fake_subjcls_intp"]))
 OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([1, 4, 6, 8, 11, 18, 22, 25]))
-LABELS = ["ecg", "gsr"]
+FEATURES = ["ecg", "gsr"]
 
 # BaseNET hparams
 HP_FILTERS = hp.HParam("filters", hp.Discrete([2, 4, 8]))
@@ -68,11 +68,6 @@ HP_GAN_BATCHSIZE = hp.HParam("Batchsize", hp.Discrete([8, 16, 32, 64]))
 OPT_PARAMS = {
     "BaseNET": {
         HP_FILTERS: 4,
-        HP_DROPOUT: 0.4,
-        HP_KERNEL: 5,
-        HP_DILATION: 1,
-        HP_POOL: 5,
-        HP_GAN_BATCHSIZE: 16
     },
     "DeepCNN": {
         HP_DEEP_LAYERS: 3,

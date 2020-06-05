@@ -8,32 +8,52 @@ class BaseNET1(tf.keras.Model):
 
     def __init__(self, hparams):
         super(BaseNET1, self).__init__()
-        self.dense_shape = tf.math.ceil(config.INPUT_SIZE / hparams[config.HP_POOL]) * hparams[config.HP_FILTERS]
+        #self.dense_shape = tf.math.ceil(config.INPUT_SIZE / hparams[config.HP_POOL]) * hparams[config.HP_FILTERS]
 
-        self.conv_1 = layers.Conv1D(
+        self.drop0 = layers.Dropout(0.1)
+        self.conv0 = layers.Conv1D(
             filters=hparams[config.HP_FILTERS],
-            kernel_size=hparams[config.HP_KERNEL],
-            dilation_rate=hparams[config.HP_DILATION],
-            padding="same", activation=layers.LeakyReLU())
-        self.drop = layers.Dropout(rate=hparams[config.HP_DROPOUT])
-        self.avg = layers.AveragePooling1D(
-            pool_size=hparams[config.HP_POOL],
-            strides=hparams[config.HP_POOL],
-            padding="same")
+            kernel_size=8,
+            strides=2,
+            padding="same",
+            activation=layers.LeakyReLU())
+        self.max0 = layers.MaxPool1D(
+            pool_size=2,
+            strides=2,
+            padding="same"
+        )
+        self.drop1 = layers.Dropout(0.5)
+        self.conv1 = layers.Conv1D(
+            filters=hparams[config.HP_FILTERS] * 2,
+            kernel_size=6,
+            strides=2,
+            padding="same",
+            activation=layers.LeakyReLU()
+        )
+        self.max1 = layers.MaxPool1D(
+            pool_size=2,
+            strides=2,
+            padding="same"
+        )
+        self.drop2 = layers.Dropout(0.5)
         self.flat = layers.Flatten()
-        self.dense = layers.Dense(8, input_shape=(self.dense_shape,), activation=layers.LeakyReLU())
-        self.dense_out = layers.Dense(1, activation="sigmoid")
+        self.dense_out = layers.Dense(2, activation="softmax")
 
     def call(self, inputs, training=None, mask=None):
 
-        x = self.conv_1(inputs)
-        x = self.drop(x, training)
-        x = self.avg(x)
+        x = self.drop0(inputs, training)
+        x = self.conv0(x)
+        x = self.max0(x)
+
+        x = self.drop1(x, training)
+        x = self.conv1(x)
+        x = self.max1(x)
+
         x = self.flat(x)
-        #x = tf.reshape(x, [-1, ])
-        #x = self.dense(x)
+        x = self.drop2(x, training)
+
         return self.dense_out(x)
 
     def model(self):
-        x = layers.Input(shape=(500, 5))
+        x = layers.Input(shape=(500, 2))
         return tf.keras.Model(inputs=[x], outputs=self.call(x))

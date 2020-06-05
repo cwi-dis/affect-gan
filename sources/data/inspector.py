@@ -217,7 +217,7 @@ def tsna_visualization(data):
     ax.legend()
     plt.show()
 
-def interactive_signal_plot(datagen):
+def interactive_signal_plot(datagen, disc):
     mpl.rcParams['font.family'] = 'Avenir'
     mpl.rcParams['font.size'] = 8
     mpl.rcParams['axes.linewidth'] = 2
@@ -262,13 +262,15 @@ def interactive_signal_plot(datagen):
     sub_1_text = TextBox(ax=ax_text1, label="Sub. 1 ID", initial="18", label_pad=0.05)
 
     sig = datagen.get(arousal_value=0, subject_value=0, sub0=4, sub1=18)
+    _, _, class_pred, subj_pred = disc(sig)
+    print("Arrousal Prediction: %s" % class_pred)
 
     scale = range(500)
-    n_signals = len(sig[0])
+    n_signals = len(sig[0, 0])
 
     fig_sig = []
     for i in range(n_signals):
-        f, = ax.plot(scale, sig[:, i], color=colors[i])
+        f, = ax.plot(scale, sig[0, :, i], color=colors[i])
         fig_sig.append(f)
 
     def slider_update(val):
@@ -277,8 +279,10 @@ def interactive_signal_plot(datagen):
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
         new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=True)
+        _, _, class_pred, subj_pred = disc(new_sig)
+        print("Arrousal Prediction: %s" % class_pred)
         for i in range(n_signals):
-            fig_sig[i].set_data(scale, new_sig[:, i])
+            fig_sig[i].set_data(scale, new_sig[0, :, i])
         fig.canvas.draw_idle()
 
     def seed_button_click(v):
@@ -287,8 +291,10 @@ def interactive_signal_plot(datagen):
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
         new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=False)
+        _, _, class_pred, subj_pred = disc(new_sig)
+        print("Arrousal Prediction: %s" % class_pred)
         for i in range(n_signals):
-            fig_sig[i].set_data(scale, new_sig[:, i])
+            fig_sig[i].set_data(scale, new_sig[0, :, i])
         fig.canvas.draw_idle()
 
 
@@ -309,12 +315,12 @@ if __name__ == '__main__':
     #                        normalized=True, continuous_labels=False)
     #data = dataloader("inspect", 1, leave_out=5)
     datagenerator = DatasetGenerator(batch_size=1,
-                                     generator_path="../Logs/wgan-tests/06.gen-no-pe/model_gen/200000",
+                                     generator_path="../Logs/loso-wgan-gp20200603-122650/subject-4-out/model_gen",
                                      class_conditioned=True,
                                      subject_conditioned=True,
                                      categorical_sampling=False,
                                      no_subject_output=True)
-    #disc = tf.keras.models.load_model("../Logs/wgan-gp20200517-135001/model_dis")
+    disc = tf.keras.models.load_model("../Logs/loso-wgan-gp20200603-122650/subject-4-out/model_dis")
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
     #print(extended_labels.describe())
@@ -324,7 +330,7 @@ if __name__ == '__main__':
     #video_viz(extended_labels)
 
     #plot_signals(data, generated=False, disc=None)
-    interactive_signal_plot(datagenerator)
+    interactive_signal_plot(datagenerator, disc)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)
