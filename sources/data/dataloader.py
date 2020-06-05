@@ -173,7 +173,7 @@ class Dataloader(object):
             dataset = dataset.repeat()
 
         if one_hot:
-            dataset = dataset.map(lambda data, label, subject: (data, tf.one_hot(tf.cast(label, tf.int32), depth=2)))
+            dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
 
         #Fix for dual output classification
         #if len(self.labels) == 2:

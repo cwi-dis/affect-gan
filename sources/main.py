@@ -60,8 +60,8 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
 
     features = config.FEATURES
     dataloader = Dataloader("5000d", features, labels, continuous_labels=continuous_labels, normalized=True)
-    train_dataset = dataloader("train", 128, leave_out=hparams[config.OUT_SUBJECT])
-    eval_dataset = dataloader("eval", 128, leave_out=hparams[config.OUT_SUBJECT])
+    train_dataset = dataloader("train", 128, leave_out=hparams[config.OUT_SUBJECT], one_hot=True)
+    eval_dataset = dataloader("eval", 128, leave_out=hparams[config.OUT_SUBJECT], one_hot=True)
 
     if model_name == "BaseNET":
         model = BaseNET1(hparams)  # ResNET(num_classes=1)
