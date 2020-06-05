@@ -382,11 +382,11 @@ def run_loso_cv(model_name):
                 train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
             else:
                 train_label = data_source.split('_')
-                wgan_path = "loso-wgan-class" if train_label[1] is "cls" else "loso-wgan-class-subject"
+                wgan_path = "loso-wgan-class" if train_label[1] == "cls" else "loso-wgan-class-subject"
                 wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
                 subj_cond = True if train_label[1] is "subjcls" else False
-                class_categorical_sampling = True if (train_label[2] is "categ") or (train_label[2] is "intpcateg") else False
-                subject_categorical_sampling = True if train_label[2] is "categ" else False
+                class_categorical_sampling = True if (train_label[2] == "categ") or (train_label[2] == "intpcateg") else False
+                subject_categorical_sampling = True if train_label[2] == "categ" else False
                 discriminator_class_conditioned = True if len(train_label) == 4 else False
                 train_set = DatasetGenerator(batch_size=128,
                                              path=wgan_path,
@@ -399,7 +399,7 @@ def run_loso_cv(model_name):
             for rerun in range(config.NUM_RERUNS):
                 print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
                 if data_source is not "real":
-                    print("Arr categ: %s, Sub categ: %s, dis_used: %s" % (class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned))
+                    print("path: %s\nArr categ: %s\nSub categ: %s\ndis_used: %s" % (wgan_path, class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned))
                 run_logdir = os.path.join(logdir, run_name, ".%d" % rerun)
 
                 if model_name == "BaseNET":
