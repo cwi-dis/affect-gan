@@ -380,7 +380,9 @@ def run_loso_cv(model_name):
             run_name = "%s-%s" % (subject_label, data_source)
             if data_source is "real":
                 train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
+                steps_per_epoch = None
             else:
+                steps_per_epoch = 517
                 train_label = data_source.split('_')
                 wgan_path = "loso-wgan-class" if train_label[1] == "cls" else "loso-wgan-class-subject"
                 wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
@@ -413,7 +415,7 @@ def run_loso_cv(model_name):
 
                 callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
 
-                model.fit(train_set, epochs=100, validation_data=eval_set, callbacks=callbacks)
+                model.fit(train_set, epochs=100, steps_per_epoch=steps_per_epoch, validation_data=eval_set, callbacks=callbacks)
 
                 del model
 
