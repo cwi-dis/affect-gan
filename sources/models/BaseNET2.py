@@ -10,7 +10,7 @@ class BaseNET2(tf.keras.Model):
         super(BaseNET2, self).__init__()
 
         self.downres0 = DownResLayer(
-            channels_out=hparams[config.HP_FILTERS],
+            channels_out=4,
             dropout_rate=0.25,
             kernel_size=6,
             normalization="batch",
@@ -19,7 +19,7 @@ class BaseNET2(tf.keras.Model):
         )
 
         self.downres1 = DownResLayer(
-            channels_out=hparams[config.HP_FILTERS]*2,
+            channels_out=4*2,
             dropout_rate=0.25,
             kernel_size=6,
             normalization="batch",

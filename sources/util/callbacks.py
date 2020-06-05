@@ -122,10 +122,10 @@ class CallbacksProducer:
         #    min_lr=0.0001
         #)
 
-        #self.callbacks["early_stop"] = callbacks.EarlyStopping(
-        #    monitor="val_loss",
-        #    patience=8
-        #)
+        self.callbacks["early_stop"] = callbacks.EarlyStopping(
+            monitor="val_loss",
+            patience=10
+        )
 
         #self.callbacks["confusion_matrix"] = ConfusionMatrixCallback(
         #    val_data=val_data,

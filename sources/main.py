@@ -362,9 +362,9 @@ def train_loso_gans(model_name):
 def run_loso_cv(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
-    labels = config.LABELS
+    features = config.FEATURES
     dataloader = Dataloader(
-        "5000d", labels,
+        "5000d", features,
         normalized=True,
         continuous_labels=False
     )
@@ -372,46 +372,53 @@ def run_loso_cv(model_name):
 
     for out_subject in config.OUT_SUBJECT.domain.values:
         subject_label = "subject-%d-out" % out_subject
-        eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject)
+        eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject, one_hot=True)
 
         for data_source in config.TRAIN_DATA.domain.values:
             hparams = {config.OUT_SUBJECT: out_subject,
                        config.TRAIN_DATA: data_source}
             run_name = "%s-%s" % (subject_label, data_source)
             if data_source is "real":
-                train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject)
+                train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
             else:
                 train_label = data_source.split('_')
                 wgan_path = "loso-wgan-class" if train_label[1] is "cls" else "loso-wgan-class-subject"
-                wgan_path = os.path.join(generator_base_path, wgan_path, subject_label, "model_gen")
+                wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
                 subj_cond = True if train_label[1] is "subjcls" else False
-                categorical_sampling = True if train_label[2] is "catg" else False
+                class_categorical_sampling = True if (train_label[2] is "categ") or (train_label[2] is "intpcateg") else False
+                subject_categorical_sampling = True if train_label[2] is "categ" else False
+                discriminator_class_conditioned = True if len(train_label) == 4 else False
                 train_set = DatasetGenerator(batch_size=128,
-                                             generator_path=wgan_path,
-                                             class_conditioned=True,
+                                             path=wgan_path,
                                              subject_conditioned=subj_cond,
-                                             categorical_sampling=categorical_sampling,
-                                             no_subject_output=True).__call__()
+                                             class_categorical_sampling=class_categorical_sampling,
+                                             subject_categorical_sampling=subject_categorical_sampling,
+                                             discriminator_class_conditioned=discriminator_class_conditioned,
+                                             no_subject_output=True,
+                                             argmaxed_label=True).__call__()
             for rerun in range(config.NUM_RERUNS):
                 print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
+                if data_source is not "real":
+                    print("Arr categ: %s, Sub categ: %s, dis_used: %s" % (class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned))
                 run_logdir = os.path.join(logdir, run_name, ".%d" % rerun)
 
-                if model_name == "AttentionNET":
-                    model = AttentionNET(hparams)
+                if model_name == "BaseNET":
+                    model = BaseNET2(hparams)
 
                 model.compile(
-                    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.5, beta_2=0.9),
+                    optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.9, beta_2=0.99),
                     loss=[tf.keras.losses.KLD],
-                    metrics=["accuracy"]
+                    metrics=["accuracy", MCC()]
                 )
 
                 callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
 
-                model.fit(train_set, epochs=200, steps_per_epoch=50, validation_data=eval_set, callbacks=callbacks)
+                model.fit(train_set, epochs=100, validation_data=eval_set, callbacks=callbacks)
 
                 del model
 
             del train_set
+        del eval_set
 
 
 def main():
@@ -421,10 +428,10 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     # single_run(model_name="AttentionNET2")
-    #run_loso_cv(model_name="AttentionNET")
+    run_loso_cv(model_name="BaseNET")
     #run_gan(model_name="wgan-gp")
     #train_loso_gans(model_name="wgan-gp")
-    hp_sweep_run(logdir, model_name="BaseNET")
+    #hp_sweep_run(logdir, model_name="BaseNET")
 
 
 def summary():

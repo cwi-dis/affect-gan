@@ -28,7 +28,7 @@ class CastingBinaryAccuracy(tf.keras.metrics.BinaryAccuracy):
 
 class MCC(tfa.metrics.MatthewsCorrelationCoefficient):
     def __init__(self, **kwargs):
-        super(MCC, self).__init__(num_classes=1, **kwargs)
+        super(MCC, self).__init__(num_classes=1, name="MCC", **kwargs)
 
     def update_state(self, y_true, y_pred, sample_weight=None):
         y_true = tf.expand_dims(tf.argmax(y_true, axis=-1), axis=-1)

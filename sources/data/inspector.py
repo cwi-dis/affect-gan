@@ -135,26 +135,24 @@ def plot_label_heatmap(labels):
 
 def plot_signal(signal):
     colors = ["blue", "red", "green"]
+    fig = plt.figure(figsize=(8, 2))
     x = range(len(signal))
     n_signals = signal.shape[-1]
-    fig, axs = plt.subplots(1, sharex=True)
+    axs = fig.add_subplot(111)
     #for i in range(n_signals):
     #    axs.plot(x, signal[:, i], color=colors[i])
-    if n_signals == 1:
-        axs.plot(x, signal[:, 0])
-    else:
-        for i, ax in enumerate(axs):
-            ax.plot(x, signal[:, i])
-        multi = MultiCursor(fig.canvas, axs, color='r', lw=1)
+    for i in range(n_signals):
+        f, = axs.plot(x, signal[:, i], color=colors[i])
     plt.show()
 
 def plot_signals(data, generated=False, disc=None):
     for signal, label, subject in data.take(100):
+        print("###########################")
         if disc:
             _, v, labp, subp = disc(signal)
             print(v)
             print(np.around(labp, 2))
-            print(np.around(subp, 2))
+            #print(np.around(subp, 2))
         print(label)
         print(np.around(subject, 2))
         plot_signal(signal[0])
@@ -261,9 +259,9 @@ def interactive_signal_plot(datagen, disc):
     sub_0_text = TextBox(ax=ax_text0, label="Sub. 0 ID", initial="4", label_pad=0.05)
     sub_1_text = TextBox(ax=ax_text1, label="Sub. 1 ID", initial="18", label_pad=0.05)
 
-    sig = datagen.get(arousal_value=0, subject_value=0, sub0=4, sub1=18)
-    _, _, class_pred, subj_pred = disc(sig)
-    print("Arrousal Prediction: %s" % class_pred)
+    sig, class_pred = datagen.get(arousal_value=0, subject_value=0, sub0=4, sub1=18)
+    _, _, class_pred2, subj_pred = disc(sig)
+    print("Arrousal Prediction: %s or %s" % (class_pred, class_pred2))
 
     scale = range(500)
     n_signals = len(sig[0, 0])
@@ -278,9 +276,9 @@ def interactive_signal_plot(datagen, disc):
         subject_val = slider_subject.val
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
-        new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=True)
-        _, _, class_pred, subj_pred = disc(new_sig)
-        print("Arrousal Prediction: %s" % class_pred)
+        new_sig, class_pred = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=True)
+        _, _, class_pred2, subj_pred = disc(new_sig)
+        print("Arrousal Prediction: %s or %s" % (class_pred, class_pred2))
         for i in range(n_signals):
             fig_sig[i].set_data(scale, new_sig[0, :, i])
         fig.canvas.draw_idle()
@@ -291,8 +289,8 @@ def interactive_signal_plot(datagen, disc):
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
         new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=False)
-        _, _, class_pred, subj_pred = disc(new_sig)
-        print("Arrousal Prediction: %s" % class_pred)
+        _, _, class_pred2, subj_pred = disc(new_sig)
+        print("Arrousal Prediction: %s or %s" % (class_pred, class_pred2))
         for i in range(n_signals):
             fig_sig[i].set_data(scale, new_sig[0, :, i])
         fig.canvas.draw_idle()
@@ -315,11 +313,15 @@ if __name__ == '__main__':
     #                        normalized=True, continuous_labels=False)
     #data = dataloader("inspect", 1, leave_out=5)
     datagenerator = DatasetGenerator(batch_size=1,
-                                     generator_path="../Logs/loso-wgan-gp20200603-122650/subject-4-out/model_gen",
-                                     class_conditioned=True,
+                                     path="../Logs/loso-wgan-gp20200603-122650/subject-4-out",
                                      subject_conditioned=True,
-                                     categorical_sampling=False,
-                                     no_subject_output=True)
+                                     class_categorical_sampling=False,
+                                     subject_categorical_sampling=False,
+                                     discriminator_class_conditioned=False,
+                                     no_subject_output=False,
+                                     argmaxed_label=True
+                                     )
+    datag = datagenerator()
     disc = tf.keras.models.load_model("../Logs/loso-wgan-gp20200603-122650/subject-4-out/model_dis")
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
@@ -329,8 +331,8 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    #plot_signals(data, generated=False, disc=None)
-    interactive_signal_plot(datagenerator, disc)
+    plot_signals(datag, generated=True, disc=disc)
+    #interactive_signal_plot(datagenerator, disc)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)

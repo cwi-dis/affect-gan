@@ -6,16 +6,22 @@ import os
 
 
 class _DataGenerator:
-    def __init__(self, file_path, batch_size, noise_dim, class_conditioned, subject_conditioned, categorical_sampling):
-        self.file_path = file_path
+    def __init__(self, file_path, batch_size, noise_dim, subject_conditioned, class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned):
+        self.gen_file_path = os.path.join(file_path, "model_gen")
+        self.dis_file_path = os.path.join(file_path, "model_dis")
         self.batch_size = batch_size
         self.noise_dim = noise_dim
-        self.class_conditioned = class_conditioned
         self.subject_conditioned = subject_conditioned
-        self.categorical_sampling = categorical_sampling
+        self.class_categorical_sampling = class_categorical_sampling
+        self.subject_categorical_sampling = subject_categorical_sampling
+        self.discriminator_class_conditioned = discriminator_class_conditioned
 
         self.generator = tf.keras.models.load_model(
-            filepath=self.file_path
+            filepath=self.gen_file_path
+        )
+
+        self.discriminator = tf.keras.models.load_model(
+            filepath=self.dis_file_path
         )
 
         self.last_seed = None
@@ -23,17 +29,25 @@ class _DataGenerator:
     def __call__(self, *args, **kwargs):
         while True:
             seed = tf.random.normal(shape=[self.batch_size, self.noise_dim])
-            if self.categorical_sampling:
+            if self.class_categorical_sampling:
                 generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=2, dtype=tf.int32), depth=2)
+            else:
+                generator_class_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 2], stddev=1))
+            if self.subject_categorical_sampling:
                 generator_subject_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=29, dtype=tf.int32), depth=29)
             else:
-                generator_class_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 2], stddev=2))
-                generator_subject_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 29], stddev=4))
-            if self.class_conditioned:
-                seed = tf.concat([seed, generator_class_inputs], axis=-1)
+                generator_subject_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 29], stddev=5))
+
+            # arousal seed
+            seed = tf.concat([seed, generator_class_inputs], axis=-1)
+
             if self.subject_conditioned:
                 seed = tf.concat([seed, generator_subject_inputs], axis=-1)
             gen_sig = self.generator(seed, training=False)
+
+            if self.discriminator_class_conditioned:
+                _, _, generator_class_inputs, _ = self.discriminator(gen_sig)
+
             yield gen_sig, generator_class_inputs, generator_subject_inputs
 
     def get(self, arousal_seed, subject_seed, noise_seed_reuse):
@@ -42,23 +56,27 @@ class _DataGenerator:
         else:
             seed = tf.random.normal(shape=[1, self.noise_dim])
             self.last_seed = seed
-        if self.class_conditioned:
-            seed = tf.concat([seed, tf.cast(arousal_seed, tf.float32)], axis=-1)
+
+        # arousal seed
+        seed = tf.concat([seed, tf.cast(arousal_seed, tf.float32)], axis=-1)
+
         if self.subject_conditioned:
             seed = tf.concat([seed, tf.cast(subject_seed, tf.float32)], axis=-1)
 
         gen_sig = self.generator(seed, training=False)
+        _, _, dis_class, _ = self.discriminator(gen_sig)
 
-        return gen_sig
+        return gen_sig, dis_class
 
 
 class DatasetGenerator:
-    def __init__(self, batch_size, generator_path, class_conditioned, subject_conditioned, categorical_sampling, no_subject_output=False,):
+    def __init__(self, batch_size, path, subject_conditioned, class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned, no_subject_output=False, argmaxed_label=False):
         self.batch_size = batch_size
         self.no_subject_output = no_subject_output
+        self.argmaxed_label = argmaxed_label
 
         noise_dim = 100 if subject_conditioned else 129
-        self.generator = _DataGenerator(generator_path, batch_size, noise_dim, class_conditioned, subject_conditioned, categorical_sampling)
+        self.generator = _DataGenerator(path, batch_size, noise_dim, subject_conditioned, class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned)
 
     def __call__(self, *args, **kwargs):
         datagenerator = tf.data.Dataset.from_generator(
@@ -66,6 +84,9 @@ class DatasetGenerator:
             output_types=(tf.float32, tf.float32, tf.float32),
             output_shapes=((self.batch_size, 500, None), (self.batch_size, 2), (self.batch_size, 29))
         )
+
+        if self.argmaxed_label:
+            datagenerator = datagenerator.map(lambda signal, label, subject: (signal, tf.one_hot(tf.argmax(label, axis=-1), depth=2), subject))
 
         if self.no_subject_output:
             datagenerator = datagenerator.map(lambda signal, label, subject: (signal, label))
