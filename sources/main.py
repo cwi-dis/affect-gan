@@ -10,6 +10,7 @@ import config
 import multiprocessing
 
 from models.BaseNET1 import BaseNET1
+from models.BaseNET2 import BaseNET2
 from models.SimpleLSTM import SimpleLSTM
 from models.ConvLSTM import ConvLSTM
 from models.ChannelCNN import ChannelCNN
@@ -64,7 +65,7 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
     eval_dataset = dataloader("eval", 128, leave_out=hparams[config.OUT_SUBJECT], one_hot=True)
 
     if model_name == "BaseNET":
-        model = BaseNET1(hparams)  # ResNET(num_classes=1)
+        model = BaseNET2(hparams)  # ResNET(num_classes=1)
     if model_name == "SimpleLSTM":
         model = SimpleLSTM(hparams)
     if model_name == "ConvLSTM":
@@ -437,12 +438,12 @@ def summary():
 
     # ResNET(num_classes=1).model().summary()
     # SimpleLSTM(hparams).model().summary()
-    BaseNET1(hparams).model().summary()
+    BaseNET2(hparams).model().summary()
     # ConvLSTM(hparams).model().summary()
     # ChannelCNN(hparams, 5).model().summary()
     # DeepCNN(hparams).model().summary()
     # LateFuseCNN(hparams, 5).model().summary()
-    # AttentionNET(hparams).model().summary()
+    #AttentionNET(hparams).model().summary()
     #Generator(n_signals=2).model().summary()
     #Discriminator(True, True).model().summary()
 
