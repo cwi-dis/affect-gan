@@ -31,8 +31,8 @@ class MCC(tfa.metrics.MatthewsCorrelationCoefficient):
         super(MCC, self).__init__(num_classes=1, **kwargs)
 
     def update_state(self, y_true, y_pred, sample_weight=None):
-        y_true = tf.argmax(y_true, axis=-1)
-        y_pred = tf.argmax(y_pred, axis=-1)
+        y_true = tf.expand_dims(tf.argmax(y_true, axis=-1), axis=1)
+        y_pred = tf.expand_dims(tf.argmax(y_pred, axis=-1), axis=1)
         tf.print(tf.shape(y_true))
         super(MCC, self).update_state(y_true, y_pred, sample_weight)
 
