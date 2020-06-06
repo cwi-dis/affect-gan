@@ -58,7 +58,7 @@ class MetricsCallback(callbacks.TensorBoard):
         else:
             if np.greater(current_acc, self.best_eval):
                 self.best_eval = current_acc
-        logs.update({"val_best": self.best_eval})
+        logs.update({"val_best_acc": self.best_eval})
 
         current_mcc = logs.get("val_MCC")
         if current_mcc is None:
@@ -68,7 +68,7 @@ class MetricsCallback(callbacks.TensorBoard):
         else:
             if np.greater(current_mcc, self.best_mcc):
                 self.best_mcc = current_mcc
-        logs.update({"mcc_best": self.best_mcc})
+        logs.update({"val_best_mcc": self.best_mcc})
 
         current_wf1 = logs.get("val_WF1")
         if current_wf1 is None:
@@ -78,7 +78,7 @@ class MetricsCallback(callbacks.TensorBoard):
         else:
             if np.greater(current_wf1, self.best_wf1):
                 self.best_wf1 = current_wf1
-        logs.update({"wf1_best": self.best_wf1})
+        logs.update({"val_best_wf1": self.best_wf1})
 
         super(MetricsCallback, self).on_epoch_end(epoch, logs)
 

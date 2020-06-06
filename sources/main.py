@@ -402,7 +402,7 @@ def run_loso_cv(model_name):
                 print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
                 if data_source is not "real":
                     print("path: %s\nArr categ: %s\nSub categ: %s\ndis_used: %s" % (wgan_path, class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned))
-                run_logdir = os.path.join(logdir, run_name, ".%d" % rerun)
+                run_logdir = os.path.join(logdir, subject_label, data_source, ".%d" % rerun)
 
                 if model_name == "BaseNET":
                     model = BaseNET2(hparams)

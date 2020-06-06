@@ -98,9 +98,9 @@ class Discriminator(tf.keras.Model):
         if self.subject_conditional:
             s = self.dense_subject_output(x_s)
 
-        x_s = self.dense_output(x_s)
+        fscore = self.dense_output(x_s)
 
-        return tf.keras.activations.sigmoid(x_s), x_s, c, s
+        return x_s, fscore, c, s
 
     def model(self):
         x = layers.Input(shape=(500, 5), batch_size=2)
