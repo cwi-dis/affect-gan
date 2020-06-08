@@ -308,10 +308,10 @@ def interactive_signal_plot(datagen, disc):
 if __name__ == '__main__':
     os.chdir("./..")
     init_tf_gpus()
-    #dataloader = Dataloader("5000d", features=["ecg", "gsr"],
-    #                        label=["arousal"],
-    #                        normalized=True, continuous_labels=False)
-    #data = dataloader("inspect", 1, leave_out=5)
+    dataloader = Dataloader("5000d", features=["ecg", "gsr"],
+                            label=["arousal"],
+                            normalized=True, continuous_labels=False)
+    data = dataloader("inspect", 1, leave_out=5)
     datagenerator = DatasetGenerator(batch_size=1,
                                      path="../Logs/loso-wgan-gp20200603-122650/subject-4-out",
                                      subject_conditioned=True,

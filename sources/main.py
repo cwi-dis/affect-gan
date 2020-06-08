@@ -22,6 +22,7 @@ from models.AttentionNETDual import AttentionNETDual
 from models.TAGAN import Generator, Discriminator
 from data.dataloader import Dataloader
 from data.datagenerator import DatasetGenerator
+from data.MixedDataset import MixedDataset
 from train_gan import GAN_Trainer
 
 from util.callbacks import CallbacksProducer
@@ -359,7 +360,7 @@ def train_loso_gans(model_name):
         del trainer
 
 
-def run_loso_cv(model_name):
+def run_loso_cv(model_name, mixed=True):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
     features = config.FEATURES
@@ -382,7 +383,7 @@ def run_loso_cv(model_name):
                 train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
                 steps_per_epoch = None
             else:
-                steps_per_epoch = 517
+                steps_per_epoch = 518
                 train_label = data_source.split('_')
                 wgan_path = "loso-wgan-class" if train_label[1] == "cls" else "loso-wgan-class-subject"
                 wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
@@ -390,14 +391,26 @@ def run_loso_cv(model_name):
                 class_categorical_sampling = True if (train_label[2] == "categ") or (train_label[2] == "intpcateg") else False
                 subject_categorical_sampling = True if train_label[2] == "categ" else False
                 discriminator_class_conditioned = True if len(train_label) == 4 else False
-                train_set = DatasetGenerator(batch_size=128,
-                                             path=wgan_path,
+
+                if mixed:
+                    train_set = MixedDataset(path=wgan_path,
+                                             batch_size=128,
+                                             features=features,
                                              subject_conditioned=subj_cond,
                                              class_categorical_sampling=class_categorical_sampling,
                                              subject_categorical_sampling=subject_categorical_sampling,
                                              discriminator_class_conditioned=discriminator_class_conditioned,
-                                             no_subject_output=True,
-                                             argmaxed_label=True).__call__()
+                                             argmaxed_label=True
+                                             ).__call__(out_subject=out_subject)
+                else:
+                    train_set = DatasetGenerator(batch_size=128,
+                                                 path=wgan_path,
+                                                 subject_conditioned=subj_cond,
+                                                 class_categorical_sampling=class_categorical_sampling,
+                                                 subject_categorical_sampling=subject_categorical_sampling,
+                                                 discriminator_class_conditioned=discriminator_class_conditioned,
+                                                 no_subject_output=True,
+                                                 argmaxed_label=True).__call__()
             for rerun in range(config.NUM_RERUNS):
                 print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
                 if data_source is not "real":

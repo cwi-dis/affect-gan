@@ -91,6 +91,8 @@ class DatasetGenerator:
         if self.no_subject_output:
             datagenerator = datagenerator.map(lambda signal, label, subject: (signal, label))
 
+        datagenerator = datagenerator.prefetch(buffer_size=2)
+
         return datagenerator
 
     def get(self, arousal_value, subject_value, sub0, sub1, noise_seed_reuse=False):
