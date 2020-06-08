@@ -126,7 +126,7 @@ class Dataloader(object):
 
         return features, labels, video, subject
 
-    def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False):
+    def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False, repeat=False):
 
         modes = ["train", "test", "eval", "inspect", "test_eval", "gan", "cgan"]
         if mode not in modes:
@@ -170,7 +170,6 @@ class Dataloader(object):
         if mode is "gan":
             dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
             dataset = dataset.shuffle(buffer_size=30000)
-            dataset = dataset.repeat()
 
         if one_hot:
             dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
@@ -181,11 +180,13 @@ class Dataloader(object):
 
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=30000)
-            #dataset = dataset.repeat()
 
         if mode == "test_eval":
             return dataset.shuffle(1000, seed=42).batch(500000).take(1)
-        
+
+        if repeat:
+            dataset = dataset.repeat()
+
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)
 

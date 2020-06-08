@@ -25,7 +25,11 @@ class MixedDataset:
 
     def __call__(self, out_subject, *args, **kwargs):
         fake_dataset = self.fake_datagenerator()
-        real_dataset = self.real_dataloader(mode="train", batch_size=self.batch_chunks, leave_out=out_subject, one_hot=True)
+        real_dataset = self.real_dataloader(mode="train",
+                                            batch_size=self.batch_chunks,
+                                            leave_out=out_subject,
+                                            one_hot=True,
+                                            repear=True)
 
         mixed_dataset = tf.data.experimental.sample_from_datasets(
             datasets=[fake_dataset, real_dataset]
