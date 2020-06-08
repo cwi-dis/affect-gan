@@ -46,7 +46,8 @@ class _DataGenerator:
             gen_sig = self.generator(seed, training=False)
 
             if self.discriminator_class_conditioned:
-                _, _, generator_class_inputs, _ = self.discriminator(gen_sig)
+                _, _, discriminator_class_prediction, _ = self.discriminator(gen_sig)
+                yield gen_sig, discriminator_class_prediction, generator_subject_inputs
 
             yield gen_sig, generator_class_inputs, generator_subject_inputs
 
