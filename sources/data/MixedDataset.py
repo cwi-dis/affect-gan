@@ -29,7 +29,7 @@ class MixedDataset:
                                             batch_size=self.batch_chunks,
                                             leave_out=out_subject,
                                             one_hot=True,
-                                            repear=True)
+                                            repeat=True)
 
         mixed_dataset = tf.data.experimental.sample_from_datasets(
             datasets=[fake_dataset, real_dataset]

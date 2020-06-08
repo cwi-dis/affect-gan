@@ -129,6 +129,30 @@ class MetricsCallback(callbacks.TensorBoard):
                         for (name, value) in these_logs:
                             summary_ops_v2.scalar(name, value, step=step)
 
+class ThresholdEarlyStopping(callbacks.EarlyStopping):
+    def __init__(self, min_epoch, *args, **kwargs):
+        self.min_epoch = min_epoch
+        super(ThresholdEarlyStopping, self).__init__(*args, **kwargs)
+
+    def on_epoch_end(self, epoch, logs=None):
+        current = self.get_monitor_value(logs)
+        if current is None:
+            return
+        if self.monitor_op(current - self.min_delta, self.best):
+            self.best = current
+            self.wait = 0
+            if self.restore_best_weights:
+                self.best_weights = self.model.get_weights()
+        else:
+            self.wait += 1
+            if (self.wait >= self.patience) and (epoch >= self.min_epoch):
+                self.stopped_epoch = epoch
+                self.model.stop_training = True
+                if self.restore_best_weights:
+                    if self.verbose > 0:
+                        print('Restoring model weights from the end of the best epoch.')
+                    self.model.set_weights(self.best_weights)
+
 class CallbacksProducer:
 
     def __init__(self, hparams, logdir, run_name, val_data=None):
@@ -147,7 +171,8 @@ class CallbacksProducer:
         #    min_lr=0.0001
         #)
 
-        self.callbacks["early_stop"] = callbacks.EarlyStopping(
+        self.callbacks["early_stop"] = ThresholdEarlyStopping(
+            min_epoch=25,
             monitor="val_loss",
             patience=10
         )
