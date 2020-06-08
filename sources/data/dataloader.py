@@ -178,14 +178,14 @@ class Dataloader(object):
         #if len(self.labels) == 2:
         #    dataset = dataset.map(lambda data, labels: (data, (labels[0], labels[1])))
 
+        if repeat:
+            dataset = dataset.repeat()
+
         if mode == "train":
             dataset = dataset.shuffle(buffer_size=30000)
 
         if mode == "test_eval":
             return dataset.shuffle(1000, seed=42).batch(500000).take(1)
-
-        if repeat:
-            dataset = dataset.repeat()
 
         dataset = dataset.batch(batch_size)
         dataset = dataset.prefetch(1)
