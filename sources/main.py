@@ -19,7 +19,7 @@ from models.LateFuseCNN import LateFuseCNN
 from models.AttentionNET import AttentionNET
 from models.AttentionNET2 import AttentionNET as AttentionNET2
 from models.AttentionNETDual import AttentionNETDual
-from models.TAGAN import Generator, Discriminator
+from models.TCGAN import Generator, Discriminator
 from data.dataloader import Dataloader
 from data.datagenerator import DatasetGenerator
 from data.MixedDataset import MixedDataset
@@ -450,9 +450,9 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     # single_run(model_name="AttentionNET2")
-    run_loso_cv(model_name="BaseNET")
+    #run_loso_cv(model_name="BaseNET")
     #run_gan(model_name="wgan-gp")
-    #train_loso_gans(model_name="wgan-gp")
+    train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="BaseNET")
 
 
@@ -467,14 +467,14 @@ def summary():
 
     # ResNET(num_classes=1).model().summary()
     # SimpleLSTM(hparams).model().summary()
-    BaseNET2(hparams).model().summary()
+    #BaseNET2(hparams).model().summary()
     # ConvLSTM(hparams).model().summary()
     # ChannelCNN(hparams, 5).model().summary()
     # DeepCNN(hparams).model().summary()
     # LateFuseCNN(hparams, 5).model().summary()
     #AttentionNET(hparams).model().summary()
-    #Generator(n_signals=2).model().summary()
-    #Discriminator(True, True).model().summary()
+    Generator(n_signals=2).model().summary()
+    Discriminator(True, True).model().summary()
 
 
 if __name__ == '__main__':

@@ -304,25 +304,65 @@ def interactive_signal_plot(datagen, disc):
 
     plt.show()
 
+def visualize_tsna_denselayer(generator, discriminator, real_data):
+    real_activations = []
+    real_subjects = []
+    lcolors = []
+    pmarkers = []
+    cm = plt.cm.get_cmap('seismic')
+    for data, label, subject in real_data:
+        dense_act, _, pl ,_ = discriminator(data)
+        real_activations.append(dense_act)
+        #lcolors.append("blue" if label.numpy()[0,0] == 0 else "red")
+        lcolors.append(label.numpy()[0,0])
+        real_subjects.append(subject)
+
+
+    real_activations = tf.reshape(real_activations, (-1, 256))
+
+    tsne = TSNE(n_components=2, perplexity=25, verbose=1, n_iter=5000)
+    tsne_results = tsne.fit_transform(real_activations)
+
+    f, ax = plt.subplots(1)
+    sc = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=lcolors, vmin=0, vmax=10, cmap=cm, alpha=0.4)
+    plt.colorbar(sc)
+    ax.legend()
+    plt.show()
+
 
 if __name__ == '__main__':
     os.chdir("./..")
     init_tf_gpus()
     dataloader = Dataloader("5000d", features=["ecg", "gsr"],
                             label=["arousal"],
-                            normalized=True, continuous_labels=False)
-    data = dataloader("inspect", 1, leave_out=5)
-    datagenerator = DatasetGenerator(batch_size=1,
-                                     path="../Logs/loso-wgan-gp20200603-122650/subject-4-out",
-                                     subject_conditioned=True,
-                                     class_categorical_sampling=False,
-                                     subject_categorical_sampling=False,
-                                     discriminator_class_conditioned=False,
-                                     no_subject_output=False,
-                                     argmaxed_label=True
-                                     )
-    datag = datagenerator()
-    disc = tf.keras.models.load_model("../Logs/loso-wgan-gp20200603-122650/subject-4-out/model_dis")
+                            normalized=True, continuous_labels=True)
+    data = dataloader("inspect", 1, leave_out=14)
+    #datagenerator = DatasetGenerator(batch_size=1,
+    #                                 path="../Logs/loso-wgan-gp20200603-122650/subject-4-out",
+    #                                 subject_conditioned=True,
+    #                                 class_categorical_sampling=False,
+    #                                 subject_categorical_sampling=False,
+    #                                 discriminator_class_conditioned=False,
+    #                                 no_subject_output=False,
+    #                                 argmaxed_label=True
+    #                                 )
+    #datag = datagenerator()
+    #disc = tf.keras.models.load_model("../Logs/loso-wgan-gp20200603-122650/subject-4-out/model_dis")
+
+
+    gen = DatasetGenerator(batch_size=1,
+                            path="../Logs/wgan-gp20200606-142301",
+                            subject_conditioned=True,
+                            class_categorical_sampling=False,
+                            subject_categorical_sampling=False,
+                            discriminator_class_conditioned=False,
+                            no_subject_output=False,
+                            argmaxed_label=True
+                           )
+    disc = tf.keras.models.load_model("../Logs/wgan-gp20200606-142301/model_dis")
+
+    visualize_tsna_denselayer(gen, disc, data)
+
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
     #print(extended_labels.describe())
@@ -331,7 +371,7 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    plot_signals(datag, generated=True, disc=disc)
+    #plot_signals(datag, generated=True, disc=disc)
     #interactive_signal_plot(datagenerator, disc)
     #positional_ecoding_viz()
 

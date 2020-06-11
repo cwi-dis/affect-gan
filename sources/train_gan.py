@@ -4,7 +4,7 @@ from util.CustomLosses import discriminator_loss, generator_loss, wgangp_critic_
 from util.CustomMetrics import discriminator_accuracy
 from data.inspector import plot_generated_signals, plot_to_image
 
-from models.TAGANdual import Generator, Discriminator
+from models.TCGAN import Generator, Discriminator
 
 class GAN_Trainer():
 
