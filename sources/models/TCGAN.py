@@ -52,11 +52,13 @@ class Discriminator(tf.keras.Model):
             first_layer=True,
             normalization="layer"
         )
-        self.local = DownResLayer(
+        self.non_local = AttentionLayer(
+            name="att0",
             channels_out=self.out_channels // 3,
+            filters_per_head=8,
+            num_attention_heads=3,
             kernel_size=5,
-            dropout_rate=0,
-            downsample_rate=1
+            use_positional_encoding=True
         )
         self.downres1 = DownResLayer(
             channels_out=self.out_channels // 2,
@@ -80,7 +82,7 @@ class Discriminator(tf.keras.Model):
     def call(self, inputs, training=None, mask=None):
         x = self.expand(inputs)
         x = self.downres0(x, training=training)
-        x = self.local(x, training=training)
+        x = self.non_local(x, training=training)
         x = self.downres1(x, training=training)
         x = self.downres2(x, training=training)
 

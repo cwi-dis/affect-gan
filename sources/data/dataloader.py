@@ -169,7 +169,7 @@ class Dataloader(object):
 
         if mode is "gan":
             dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
-            dataset = dataset.shuffle(buffer_size=30000)
+            dataset = dataset.repeat().shuffle(buffer_size=30000)
 
         if one_hot:
             dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
