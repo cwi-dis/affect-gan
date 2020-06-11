@@ -11,20 +11,19 @@ class AttentionNET(tf.keras.Model):
         super(AttentionNET, self).__init__()
 
         self.downres0 = DownResLayer(
-            channels_out=4,
+            channels_out=6,
             dropout_rate=0.2,
-            kernel_size=5,
-            normalization="layer",
+            kernel_size=6,
             first_layer=True,
             regularization=tf.keras.regularizers.l2(0.0005)
         )
 
         self.max_pool0 = layers.MaxPool1D(pool_size=2, strides=2)
         self.attention_layer = AttentionLayer(
-            channels_out=4,
-            filters_per_head=3,
+            channels_out=6,
+            filters_per_head=4,
             num_attention_heads=1,
-            use_positional_encoding=True,
+            use_positional_encoding=False,
             regularization=tf.keras.regularizers.l2(0.0005),
             kernel_size=6,
         )
@@ -32,11 +31,9 @@ class AttentionNET(tf.keras.Model):
         self.max_pool1 = layers.MaxPool1D(pool_size=2, strides=2)
 
         self.downres1 = DownResLayer(
-            channels_out=4,
-            dropout_rate=0.25,
+            channels_out=8,
+            dropout_rate=0.2,
             kernel_size=6,
-            normalization="layer",
-            downsample_rate=2,
             regularization=tf.keras.regularizers.l2(0.0005)
         )
 

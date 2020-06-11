@@ -41,8 +41,8 @@ class GAN_Trainer():
         self.classification_loss_factor = 0.25 if (self.class_conditional and self.subject_conditional) else 0.5
         dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.0008, 50000, 0.75)
         gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 10000, 0.75)
-        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.5, beta_2=0.99)
-        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.5, beta_2=0.99)
+        self.generator_optimizer = tf.keras.optimizers.Adam(learning_rate=gen_lr_decay, beta_1=0.2, beta_2=0.99)
+        self.discriminator_optimizer = tf.keras.optimizers.Adam(learning_rate=dis_lr_decay, beta_1=0.75, beta_2=0.99)
         self.train = self.train_vanilla if mode is "vanilla_gan" else self.train_wgangp
 
         self.discriminator_path = os.path.join(logdir, "model_dis")

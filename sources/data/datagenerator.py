@@ -92,7 +92,7 @@ class DatasetGenerator:
         if self.no_subject_output:
             datagenerator = datagenerator.map(lambda signal, label, subject: (signal, label))
 
-        datagenerator = datagenerator.prefetch(buffer_size=2)
+        #datagenerator = datagenerator.prefetch(buffer_size=2)
 
         return datagenerator
 

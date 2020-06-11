@@ -152,7 +152,7 @@ class Dataloader(object):
         files = tf.data.Dataset.from_tensor_slices(files)
 
         dataset = files.interleave(lambda f: tf.data.TFRecordDataset(f).map(self._decode, num_parallel_calls=1),
-                                   num_parallel_calls=tf.data.experimental.AUTOTUNE, block_length=16)
+                                   num_parallel_calls=1, block_length=16)
         #dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video, ___: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video, subject: (features, labels, subject))

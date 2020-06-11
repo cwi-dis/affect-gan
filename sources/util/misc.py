@@ -1,3 +1,4 @@
+import os
 import tensorflow as tf
 from tensorflow.python.ops import math_ops
 from collections import defaultdict
@@ -5,6 +6,7 @@ from collections import defaultdict
 def binary_discretize_labels(labels, threshold=5.0): return math_ops.cast(labels > threshold, labels.dtype)
 
 def init_tf_gpus():
+    #os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3' 
     print(tf.__version__)
     gpus = tf.config.experimental.list_physical_devices('GPU')
     print("Num GPUs Available: ", len(tf.config.experimental.list_physical_devices('GPU')))

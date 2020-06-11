@@ -8,7 +8,7 @@ from data.dataloader import Dataloader
 class MixedDataset:
     def __init__(self, path, batch_size, features, subject_conditioned, class_categorical_sampling, subject_categorical_sampling,
                  discriminator_class_conditioned, argmaxed_label=False):
-        self.batch_chunks = 16
+        self.batch_chunks = 16 
         self.batch_size = batch_size // self.batch_chunks
 
         self.fake_datagenerator = DatasetGenerator(batch_size=self.batch_chunks,
@@ -38,7 +38,7 @@ class MixedDataset:
         mixed_dataset = mixed_dataset.batch(batch_size=self.batch_size)
         mixed_dataset = mixed_dataset.map(lambda data, label:
                                           (tf.reshape(data, (-1, 500, 2)), tf.reshape(label, (-1, 2))))
-        mixed_dataset = mixed_dataset.prefetch(buffer_size=2)
+        #mixed_dataset = mixed_dataset.prefetch(buffer_size=2)
 
         return mixed_dataset
 

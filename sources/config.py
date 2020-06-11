@@ -1,14 +1,14 @@
 from tensorboard.plugins.hparams import api as hp
 
 INPUT_SIZE = 500
-NUM_RERUNS = 7 
+NUM_RERUNS = 4 
 GLOBAL_LR = 0.0003
 TRAIN_DATA = hp.HParam("Train Data Type", hp.Discrete(["real", "fake_cls_categ", "fake_subjcls_categ", "fake_cls_intp", "fake_subjcls_intp", "fake_subjcls_intpcateg", "fake_cls_intp_dis", "fake_subjcls_intp_dis"]))
-OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([4, 6, 8, 11, 18, 22, 25]))
 FEATURES = ["ecg", "gsr"]
+OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([25]))#[4, 6, 11, 18, 22, 25]))
 
 # BaseNET hparams
-HP_FILTERS = hp.HParam("filters", hp.Discrete([2, 4, 8]))
+HP_FILTERS = hp.HParam("filters", hp.Discrete([4]))
 HP_DROPOUT = hp.HParam("dropout", hp.Discrete([0.5, 0.75]))
 HP_KERNEL = hp.HParam("kernel_size", hp.Discrete([3, 5]))
 HP_DILATION = hp.HParam("dilation", hp.Discrete([1, 3]))

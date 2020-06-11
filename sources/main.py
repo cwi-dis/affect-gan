@@ -85,7 +85,7 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
         model = AttentionNETDual(hparams)
 
     model.compile(
-        optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.75),
+        optimizer=tf.keras.optimizers.Adam(learning_rate=0.001, beta_1=0.9),
         loss=loss,
         metrics=metrics
     )
@@ -93,6 +93,11 @@ def run(model_name, hparams, logdir, run_name=None, dense_shape=None):
     callbacks = CallbacksProducer(hparams, logdir, run_name).get_callbacks()
 
     model.fit(train_dataset, epochs=50, validation_data=eval_dataset, callbacks=callbacks)
+
+    del model
+    del dataloader
+    del train_dataset
+    del eval_dataset
 
 
 def hp_sweep_run(logdir, model_name):
@@ -225,7 +230,7 @@ def hp_sweep_run(logdir, model_name):
                                 run(model_name, hparams, run_logdir, run_name)
                                 session_num += 1
 
-    if model_name == "AttentionNET":
+    if model_name == "AttentionNET2":
         for filters in config.HP_ATT_FILTERS.domain.values:
             for extra in config.HP_ATT_EXTRA_LAYER.domain.values:
                 for attd in config.HP_ATT_DOWNRESATT.domain.values:
@@ -296,11 +301,11 @@ def single_run(model_name):
 def run_gan(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", model_name + run_id)
-    leave_out = 3
+    leave_out = 13 
     hparams = config.OPT_PARAMS["gan"]
-    labels = config.LABELS
+    features = config.FEATURES
     dataloader = Dataloader(
-        "5000d", labels, continuous_labels=False,
+        "5000d", features, continuous_labels=False,
         normalized=True
     )
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=leave_out)
@@ -310,7 +315,7 @@ def run_gan(model_name):
         hparams=hparams,
         logdir=logdir,
         num_classes=2,
-        n_signals=len(labels),
+        n_signals=len(features),
         leave_out=leave_out,
         class_conditional=True,
         subject_conditional=True,
@@ -348,9 +353,9 @@ def train_loso_gans(model_name):
             n_signals=len(labels),
             leave_out=out_subject,
             class_conditional=True,
-            subject_conditional=True,
+            subject_conditional=False,
             save_image_every_n_steps=1500,
-            n_critic=8,
+            n_critic=5,
             train_steps=200000
         )
 
@@ -413,7 +418,7 @@ def run_loso_cv(model_name, mixed=True):
                                                      no_subject_output=True,
                                                      argmaxed_label=True).__call__()
 
-                print("Subject: %d, Trained on %s data, Restart #%d" % (out_subject, data_source, rerun))
+                print("Subject: %d, Trained on %s data (mixed: %s), Restart #%d" % (out_subject, data_source, mixed&(data_source is not "real"), rerun))
                 if data_source is not "real":
                     print("path: %s\nArr categ: %s\nSub categ: %s\ndis_used: %s" % (wgan_path, class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned))
                 run_logdir = os.path.join(logdir, subject_label, data_source, ".%d" % rerun)
@@ -429,13 +434,13 @@ def run_loso_cv(model_name, mixed=True):
 
                 callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
 
-                model.fit(train_set, epochs=100, steps_per_epoch=steps_per_epoch, validation_data=eval_set, callbacks=callbacks)
+                model.fit(train_set, workers=1, epochs=100, steps_per_epoch=steps_per_epoch, validation_data=eval_set, callbacks=callbacks)
 
-                del model
-                del train_set
                 tf.keras.backend.clear_session()
+                #del model
+                #del train_set
 
-        del eval_set
+        #del eval_set
 
 
 def main():

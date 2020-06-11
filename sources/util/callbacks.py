@@ -172,7 +172,7 @@ class CallbacksProducer:
         #)
 
         self.callbacks["early_stop"] = ThresholdEarlyStopping(
-            min_epoch=25,
+            min_epoch=20,
             monitor="val_loss",
             patience=10
         )

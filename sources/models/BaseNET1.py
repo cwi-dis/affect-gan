@@ -22,7 +22,7 @@ class BaseNET1(tf.keras.Model):
             strides=2,
             padding="same"
         )
-        self.drop1 = layers.Dropout(0.5)
+        self.drop1 = layers.Dropout(0.2)
         self.conv1 = layers.Conv1D(
             filters=hparams[config.HP_FILTERS] * 2,
             kernel_size=6,
@@ -35,7 +35,7 @@ class BaseNET1(tf.keras.Model):
             strides=2,
             padding="same"
         )
-        self.drop2 = layers.Dropout(0.5)
+        self.drop2 = layers.Dropout(0.2)
         self.flat = layers.Flatten()
         self.dense_out = layers.Dense(2, activation="softmax")
 
