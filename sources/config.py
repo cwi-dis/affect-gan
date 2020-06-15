@@ -3,7 +3,7 @@ from tensorboard.plugins.hparams import api as hp
 INPUT_SIZE = 500
 NUM_RERUNS = 4 
 GLOBAL_LR = 0.0003
-TRAIN_DATA = hp.HParam("Train Data Type", hp.Discrete(["real", "fake_cls_categ", "fake_subjcls_categ", "fake_cls_intp", "fake_subjcls_intp", "fake_subjcls_intpcateg", "fake_cls_intp_dis", "fake_subjcls_intp_dis"]))
+TRAIN_DATA = hp.HParam("Train Data Type", hp.Discrete(["real", "fake_cls_categ", "fake_subjcls_categ", "fake_cls_intp", "fake_subjcls_intp", "fake_cls_intpreg", "fake_subjcls_intpreg"]))
 FEATURES = ["ecg", "gsr"]
 OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([25]))#[4, 6, 11, 18, 22, 25]))
 

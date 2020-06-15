@@ -171,10 +171,16 @@ class CallbacksProducer:
         #    min_lr=0.0001
         #)
 
-        self.callbacks["early_stop"] = ThresholdEarlyStopping(
-            min_epoch=20,
+        #self.callbacks["early_stop"] = ThresholdEarlyStopping(
+        #    min_epoch=20,
+        #    monitor="val_loss",
+        #    patience=10
+        #)
+
+        self.callbacks["early_stop"] = callbacks.EarlyStopping(
             monitor="val_loss",
-            patience=10
+            patience=5,
+            restore_best_weights=True
         )
 
         #self.callbacks["confusion_matrix"] = ConfusionMatrixCallback(

@@ -143,7 +143,7 @@ class Dataloader(object):
 
         if (mode is "train") or (mode is "gan"):
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]
-        elif (mode is "eval") or (mode is "test_eval") or (mode is "inspect" and leave_out is not None):
+        elif (mode is "test") or (mode is "test_eval") or (mode is "inspect" and leave_out is not None):
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in eval_subject_ids]
         else:
             files = [glob.glob("%s*.tfrecord" % self.path)]
@@ -152,7 +152,7 @@ class Dataloader(object):
         files = tf.data.Dataset.from_tensor_slices(files)
 
         dataset = files.interleave(lambda f: tf.data.TFRecordDataset(f).map(self._decode, num_parallel_calls=1),
-                                   num_parallel_calls=1, block_length=16)
+                                   num_parallel_calls=tf.data.experimental.AUTOTUNE, block_length=16)
         #dataset = dataset.map(self._decode, num_parallel_calls=tf.data.experimental.AUTOTUNE)
         dataset = dataset.filter(lambda _, __, video, ___: tf.less(video, 10))
         dataset = dataset.map(lambda features, labels, video, subject: (features, labels, subject))
@@ -164,34 +164,62 @@ class Dataloader(object):
         if not self.continuous_labels:
             dataset = dataset.map(with_categoric_labels)
 
-        if mode is "inspect":
-            dataset = dataset.shuffle(buffer_size=10000)
+        if one_hot and (mode is not "gan"):
+            dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
+
+        if mode == "train":
+            trainset, evalset = split_dataset(dataset, validation_data_fraction=0.1)
+            if repeat:
+                trainset = trainset.repeat()
+            trainset = trainset.shuffle(buffer_size=30000)
+            trainset = trainset.batch(batch_size)
+            trainset = trainset.prefetch(1)
+
+            evalset = evalset.batch(batch_size)
+
+            return trainset, evalset
 
         if mode is "gan":
             dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
             dataset = dataset.repeat().shuffle(buffer_size=30000)
 
-        if one_hot:
-            dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
+        if mode is "inspect":
+            dataset = dataset.shuffle(buffer_size=10000)
+            return dataset
+
+        if mode is "test":
+            dataset = dataset.batch(batch_size)
+            return dataset
+
 
         #Fix for dual output classification
         #if len(self.labels) == 2:
         #    dataset = dataset.map(lambda data, labels: (data, (labels[0], labels[1])))
 
-        if repeat:
-            dataset = dataset.repeat()
 
-        if mode == "train":
-            dataset = dataset.shuffle(buffer_size=30000)
 
-        if mode == "test_eval":
-            return dataset.shuffle(1000, seed=42).batch(500000).take(1)
+def split_dataset(dataset: tf.data.Dataset, validation_data_fraction: float):
+    """
+    Splits a dataset of type tf.data.Dataset into a training and validation dataset using given ratio. Fractions are
+    rounded up to two decimal places.
+    @param dataset: the input dataset to split.
+    @param validation_data_fraction: the fraction of the validation data as a float between 0 and 1.
+    @return: a tuple of two tf.data.Datasets as (training, validation)
+    """
 
-        dataset = dataset.batch(batch_size)
-        dataset = dataset.prefetch(1)
+    validation_data_percent = round(validation_data_fraction * 100)
+    if not (0 <= validation_data_percent <= 100):
+        raise ValueError("validation data fraction must be ∈ [0,1]")
 
-        return dataset
+    dataset = dataset.enumerate()
+    train_dataset = dataset.filter(lambda f, data: f % 100 > validation_data_percent)
+    validation_dataset = dataset.filter(lambda f, data: f % 100 <= validation_data_percent)
 
+    # remove enumeration
+    train_dataset = train_dataset.map(lambda f, data: data)
+    validation_dataset = validation_dataset.map(lambda f, data: data)
+
+    return train_dataset, validation_dataset
 
 if __name__ == '__main__':
     os.chdir("./..")

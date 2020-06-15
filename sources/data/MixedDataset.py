@@ -6,17 +6,14 @@ from data.dataloader import Dataloader
 #from main import init_tf_gpus
 
 class MixedDataset:
-    def __init__(self, path, batch_size, features, subject_conditioned, class_categorical_sampling, subject_categorical_sampling,
-                 discriminator_class_conditioned, argmaxed_label=False):
+    def __init__(self, path, batch_size, features, subject_conditioned, categorical_sampling, argmaxed_label=False):
         self.batch_chunks = 16 
         self.batch_size = batch_size // self.batch_chunks
 
         self.fake_datagenerator = DatasetGenerator(batch_size=self.batch_chunks,
                                              path=path,
                                              subject_conditioned=subject_conditioned,
-                                             class_categorical_sampling=class_categorical_sampling,
-                                             subject_categorical_sampling=subject_categorical_sampling,
-                                             discriminator_class_conditioned=discriminator_class_conditioned,
+                                             categorical_sampling=categorical_sampling,
                                              no_subject_output=True,
                                              argmaxed_label=argmaxed_label
                                              )
@@ -25,14 +22,14 @@ class MixedDataset:
 
     def __call__(self, out_subject, *args, **kwargs):
         fake_dataset = self.fake_datagenerator()
-        real_dataset = self.real_dataloader(mode="train",
+        real_trainset, evalset = self.real_dataloader(mode="train",
                                             batch_size=self.batch_chunks,
                                             leave_out=out_subject,
                                             one_hot=True,
                                             repeat=True)
 
         mixed_dataset = tf.data.experimental.sample_from_datasets(
-            datasets=[fake_dataset, real_dataset]
+            datasets=[fake_dataset, real_trainset]
         )
 
         mixed_dataset = mixed_dataset.batch(batch_size=self.batch_size)
@@ -40,7 +37,7 @@ class MixedDataset:
                                           (tf.reshape(data, (-1, 500, 2)), tf.reshape(label, (-1, 2))))
         #mixed_dataset = mixed_dataset.prefetch(buffer_size=2)
 
-        return mixed_dataset
+        return mixed_dataset, evalset
 
 def _main():
     #init_tf_gpus()
@@ -49,9 +46,7 @@ def _main():
         batch_size=4,
         features=["ecg", "gsr"],
         subject_conditioned=True,
-        class_categorical_sampling=False,
-        subject_categorical_sampling=False,
-        discriminator_class_conditioned=False,
+        categorical_sampling=False,
         argmaxed_label=False
     )
 

@@ -378,7 +378,7 @@ def run_loso_cv(model_name, mixed=True):
 
     for out_subject in config.OUT_SUBJECT.domain.values:
         subject_label = "subject-%d-out" % out_subject
-        eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject, one_hot=True)
+        test_set = dataloader(mode="test", batch_size=128, leave_out=out_subject, one_hot=True)
 
         for data_source in config.TRAIN_DATA.domain.values:
             for rerun in range(config.NUM_RERUNS):
@@ -386,7 +386,7 @@ def run_loso_cv(model_name, mixed=True):
                            config.TRAIN_DATA: data_source}
                 run_name = "%s-%s" % (subject_label, data_source)
                 if data_source is "real":
-                    train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
+                    train_set, eval_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
                     steps_per_epoch = None
                 else:
                     steps_per_epoch = 518
@@ -394,33 +394,28 @@ def run_loso_cv(model_name, mixed=True):
                     wgan_path = "loso-wgan-class" if train_label[1] == "cls" else "loso-wgan-class-subject"
                     wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
                     subj_cond = True if train_label[1] is "subjcls" else False
-                    class_categorical_sampling = True if (train_label[2] == "categ") or (train_label[2] == "intpcateg") else False
-                    subject_categorical_sampling = True if train_label[2] == "categ" else False
-                    discriminator_class_conditioned = True if len(train_label) == 4 else False
+                    categorical_sampling = True if (train_label[2] == "categ") else False
+                    argmaxed_label = False if train_label[2] == "intpreg" else True
 
                     if mixed:
-                        train_set = MixedDataset(path=wgan_path,
+                        train_set, eval_set = MixedDataset(path=wgan_path,
                                                  batch_size=128,
                                                  features=features,
                                                  subject_conditioned=subj_cond,
-                                                 class_categorical_sampling=class_categorical_sampling,
-                                                 subject_categorical_sampling=subject_categorical_sampling,
-                                                 discriminator_class_conditioned=discriminator_class_conditioned,
-                                                 argmaxed_label=True
+                                                 categorical_sampling=categorical_sampling,
+                                                 argmaxed_label=argmaxed_label
                                                  ).__call__(out_subject=out_subject)
                     else:
                         train_set = DatasetGenerator(batch_size=128,
                                                      path=wgan_path,
                                                      subject_conditioned=subj_cond,
-                                                     class_categorical_sampling=class_categorical_sampling,
-                                                     subject_categorical_sampling=subject_categorical_sampling,
-                                                     discriminator_class_conditioned=discriminator_class_conditioned,
+                                                     categorical_sampling=categorical_sampling,
                                                      no_subject_output=True,
-                                                     argmaxed_label=True).__call__()
+                                                     argmaxed_label=argmaxed_label).__call__()
 
                 print("Subject: %d, Trained on %s data (mixed: %s), Restart #%d" % (out_subject, data_source, mixed&(data_source is not "real"), rerun))
                 if data_source is not "real":
-                    print("path: %s\nArr categ: %s\nSub categ: %s\ndis_used: %s" % (wgan_path, class_categorical_sampling, subject_categorical_sampling, discriminator_class_conditioned))
+                    print("path: %s\nCategorical sampling: %s\nArgmaxed Label: %s" % (wgan_path, categorical_sampling, argmaxed_label))
                 run_logdir = os.path.join(logdir, subject_label, data_source, ".%d" % rerun)
 
                 if model_name == "BaseNET":
@@ -434,7 +429,9 @@ def run_loso_cv(model_name, mixed=True):
 
                 callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
 
-                model.fit(train_set, workers=1, epochs=100, steps_per_epoch=steps_per_epoch, validation_data=eval_set, callbacks=callbacks)
+                model.fit(train_set, workers=0, epochs=100, steps_per_epoch=steps_per_epoch, validation_data=eval_set, callbacks=callbacks)
+
+                model.evaluate(eval_set, callbacks=callbacks)
 
                 tf.keras.backend.clear_session()
                 #del model
@@ -478,5 +475,5 @@ def summary():
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()
