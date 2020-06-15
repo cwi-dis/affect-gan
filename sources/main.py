@@ -386,7 +386,8 @@ def run_loso_cv(model_name, mixed=True):
                            config.TRAIN_DATA: data_source}
                 run_name = "%s-%s" % (subject_label, data_source)
                 if data_source is "real":
-                    train_set, eval_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
+                    train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
+                    eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject, one_hot=True)
                     steps_per_epoch = None
                 else:
                     steps_per_epoch = 518

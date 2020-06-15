@@ -167,13 +167,19 @@ class Dataloader(object):
 
         if leave_out is None:
             train_subject_ids = self.subject_labels[:28]
-            eval_subject_ids = self.subject_labels[28:]
+            test_subject_ids = self.subject_labels[28:]
         else:
             train_subject_ids = self.subject_labels[:leave_out-1] + self.subject_labels[leave_out:]
-            eval_subject_ids = tf.random.uniform([2], maxval=29, dtype=tf.int32)
             test_subject_ids = self.subject_labels[leave_out-1:leave_out]
 
-        if (mode is "train") or (mode is "gan"):
+        if (mode is "train"):
+            self.eval_subject_ids = tf.random.uniform([2], maxval=29, dtype=tf.int32)
+            tf.print("Set eval subjects to %s" % self.eval_subject_ids)
+            train_subject_ids = [id for id in train_subject_ids if id not in self.eval_subject_ids]
+            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]
+        elif mode is "eval":
+            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in self.eval_subject_ids]
+        elif (mode is "gan"):
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]
         elif (mode is "test") or (mode is "test_eval") or (mode is "inspect" and leave_out is not None):
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in test_subject_ids]
@@ -197,32 +203,27 @@ class Dataloader(object):
             dataset = dataset.map(with_categoric_labels)
 
         if one_hot and (mode is not "gan"):
-            dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2)), subject))
+            dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
 
         if mode == "train":
-            dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
-            trainset, evalset = self.split_dataset_subject(dataset, validation_subjects=eval_subject_ids)
-            trainset = trainset.map(lambda features, labels, subject: (features, labels))
-            evalset = evalset.map(lambda features, labels, subject: (features, labels))
             if repeat:
-                trainset = trainset.repeat()
-            trainset = trainset.shuffle(buffer_size=30000)
-            trainset = trainset.batch(batch_size)
-            trainset = trainset.prefetch(1)
+                dataset = dataset.repeat()
+            dataset = dataset.shuffle(buffer_size=30000)
+            dataset = dataset.batch(batch_size)
+            dataset = dataset.prefetch(1)
 
-            evalset = evalset.batch(batch_size)
-
-            return trainset, evalset
+            return dataset
 
         if mode is "gan":
             dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
             dataset = dataset.repeat().shuffle(buffer_size=30000)
+            return dataset
 
         if mode is "inspect":
             dataset = dataset.shuffle(buffer_size=10000)
             return dataset
 
-        if mode is "test":
+        if (mode is "test") or (mode is "eval"):
             dataset = dataset.batch(batch_size)
             return dataset
 
