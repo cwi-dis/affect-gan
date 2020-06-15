@@ -150,6 +150,13 @@ class Dataloader(object):
 
         return train_dataset, validation_dataset
 
+    @staticmethod
+    def split_dataset_subject(dset: tf.data.Dataset, validation_subjects):
+        train_dataset = dset.filter(lambda data, label, subject: not tf.reduce_any(tf.math.equal(tf.cast(subject, tf.int32), validation_subjects)))
+        eval_dataset = dset.filter(lambda data, label, subject: tf.reduce_any(tf.math.equal(tf.cast(subject, tf.int32), validation_subjects)))
+
+        return train_dataset, eval_dataset
+
     def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False, repeat=False):
 
         modes = ["train", "test", "eval", "inspect", "test_eval", "gan", "cgan"]
@@ -163,12 +170,13 @@ class Dataloader(object):
             eval_subject_ids = self.subject_labels[28:]
         else:
             train_subject_ids = self.subject_labels[:leave_out-1] + self.subject_labels[leave_out:]
-            eval_subject_ids = self.subject_labels[leave_out-1:leave_out]
+            eval_subject_ids = tf.random.uniform([2], maxval=29, dtype=tf.int32)
+            test_subject_ids = self.subject_labels[leave_out-1:leave_out]
 
         if (mode is "train") or (mode is "gan"):
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]
         elif (mode is "test") or (mode is "test_eval") or (mode is "inspect" and leave_out is not None):
-            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in eval_subject_ids]
+            files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in test_subject_ids]
         else:
             files = [glob.glob("%s*.tfrecord" % self.path)]
 
@@ -189,10 +197,11 @@ class Dataloader(object):
             dataset = dataset.map(with_categoric_labels)
 
         if one_hot and (mode is not "gan"):
-            dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
+            dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2)), subject))
 
         if mode == "train":
-            trainset, evalset = self.split_dataset(dataset, validation_data_fraction=0.1)
+            dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
+            trainset, evalset = self.split_dataset_subject(dataset, validation_subjects=eval_subject_ids)
             if repeat:
                 trainset = trainset.repeat()
             trainset = trainset.shuffle(buffer_size=30000)

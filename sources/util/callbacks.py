@@ -178,8 +178,8 @@ class CallbacksProducer:
         #)
 
         self.callbacks["early_stop"] = callbacks.EarlyStopping(
-            monitor="val_loss",
-            patience=15,
+            monitor="val_MCC",
+            patience=5,
             restore_best_weights=True
         )
 
