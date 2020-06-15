@@ -202,6 +202,8 @@ class Dataloader(object):
         if mode == "train":
             dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
             trainset, evalset = self.split_dataset_subject(dataset, validation_subjects=eval_subject_ids)
+            trainset = trainset.map(lambda features, labels, subject: (features, labels))
+            evalset = evalset.map(lambda features, labels, subject: (features, labels))
             if repeat:
                 trainset = trainset.repeat()
             trainset = trainset.shuffle(buffer_size=30000)
