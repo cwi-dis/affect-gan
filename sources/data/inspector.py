@@ -288,7 +288,7 @@ def interactive_signal_plot(datagen, disc):
         subject_val = slider_subject.val
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
-        new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=False)
+        new_sig, class_pred = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=False)
         _, _, class_pred2, subj_pred = disc(new_sig)
         print("Arrousal Prediction: %s or %s" % (class_pred, class_pred2))
         for i in range(n_signals):
@@ -338,7 +338,7 @@ if __name__ == '__main__':
                             normalized=True, continuous_labels=True)
     data = dataloader("inspect", 1, leave_out=14)
     #datagenerator = DatasetGenerator(batch_size=1,
-    #                                 path="../Logs/loso-wgan-gp20200603-122650/subject-4-out",
+    #                                 path="../Logs/loso-wgan-class-subject/subject-4-out",
     #                                 subject_conditioned=True,
     #                                 class_categorical_sampling=False,
     #                                 subject_categorical_sampling=False,
@@ -347,11 +347,11 @@ if __name__ == '__main__':
     #                                 argmaxed_label=True
     #                                 )
     #datag = datagenerator()
-    #disc = tf.keras.models.load_model("../Logs/loso-wgan-gp20200603-122650/subject-4-out/model_dis")
+    #disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-4-out/model_dis")
 
 
-    gen = DatasetGenerator(batch_size=1,
-                            path="../Logs/wgan-gp20200606-142301",
+    datagenerator = DatasetGenerator(batch_size=1,
+                            path="../Logs/loso-wgan-class-subject/subject-4-out",
                             subject_conditioned=True,
                             class_categorical_sampling=False,
                             subject_categorical_sampling=False,
@@ -359,9 +359,9 @@ if __name__ == '__main__':
                             no_subject_output=False,
                             argmaxed_label=True
                            )
-    disc = tf.keras.models.load_model("../Logs/wgan-gp20200606-142301/model_dis")
+    disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-4-out/model_dis")
 
-    visualize_tsna_denselayer(gen, disc, data)
+    #visualize_tsna_denselayer(gen, disc, data)
 
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
@@ -372,7 +372,7 @@ if __name__ == '__main__':
     #video_viz(extended_labels)
 
     #plot_signals(datag, generated=True, disc=disc)
-    #interactive_signal_plot(datagenerator, disc)
+    interactive_signal_plot(datagenerator, disc)
     #positional_ecoding_viz()
 
     #tsna_visualization(data)

@@ -431,7 +431,9 @@ def run_loso_cv(model_name, mixed=True):
 
                 model.fit(train_set, workers=0, epochs=100, steps_per_epoch=steps_per_epoch, validation_data=eval_set, callbacks=callbacks)
 
-                model.evaluate(eval_set, callbacks=callbacks)
+                tf.print("\n######## Test Result: ########\n")
+                model.evaluate(test_set, callbacks=callbacks)
+                tf.print("\n")
 
                 tf.keras.backend.clear_session()
                 #del model

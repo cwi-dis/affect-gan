@@ -126,6 +126,30 @@ class Dataloader(object):
 
         return features, labels, video, subject
 
+    @staticmethod
+    def split_dataset(dset: tf.data.Dataset, validation_data_fraction: float):
+        """
+        Splits a dataset of type tf.data.Dataset into a training and validation dataset using given ratio. Fractions are
+        rounded up to two decimal places.
+        @param dataset: the input dataset to split.
+        @param validation_data_fraction: the fraction of the validation data as a float between 0 and 1.
+        @return: a tuple of two tf.data.Datasets as (training, validation)
+        """
+
+        validation_data_percent = round(validation_data_fraction * 100)
+        if not (0 <= validation_data_percent <= 100):
+            raise ValueError("validation data fraction must be ∈ [0,1]")
+
+        dset = dset.enumerate()
+        train_dataset = dset.filter(lambda f, data: f % 100 > validation_data_percent)
+        validation_dataset = dset.filter(lambda f, data: f % 100 <= validation_data_percent)
+
+        # remove enumeration
+        train_dataset = train_dataset.map(lambda f, data: data)
+        validation_dataset = validation_dataset.map(lambda f, data: data)
+
+        return train_dataset, validation_dataset
+
     def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False, repeat=False):
 
         modes = ["train", "test", "eval", "inspect", "test_eval", "gan", "cgan"]
@@ -168,7 +192,7 @@ class Dataloader(object):
             dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
 
         if mode == "train":
-            trainset, evalset = split_dataset(dataset, validation_data_fraction=0.1)
+            trainset, evalset = self.split_dataset(dataset, validation_data_fraction=0.1)
             if repeat:
                 trainset = trainset.repeat()
             trainset = trainset.shuffle(buffer_size=30000)
@@ -197,41 +221,32 @@ class Dataloader(object):
         #    dataset = dataset.map(lambda data, labels: (data, (labels[0], labels[1])))
 
 
-
-def split_dataset(dataset: tf.data.Dataset, validation_data_fraction: float):
-    """
-    Splits a dataset of type tf.data.Dataset into a training and validation dataset using given ratio. Fractions are
-    rounded up to two decimal places.
-    @param dataset: the input dataset to split.
-    @param validation_data_fraction: the fraction of the validation data as a float between 0 and 1.
-    @return: a tuple of two tf.data.Datasets as (training, validation)
-    """
-
-    validation_data_percent = round(validation_data_fraction * 100)
-    if not (0 <= validation_data_percent <= 100):
-        raise ValueError("validation data fraction must be ∈ [0,1]")
-
-    dataset = dataset.enumerate()
-    train_dataset = dataset.filter(lambda f, data: f % 100 > validation_data_percent)
-    validation_dataset = dataset.filter(lambda f, data: f % 100 <= validation_data_percent)
-
-    # remove enumeration
-    train_dataset = train_dataset.map(lambda f, data: data)
-    validation_dataset = validation_dataset.map(lambda f, data: data)
-
-    return train_dataset, validation_dataset
-
 if __name__ == '__main__':
     os.chdir("./..")
     labels = ["ecg", "gsr"]
     d = Dataloader("5000d", labels, label=["subject"],
                    normalized=True, continuous_labels=True)
-    d = d("inspect", 1, 6)
+    t, e = d("train", 1, 4)
 
-    i = 0
-    for _ in d:
-        i += 1
-    print(i)
+    it = 0
+    for _ in t:
+        it += 1
+    print(it)
+
+    ie = 0
+    for _ in e:
+        ie += 1
+    print(ie)
+
+    it = 0
+    for _ in t:
+        it += 1
+    print(it)
+
+    ie = 0
+    for _ in e:
+        ie += 1
+    print(ie)
 #with open("../Dataset/CASE_dataset/stats/subj_mean.pickle", "rb") as handle:
     #    subj_means = pd.DataFrame.from_dict(pickle.load(handle)).astype("float32")
     #with open("../Dataset/CASE_dataset/stats/subj_minmax.pickle", "rb") as handle:
