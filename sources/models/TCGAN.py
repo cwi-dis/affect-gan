@@ -10,21 +10,21 @@ class Generator(tf.keras.Model):
     def __init__(self, n_signals, *args, **kwargs):
         super(Generator, self).__init__(*args, **kwargs)
         self.n_multiplier = 2
-        self.expand = layers.Dense(units=125 * 40, use_bias=False)
-        self.up_0 = UpResLayer(channels_out=40, kernel_size=6, dropout_rate=0.2, normalization=None)
+        self.expand = layers.Dense(units=125 * 50, use_bias=False)
+        self.up_0 = UpResLayer(channels_out=50, kernel_size=6, dropout_rate=0.2, normalization=None)
         self.local = DownResLayer(
-            channels_out=40,
+            channels_out=50,
             kernel_size=6,
             dropout_rate=0,
             downsample_rate=1
         )
-        self.up_1 = UpResLayer(channels_out=20, kernel_size=8, dropout_rate=0.2, normalization=None)
+        self.up_1 = UpResLayer(channels_out=25, kernel_size=8, dropout_rate=0.2, normalization=None)
         self.act = layers.LeakyReLU(alpha=0.2)
         self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=10, padding="same")
 
     def call(self, inputs, training=None, mask=None):
         x = self.expand(inputs)
-        x = tf.reshape(x, shape=[-1, 125, 40])
+        x = tf.reshape(x, shape=[-1, 125, 50])
         x = self.up_0(x, training=training)
         x = self.local(x)
         x = self.act(self.up_1(x, training=training))

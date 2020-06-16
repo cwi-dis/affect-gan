@@ -81,8 +81,8 @@ class GAN_Trainer():
                     tf.summary.scalar("classloss.generator", gen_classification_loss, step=train_step)
                     tf.summary.scalar("subjectloss.critic", subject_loss, step=train_step)
                     tf.summary.scalar("subjectloss.generator", gen_subject_loss, step=train_step)
-                    tf.summary.scalar("Gen. attention Gamma", self.generator.get_layer("att0").gamma, step=train_step)
-                    tf.summary.scalar("Critic attention Gamma", self.discriminator.get_layer("att0").gamma, step=train_step)
+                    #tf.summary.scalar("Gen. attention Gamma", self.generator.get_layer("att0").gamma, step=train_step)
+                    #tf.summary.scalar("Critic attention Gamma", self.discriminator.get_layer("att0").gamma, step=train_step)
 
                 tf.print("Current Train Step: %d, Critic Loss: %3f, Generator Loss: %3f" % (train_step, critic_loss, gen_loss))
                 if self.class_conditional:

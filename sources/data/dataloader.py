@@ -157,6 +157,7 @@ class Dataloader(object):
 
         return train_dataset, eval_dataset
 
+
     def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False, repeat=False):
 
         modes = ["train", "test", "eval", "inspect", "test_eval", "gan", "cgan"]
@@ -173,7 +174,7 @@ class Dataloader(object):
             test_subject_ids = self.subject_labels[leave_out-1:leave_out]
 
         if (mode is "train"):
-            self.eval_subject_ids = tf.random.uniform([2], maxval=29, dtype=tf.int32)
+            self.eval_subject_ids = np.random.choice(train_subject_ids, 3, replace=False)
             tf.print("Set eval subjects to %s" % self.eval_subject_ids)
             train_subject_ids = [id for id in train_subject_ids if id not in self.eval_subject_ids]
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]
@@ -186,7 +187,7 @@ class Dataloader(object):
         else:
             files = [glob.glob("%s*.tfrecord" % self.path)]
 
-        #print("Files loaded in mode %s:"%files)
+        tf.print("Files loaded in mode %s:"%files)
         files = tf.data.Dataset.from_tensor_slices(files)
 
         dataset = files.interleave(lambda f: tf.data.TFRecordDataset(f).map(self._decode, num_parallel_calls=1),

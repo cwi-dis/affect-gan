@@ -331,7 +331,7 @@ def train_loso_gans(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
     hparams = config.OPT_PARAMS["gan"]
-    labels = config.LABELS
+    labels = config.FEATURES
 
     dataloader = Dataloader(
         "5000d", labels,
@@ -353,7 +353,7 @@ def train_loso_gans(model_name):
             n_signals=len(labels),
             leave_out=out_subject,
             class_conditional=True,
-            subject_conditional=False,
+            subject_conditional=True,
             save_image_every_n_steps=1500,
             n_critic=5,
             train_steps=200000
@@ -390,7 +390,7 @@ def run_loso_cv(model_name, mixed=True):
                     eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject, one_hot=True)
                     steps_per_epoch = None
                 else:
-                    steps_per_epoch = 518
+                    steps_per_epoch = 463
                     train_label = data_source.split('_')
                     wgan_path = "loso-wgan-class" if train_label[1] == "cls" else "loso-wgan-class-subject"
                     wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
