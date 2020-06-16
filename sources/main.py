@@ -434,7 +434,8 @@ def run_loso_cv(model_name, mixed=True):
                 model.fit(train_set, workers=0, epochs=100, steps_per_epoch=steps_per_epoch, validation_data=eval_set, callbacks=callbacks)
 
                 tf.print("\n######## Test Result: ########\n")
-                test_logs = model.evaluate(test_set, return_dict=True)
+                test_logs = model.evaluate(test_set)
+                test_logs = {out: test_logs[i] for i, out in enumerate(model.metrics_names)}
                 with test_writer.as_default():
                     for name, value in test_logs.items():
                         tf.summary.scalar("test_" + name, value, step=0)
