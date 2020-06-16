@@ -47,6 +47,10 @@ class MetricsCallback(callbacks.TensorBoard):
         self.best_mcc = 0
         self.best_wf1 = 0
 
+    def on_train_begin(self, logs=None):
+        self.best_eval = 0
+        super(MetricsCallback, self).on_train_begin(logs)
+
     def on_epoch_end(self, epoch, logs=None):
         logs = logs or {}
 
@@ -81,11 +85,6 @@ class MetricsCallback(callbacks.TensorBoard):
         logs.update({"val_best_wf1": self.best_wf1})
 
         super(MetricsCallback, self).on_epoch_end(epoch, logs)
-
-    def on_train_begin(self, logs=None):
-        self.best_eval = 0
-        super(MetricsCallback, self).on_train_begin(logs)
-
 
     def _log_metrics(self, logs, prefix, step):
         """Writes metrics out as custom scalar summaries.

@@ -429,11 +429,15 @@ def run_loso_cv(model_name, mixed=True):
                 )
 
                 callbacks = CallbacksProducer(hparams, run_logdir, run_name).get_callbacks()
+                test_writer = tf.summary.create_file_writer(logdir=run_logdir)
 
                 model.fit(train_set, workers=0, epochs=100, steps_per_epoch=steps_per_epoch, validation_data=eval_set, callbacks=callbacks)
 
                 tf.print("\n######## Test Result: ########\n")
-                model.evaluate(test_set, callbacks=callbacks)
+                test_logs = model.evaluate(test_set, return_dict=True)
+                with test_writer.as_default():
+                    for name, value in test_logs.items():
+                        tf.summary.scalar("test_" + name, value, step=0)
                 tf.print("\n")
 
                 tf.keras.backend.clear_session()
