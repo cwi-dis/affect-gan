@@ -35,6 +35,10 @@ class MCC(tfa.metrics.MatthewsCorrelationCoefficient):
         y_pred = tf.expand_dims(tf.argmax(y_pred, axis=-1), axis=-1)
         super(MCC, self).update_state(y_true, y_pred, sample_weight)
 
+    def result(self):
+        res = super(MCC, self).result()
+        return res[0]
+
 
 class WF1(tfa.metrics.F1Score):
     def __init__(self, num_classes=1, **kwargs):
