@@ -27,7 +27,7 @@ class GAN_Trainer():
         self.batch_size = batch_size
         self.n_critic = n_critic
         self.train_steps = train_steps
-        self.noise_dim = 100 if subject_conditional else 129
+        self.noise_dim = 129
         self.num_classes = num_classes
         self.num_subjects = 29
         self.leave_out = leave_out
