@@ -259,9 +259,8 @@ def interactive_signal_plot(datagen, disc):
     sub_0_text = TextBox(ax=ax_text0, label="Sub. 0 ID", initial="4", label_pad=0.05)
     sub_1_text = TextBox(ax=ax_text1, label="Sub. 1 ID", initial="18", label_pad=0.05)
 
-    sig, class_pred = datagen.get(arousal_value=0, subject_value=0, sub0=4, sub1=18)
+    sig = datagen.get(arousal_value=0, subject_value=0, sub0=4, sub1=18)
     _, _, class_pred2, subj_pred = disc(sig)
-    print("Arrousal Prediction: %s or %s" % (class_pred, class_pred2))
 
     scale = range(500)
     n_signals = len(sig[0, 0])
@@ -276,9 +275,8 @@ def interactive_signal_plot(datagen, disc):
         subject_val = slider_subject.val
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
-        new_sig, class_pred = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=True)
+        new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=True)
         _, _, class_pred2, subj_pred = disc(new_sig)
-        print("Arrousal Prediction: %s or %s" % (class_pred, class_pred2))
         for i in range(n_signals):
             fig_sig[i].set_data(scale, new_sig[0, :, i])
         fig.canvas.draw_idle()
@@ -288,9 +286,8 @@ def interactive_signal_plot(datagen, disc):
         subject_val = slider_subject.val
         sub0 = int(sub_0_text.text)
         sub1 = int(sub_1_text.text)
-        new_sig, class_pred = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=False)
+        new_sig = datagen.get(arousal_value=arousal_val, subject_value=subject_val, sub0=sub0, sub1=sub1, noise_seed_reuse=False)
         _, _, class_pred2, subj_pred = disc(new_sig)
-        print("Arrousal Prediction: %s or %s" % (class_pred, class_pred2))
         for i in range(n_signals):
             fig_sig[i].set_data(scale, new_sig[0, :, i])
         fig.canvas.draw_idle()
@@ -351,15 +348,13 @@ if __name__ == '__main__':
 
 
     datagenerator = DatasetGenerator(batch_size=1,
-                            path="../Logs/loso-wgan-class-subject/subject-4-out",
+                            path="../Logs/loso-wgan-class-subject/subject-6-out",
                             subject_conditioned=True,
-                            class_categorical_sampling=False,
-                            subject_categorical_sampling=False,
-                            discriminator_class_conditioned=False,
+                            categorical_sampling=False,
                             no_subject_output=False,
                             argmaxed_label=True
                            )
-    disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-4-out/model_dis")
+    disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-6-out/model_dis")
 
     #visualize_tsna_denselayer(gen, disc, data)
 

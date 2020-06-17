@@ -43,7 +43,7 @@ class BaseNET2(tf.keras.Model):
         x = self.conv3(x)
         x = self.maxp(x)
         x = self.flat(x)
-        x = self.drop1(x)
+        x = self.drop1(x, training=training)
         return self.dense_out(x)
 
     def model(self):
