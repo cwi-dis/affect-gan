@@ -217,7 +217,7 @@ class Dataloader(object):
 
         if mode is "gan":
             dataset = dataset.map(lambda features, labels, subject: (features, labels, tf.cond(tf.greater(subject, leave_out), lambda: subject - 2, lambda: subject - 1)))
-            dataset = dataset.repeat().shuffle(buffer_size=30000)
+            dataset = dataset.cache().repeat().shuffle(buffer_size=30000).batch(batch_size)
             return dataset
 
         if mode is "inspect":
