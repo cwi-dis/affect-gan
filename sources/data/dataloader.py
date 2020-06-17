@@ -157,8 +157,7 @@ class Dataloader(object):
 
         return train_dataset, eval_dataset
 
-
-    def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False, repeat=False):
+    def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False, repeat=False, force_eval_change=False):
 
         modes = ["train", "test", "eval", "inspect", "test_eval", "gan", "cgan"]
         if mode not in modes:
@@ -173,9 +172,10 @@ class Dataloader(object):
             train_subject_ids = self.subject_labels[:leave_out-1] + self.subject_labels[leave_out:]
             test_subject_ids = self.subject_labels[leave_out-1:leave_out]
 
-        if (mode is "train"):
+        if (mode is "train") or force_eval_change:
             self.eval_subject_ids = np.random.choice(train_subject_ids, 3, replace=False)
             tf.print("Set eval subjects to %s" % self.eval_subject_ids)
+        if mode is "train":
             train_subject_ids = [id for id in train_subject_ids if id not in self.eval_subject_ids]
             files = [glob.glob("%ssub_%d.tfrecord" % (self.path, num)) for num in train_subject_ids]
         elif mode is "eval":
