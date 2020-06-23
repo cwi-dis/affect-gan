@@ -145,17 +145,32 @@ def plot_signal(signal):
         f, = axs.plot(x, signal[:, i], color=colors[i])
     plt.show()
 
-def plot_signals(data, generated=False, disc=None):
-    for signal, label, subject in data.take(100):
-        print("###########################")
-        if disc:
-            _, v, labp, subp = disc(signal)
-            print(v)
-            print(np.around(labp, 2))
-            #print(np.around(subp, 2))
-        print(label)
-        print(np.around(subject, 2))
-        plot_signal(signal[0])
+def plot_signals(data_source, generated=False, disc=None, subject_seed=None):
+    if subject_seed is None:
+        if generated:
+            data = data_source()
+        else:
+            data = data_source
+        for signal, label, subject in data.take(100):
+            print("###########################")
+            if disc:
+                _, v, labp, subp = disc(signal)
+                print(v)
+                print(np.around(labp, 2))
+                #print(np.around(subp, 2))
+            print(label)
+            print(np.around(subject, 2))
+            plot_signal(signal[0])
+    else:
+        while(True):
+            signal, label = data_source.get(arousal_value=None, subject_value=subject_seed, sub0=None, sub1=None)
+            if disc:
+                _, v, labp, subp = disc(signal)
+                print(v)
+                print(np.around(labp, 2))
+                print(np.around(subp, 2))
+            print(label)
+            plot_signal(signal[0])
 
 
 def valence_arousal_viz(extended_labels):
@@ -326,6 +341,22 @@ def visualize_tsna_denselayer(generator, discriminator, real_data):
     ax.legend()
     plt.show()
 
+def map_subject_to_pdf(data, discriminator):
+    pdf = None
+    count = 0
+    for d, l, s in data:
+        _, _, _, ps = discriminator(d)
+        if pdf is None:
+            pdf = ps
+        else:
+            pdf = tf.concat([pdf, ps], axis=0)
+        count += 1
+
+    pdf_mean = tf.reduce_mean(pdf, axis=0)
+    pdf_std = tf.math.reduce_std(pdf, axis=0)
+
+    return pdf
+
 
 if __name__ == '__main__':
     os.chdir("./..")
@@ -333,7 +364,7 @@ if __name__ == '__main__':
     dataloader = Dataloader("5000d", features=["ecg", "gsr"],
                             label=["arousal"],
                             normalized=True, continuous_labels=True)
-    data = dataloader("inspect", 1, leave_out=14)
+    data = dataloader("inspect", 1, leave_out=18)
     #datagenerator = DatasetGenerator(batch_size=1,
     #                                 path="../Logs/loso-wgan-class-subject/subject-4-out",
     #                                 subject_conditioned=True,
@@ -348,13 +379,13 @@ if __name__ == '__main__':
 
 
     datagenerator = DatasetGenerator(batch_size=1,
-                            path="../Logs/loso-wgan-class-subject/subject-6-out",
+                            path="../Logs/loso-wgan-class-subject/subject-18-out",
                             subject_conditioned=True,
                             categorical_sampling=False,
                             no_subject_output=False,
                             argmaxed_label=True
                            )
-    disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-6-out/model_dis")
+    disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-18-out/model_dis")
 
     #visualize_tsna_denselayer(gen, disc, data)
 
@@ -366,9 +397,11 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    #plot_signals(datag, generated=True, disc=disc)
-    interactive_signal_plot(datagenerator, disc)
+    subject_seed = map_subject_to_pdf(data, disc)
+    plot_signals(datagenerator, generated=True, disc=disc, subject_seed=subject_seed)
+    #interactive_signal_plot(datagenerator, disc)
     #positional_ecoding_viz()
+
 
     #tsna_visualization(data)
 

@@ -365,9 +365,9 @@ def train_loso_gans(model_name):
         del trainer
 
 
-def run_loso_cv(model_name, mixed=True, start_from=205):
+def run_loso_cv(model_name, mixed=True, start_from=0):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-    logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
+    logdir = os.path.join("../Logs", "loso-" + "tagan" + model_name + run_id)
     features = config.FEATURES
     dataloader = Dataloader(
         "5000d", features,
@@ -375,7 +375,6 @@ def run_loso_cv(model_name, mixed=True, start_from=205):
         continuous_labels=False
     )
     generator_base_path = "../Logs"
-    first_pass = True
     absolute_ID = 0
 
     for out_subject in config.OUT_SUBJECT.domain.values:
@@ -391,7 +390,7 @@ def run_loso_cv(model_name, mixed=True, start_from=205):
             else:
                 steps_per_epoch = 463
                 train_label = data_source.split('_')
-                wgan_path = "loso-cgan-class" if train_label[1] == "cls" else "loso-cgan-class-subject"
+                wgan_path = "loso-wgan-class" if train_label[1] == "cls" else "loso-wgan-class-subject"
                 wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
                 subj_cond = True if train_label[1] == "subjcls" else False
                 categorical_sampling = True if (train_label[2] == "categ") else False
@@ -435,6 +434,8 @@ def run_loso_cv(model_name, mixed=True, start_from=205):
 
                 if model_name == "BaseNET":
                     model = BaseNET2(hparams)
+                elif model_name == "LSTM":
+                    model = ConvLSTM(hparams)
 
                 model.compile(
                     optimizer=tf.keras.optimizers.Adam(learning_rate=0.0008, beta_1=0.9, beta_2=0.99),
@@ -468,7 +469,7 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     # single_run(model_name="AttentionNET2")
-    run_loso_cv(model_name="BaseNET")
+    run_loso_cv(model_name="SimpleLSTM")
     #run_gan(model_name="wgan-gp")
     #train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="BaseNET")

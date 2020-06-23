@@ -3,6 +3,7 @@ import tensorflow as tf
 from tensorflow.python.ops import math_ops
 from collections import defaultdict
 
+
 def binary_discretize_labels(labels, threshold=5.0): return math_ops.cast(labels > threshold, labels.dtype)
 
 def init_tf_gpus():

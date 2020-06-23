@@ -8,26 +8,24 @@ class ConvLSTM(tf.keras.Model):
     def __init__(self, hparams):
         super(ConvLSTM, self).__init__()
 
-        self.conv_1 = layers.Conv1D(
-            filters=hparams[config.HP_FILTERS_CL],
-            kernel_size=hparams[config.HP_KERNEL_CL],
-            strides=hparams[config.HP_STRIDES_CL],
-            padding="same", activation=layers.LeakyReLU())
-        self.drop = layers.Dropout(rate=hparams[config.HP_DROPOUT_CL])
-        self.avg = layers.AveragePooling1D(
-            pool_size=3,
+        self.expand = layers.Conv1D(
+            filters=6,
+            kernel_size=6,
             strides=2,
-            padding="same")
+            padding="same"
+        )
 
-        self.lstm_layer = layers.LSTM(units=hparams[config.HP_LSTMCELLS_CL])
-        self.dense_output = layers.Dense(1, activation="sigmoid")
+        self.lstm_layer = layers.LSTM(
+            units=6,
+            dropout=0.4
+        )
+
+        self.dense_output = layers.Dense(2, activation="softmax")
 
     def call(self, inputs, training=None, mask=None):
-        x = self.conv_1(inputs)
-        x = self.drop(x, training)
-        x = self.avg(x)
-        x2 = self.lstm_layer(x)
-        return self.dense_output(x2)
+        x = self.expand(inputs)
+        x = self.lstm_layer(x, training=training)
+        return self.dense_output(x)
 
     def model(self):
         x = layers.Input(shape=(500, 5))

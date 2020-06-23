@@ -221,8 +221,8 @@ class Dataloader(object):
             return dataset
 
         if mode is "inspect":
-            dataset = dataset.shuffle(buffer_size=10000)
-            return dataset
+            dataset = dataset.shuffle(buffer_size=100)
+            return dataset.batch(batch_size)
 
         if (mode is "test") or (mode is "eval"):
             dataset = dataset.cache()

@@ -84,13 +84,25 @@ class DatasetGenerator:
         return datagenerator
 
     def get(self, arousal_value, subject_value, sub0, sub1, noise_seed_reuse=False):
-        arousal_seed = tf.expand_dims([arousal_value, 1-arousal_value], axis=0)
-        subject_seed = np.zeros(29)
-        subject_seed[sub0] = subject_value
-        subject_seed[sub1] = 1 - subject_value
-        subject_seed = tf.expand_dims(subject_seed, axis=0)
+        if arousal_value is None:
+            arousal_seed = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 2], stddev=1))
+        else:
+            arousal_seed = tf.expand_dims([arousal_value, 1-arousal_value], axis=0)
 
-        return self.generator.get(arousal_seed, subject_seed, noise_seed_reuse)
+        if isinstance(subject_value, np.ndarray):
+            subject_seed = subject_value
+        else:
+            subject_seed = np.zeros(29)
+            subject_seed[sub0] = subject_value
+            subject_seed[sub1] = 1 - subject_value
+            subject_seed = tf.expand_dims(subject_seed, axis=0)
+
+        gen_sig = self.generator.get(arousal_seed, subject_seed, noise_seed_reuse)
+
+        if arousal_value is None:
+            return gen_sig, arousal_seed
+        else:
+            return gen_sig
 
 
 def _main():
