@@ -365,7 +365,7 @@ def train_loso_gans(model_name):
         del trainer
 
 
-def run_loso_cv(model_name, mixed=True):
+def run_loso_cv(model_name, mixed=True, start_from=205):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
     features = config.FEATURES
@@ -376,6 +376,7 @@ def run_loso_cv(model_name, mixed=True):
     )
     generator_base_path = "../Logs"
     first_pass = True
+    absolute_ID = 0
 
     for out_subject in config.OUT_SUBJECT.domain.values:
         subject_label = "subject-%d-out" % out_subject
@@ -390,15 +391,13 @@ def run_loso_cv(model_name, mixed=True):
             else:
                 steps_per_epoch = 463
                 train_label = data_source.split('_')
-                wgan_path = "loso-wgan-class" if train_label[1] == "cls" else "loso-wgan-class-subject"
+                wgan_path = "loso-cgan-class" if train_label[1] == "cls" else "loso-cgan-class-subject"
                 wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
-                subj_cond = True if train_label[1] is "subjcls" else False
+                subj_cond = True if train_label[1] == "subjcls" else False
                 categorical_sampling = True if (train_label[2] == "categ") else False
                 argmaxed_label = False if train_label[2] == "intpreg" else True
 
                 if mixed:
-                    if not first_pass:
-                        del mixed_dataset
                     mixed_dataset = MixedDataset(path=wgan_path,
                                                  batch_size=128,
                                                  features=features,
@@ -406,7 +405,6 @@ def run_loso_cv(model_name, mixed=True):
                                                  categorical_sampling=categorical_sampling,
                                                  argmaxed_label=argmaxed_label
                                                  )
-                    first_pass = False
                 else:
                     fake_dataset = DatasetGenerator(batch_size=128,
                                                  path=wgan_path,
@@ -418,7 +416,11 @@ def run_loso_cv(model_name, mixed=True):
             for rerun in range(config.NUM_RERUNS):
                 run_name = "%s-%s" % (subject_label, data_source)
                 run_logdir = os.path.join(logdir, subject_label, data_source, ".%d" % rerun)
-                print("Subject: %d, Trained on %s data (mixed: %s), Restart #%d" % (out_subject, data_source, mixed & (data_source is not "real"), rerun))
+                print("RUN_ID: %d  --  Subject: %d, Trained on %s data (mixed: %s), Restart #%d" % (absolute_ID, out_subject, data_source, mixed & (data_source is not "real"), rerun))
+
+                if absolute_ID < start_from:
+                    absolute_ID += 1
+                    continue
 
                 if data_source is "real":
                     train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
@@ -429,7 +431,7 @@ def run_loso_cv(model_name, mixed=True):
                     else:
                         train_set = fake_dataset()
                         eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject, one_hot=True, force_eval_change=True)
-                    print("path: %s\nCategorical sampling: %s\nArgmaxed Label: %s" % (wgan_path, categorical_sampling, argmaxed_label))
+                    print("path: %s\nCategorical sampling: %s\nSubject conditioned: %s\nArgmaxed Label: %s" % (wgan_path, categorical_sampling,subj_cond, argmaxed_label))
 
                 if model_name == "BaseNET":
                     model = BaseNET2(hparams)
@@ -453,8 +455,8 @@ def run_loso_cv(model_name, mixed=True):
                         tf.summary.scalar("test_" + name, value, step=0)
                 tf.print("\n")
 
-                tf.keras.backend.clear_session()
                 del train_set
+                absolute_ID += 1
 
         #del eval_set
 

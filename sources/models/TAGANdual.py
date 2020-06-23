@@ -16,7 +16,7 @@ class Generator(tf.keras.Model):
             name="att0",
             channels_out=50,
             kernel_size=6,
-            filters_per_head=17,
+            filters_per_head=15,
             num_attention_heads=3,
             use_positional_encoding=False)
         self.up_1 = UpResLayer(channels_out=25, kernel_size=8, dropout_rate=0.2, normalization=None)

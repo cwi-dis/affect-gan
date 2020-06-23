@@ -63,7 +63,7 @@ class DatasetGenerator:
         self.no_subject_output = no_subject_output
         self.argmaxed_label = argmaxed_label
 
-        noise_dim = 100 if subject_conditioned else 129
+        noise_dim = 129
         self.generator = _DataGenerator(path, batch_size, noise_dim, subject_conditioned, categorical_sampling)
 
     def __call__(self, *args, **kwargs):

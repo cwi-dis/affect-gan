@@ -208,7 +208,7 @@ class Dataloader(object):
 
         if mode == "train":
             if repeat:
-                dataset = dataset.repeat()
+                dataset = dataset.cache().repeat()
             dataset = dataset.shuffle(buffer_size=30000)
             dataset = dataset.batch(batch_size)
             dataset = dataset.prefetch(1)
@@ -225,6 +225,7 @@ class Dataloader(object):
             return dataset
 
         if (mode is "test") or (mode is "eval"):
+            dataset = dataset.cache()
             dataset = dataset.batch(batch_size)
             return dataset
 
