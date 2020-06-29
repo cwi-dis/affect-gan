@@ -364,7 +364,7 @@ if __name__ == '__main__':
     dataloader = Dataloader("5000d", features=["ecg", "gsr"],
                             label=["arousal"],
                             normalized=True, continuous_labels=True)
-    data = dataloader("inspect", 1, leave_out=18)
+    data = dataloader("inspect", 1, leave_out=8, augmented=True)
     #datagenerator = DatasetGenerator(batch_size=1,
     #                                 path="../Logs/loso-wgan-class-subject/subject-4-out",
     #                                 subject_conditioned=True,
@@ -397,8 +397,8 @@ if __name__ == '__main__':
     #video_subject_viz(extended_labels)
     #video_viz(extended_labels)
 
-    subject_seed = map_subject_to_pdf(data, disc)
-    plot_signals(datagenerator, generated=True, disc=disc, subject_seed=subject_seed)
+    #subject_seed = map_subject_to_pdf(data, disc)
+    plot_signals(data, generated=False, disc=disc, subject_seed=None)
     #interactive_signal_plot(datagenerator, disc)
     #positional_ecoding_viz()
 

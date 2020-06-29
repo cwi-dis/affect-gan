@@ -157,7 +157,23 @@ class Dataloader(object):
 
         return train_dataset, eval_dataset
 
-    def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False, repeat=False, force_eval_change=False):
+    @staticmethod
+    def augment(data, label, *args):
+        noise = tf.random.normal(shape=tf.shape(data), mean=0, stddev=0.02)
+
+        ph = tf.random.normal([])
+        trend_line = tf.expand_dims(tf.sin(tf.range(ph, ph+5, 0.01, dtype=tf.float32)) / 5, axis=1)
+
+        coin_toss = tf.random.uniform([2])
+
+        if tf.greater(coin_toss[0], 0.5):
+            data = tf.add(data, noise)
+        if tf.greater(coin_toss[1], 0.5):
+            data = tf.add(data, trend_line)
+
+        return data, label, args
+
+    def __call__(self, mode, batch_size=64, leave_out=None, one_hot=False, repeat=False, force_eval_change=False, augmented=False):
 
         modes = ["train", "test", "eval", "inspect", "test_eval", "gan", "cgan"]
         if mode not in modes:
@@ -207,11 +223,15 @@ class Dataloader(object):
             dataset = dataset.map(lambda data, label, subject: (data, tf.squeeze(tf.one_hot(tf.cast(label, tf.int32), depth=2))))
 
         if mode == "train":
+            if augmented:
+                dataset = dataset.map(self.augment, num_parallel_calls=tf.data.experimental.AUTOTUNE)
+            else:
+                dataset = dataset.cache()
             if repeat:
-                dataset = dataset.cache().repeat()
+                dataset = dataset.repeat()
             dataset = dataset.shuffle(buffer_size=30000)
             dataset = dataset.batch(batch_size)
-            dataset = dataset.prefetch(1)
+            dataset = dataset.prefetch(tf.data.experimental.AUTOTUNE)
 
             return dataset
 
@@ -221,6 +241,8 @@ class Dataloader(object):
             return dataset
 
         if mode is "inspect":
+            if augmented:
+                dataset = dataset.map(self.augment, num_parallel_calls=tf.data.experimental.AUTOTUNE)
             dataset = dataset.shuffle(buffer_size=100)
             return dataset.batch(batch_size)
 

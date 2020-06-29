@@ -365,7 +365,7 @@ def train_loso_gans(model_name):
         del trainer
 
 
-def run_loso_cv(model_name, mixed=True, start_from=0):
+def run_loso_cv(model_name, mixed=False, start_from=0):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
     logdir = os.path.join("../Logs", "loso-" + "tagan" + model_name + run_id)
     features = config.FEATURES
@@ -385,11 +385,13 @@ def run_loso_cv(model_name, mixed=True, start_from=0):
             hparams = {config.OUT_SUBJECT: out_subject,
                        config.TRAIN_DATA: data_source}
 
-            if data_source is "real":
+            train_label = data_source.split('_')
+
+            if train_label[0] == "real":
                 steps_per_epoch = None
+                augmented = tf.greater(len(train_label), 1)
             else:
                 steps_per_epoch = 463
-                train_label = data_source.split('_')
                 wgan_path = "loso-wgan-class" if train_label[1] == "cls" else "loso-wgan-class-subject"
                 wgan_path = os.path.join(generator_base_path, wgan_path, subject_label)
                 subj_cond = True if train_label[1] == "subjcls" else False
@@ -421,8 +423,9 @@ def run_loso_cv(model_name, mixed=True, start_from=0):
                     absolute_ID += 1
                     continue
 
-                if data_source is "real":
-                    train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True)
+                if train_label[0] == "real":
+                    print("Augmented: %s" % augmented)
+                    train_set = dataloader(mode="train", batch_size=128, leave_out=out_subject, one_hot=True, augmented=augmented)
                     eval_set = dataloader(mode="eval", batch_size=128, leave_out=out_subject, one_hot=True)
                 else:
                     if mixed:
