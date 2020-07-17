@@ -54,6 +54,8 @@ class GAN_Trainer():
         self.gs = 0.25
 
     def train_wgangp(self, dataset):
+        acc_critic_loss = 0
+
         test_seed_0 = tf.random.normal([5, self.noise_dim])
         test_seed_1 = test_seed_0
         if self.class_conditional:
@@ -70,13 +72,16 @@ class GAN_Trainer():
             subject = tf.squeeze(tf.one_hot(tf.cast(subject, tf.int32), depth=self.num_subjects))
             critic_loss, classification_loss, subject_loss = self.train_step_wgangp_critic(batch, labels, subject)
 
+            acc_critic_loss += critic_loss
+
             if train_step % self.n_critic == 0:
                 gen_loss, gen_classification_loss, gen_subject_loss = self.train_step_wgangp_generator()
 
             if train_step % self.save_image_every_n_steps == 0:
+                acc_critic_loss /= self.save_image_every_n_steps
                 with self.summary_writer.as_default():
-                    tf.summary.scalar("critic_loss", critic_loss, step=train_step)
-                    tf.summary.scalar("generator_loss", gen_loss, step=train_step)
+                    tf.summary.scalar("critic_loss", acc_critic_loss, step=train_step)
+                    #tf.summary.scalar("generator_loss", gen_loss, step=train_step)
                     tf.summary.scalar("classloss.critic", classification_loss, step=train_step)
                     tf.summary.scalar("classloss.generator", gen_classification_loss, step=train_step)
                     tf.summary.scalar("subjectloss.critic", subject_loss, step=train_step)
