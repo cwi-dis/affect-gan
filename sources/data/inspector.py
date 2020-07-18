@@ -8,7 +8,10 @@ import seaborn as sns
 import tensorflow as tf
 import tensorflow_datasets as tfds
 import itertools
+import pickle
+from collections import defaultdict
 from sklearn.manifold import TSNE
+from dtaidistance import dtw_ndim
 
 from data.dataloader import Dataloader
 from data.datagenerator import DatasetGenerator
@@ -199,12 +202,12 @@ def video_viz(extended_labels):
     plt.show()
 
 def positional_ecoding_viz():
-    pos_encoding = get_positional_encoding(250, 40)
+    pos_encoding = get_positional_encoding(250, 20)
     print(pos_encoding.shape)
 
     plt.pcolormesh(pos_encoding[0], cmap='RdBu')
     plt.xlabel('Depth')
-    plt.xlim((0, 40))
+    plt.xlim((0, 20))
     plt.ylabel('Position')
     plt.colorbar()
     plt.show()
@@ -319,25 +322,36 @@ def interactive_signal_plot(datagen, disc):
 def visualize_tsna_denselayer(generator, discriminator, real_data):
     real_activations = []
     real_subjects = []
+    data_source = []
     lcolors = []
     pmarkers = []
     cm = plt.cm.get_cmap('seismic')
+    count = 0
     for data, label, subject in real_data:
         dense_act, _, pl ,_ = discriminator(data)
         real_activations.append(dense_act)
         #lcolors.append("blue" if label.numpy()[0,0] == 0 else "red")
-        lcolors.append(label.numpy()[0,0])
+        #lcolors.append(label.numpy()[0,0])
+        lcolors.append("red")
         real_subjects.append(subject)
+        data_source.append("real")
+        count += 1
 
+    for i in range(count):
+        sig, arr = generator.get(arousal_value=None, subject_value=1, sub0 = 3, sub1=1)
+        dense_act, _, pl, _ = discriminator(sig)
+        real_activations.append(dense_act)
+        lcolors.append("blue")
+        data_source.append("fake")
 
     real_activations = tf.reshape(real_activations, (-1, 256))
 
-    tsne = TSNE(n_components=2, perplexity=25, verbose=1, n_iter=5000)
+    tsne = TSNE(n_components=2, perplexity=40, verbose=1, n_iter=5000)
     tsne_results = tsne.fit_transform(real_activations)
 
     f, ax = plt.subplots(1)
-    sc = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=lcolors, vmin=0, vmax=10, cmap=cm, alpha=0.4)
-    plt.colorbar(sc)
+    sc = plt.scatter(tsne_results[:, 0], tsne_results[:, 1], c=lcolors, alpha=0.4)
+    #plt.colorbar(sc)
     ax.legend()
     plt.show()
 
@@ -357,14 +371,108 @@ def map_subject_to_pdf(data, discriminator):
 
     return pdf
 
+def wasserstein_distances(batch_size=64):
+    gan_path = "../Logs/loso-wgan-class-subject/subject-18-out/"
+    critic = tf.keras.models.load_model(gan_path + "model_dis")
+
+    real_dataset = Dataloader("5000d", features=["ecg", "gsr"],
+                            label=["arousal"],
+                            normalized=True, continuous_labels=True)
+    real_data = real_dataset("inspect", batch_size=batch_size)
+
+
+    acc = None
+    for sig, _, _ in real_data.take(5):
+        __, wd, __, __ = critic(sig)
+
+        if acc != None:
+            acc = tf.concat([acc, wd], axis=0)
+        else:
+            acc = wd
+
+    num_batches = 1 + len(acc) // batch_size
+    real_wd = tf.reduce_mean(acc)
+
+    fake_dataset = DatasetGenerator(batch_size=batch_size,
+                                     path=gan_path,
+                                     subject_conditioned=True,
+                                     categorical_sampling=True,
+                                     no_subject_output=True,
+                                     argmaxed_label=False
+                                     )
+    fake_data = fake_dataset()
+
+    acc = None
+    for sig, _ in fake_data.take(num_batches):
+        __, wd, __, __ = critic(sig)
+        if acc != None:
+            acc = tf.concat([acc, wd], axis=0)
+        else:
+            acc = wd
+
+    fake_wd = tf.reduce_mean(acc)
+    print(real_wd, fake_wd, real_wd - fake_wd)
+
+def dtwdistance(batch_size=1, recompute_signal_dump=False):
+    #gan_path = "../Logs/loso-wgan-class-subject/subject-18-out/"
+    #critic = tf.keras.models.load_model(gan_path + "model_dis")
+
+    if recompute_signal_dump:
+        real_dataset = Dataloader("5000d", features=["ecg", "gsr"],
+                                  label=["arousal"],
+                                  normalized=True, continuous_labels=True)
+        real_data = real_dataset("inspect", batch_size=batch_size)
+
+        acc = defaultdict(list)
+        sacc = None
+        for sig, _, subj in real_data:
+            acc[subj[0].numpy().astype(int)].append(sig[0].numpy().astype(np.double))
+
+        pickle.dump(acc,open("../Dataset/realsignals.p", "wb"))
+
+        with open("../Dataset/realsignals.p", "rb") as f:
+            real_data = pickle.load(f)
+
+        np.random.seed(42)
+        big_train = []
+        big_test = []
+        for subject in range(1, 31):
+            subj_sigs = real_data[subject]
+            np.random.shuffle(subj_sigs)
+            train = subj_sigs[:1000]
+            test = subj_sigs[1000:2000]
+
+            if len(big_train) == 0:
+                big_train = train
+                big_test = test
+            else:
+                big_train.extend(train)
+                big_test.extend(test)
+
+        pickle.dump(big_train, open("../Dataset/dtw_target.p", "wb"))
+        pickle.dump(big_test, open("../Dataset/dtw_realsource.p", "wb"))
+
+    with open("../Dataset/dtw_target.p", "rb") as f:
+        real_target = pickle.load(f)
+    with open("../Dataset/dtw_realsource.p", "rb") as f:
+        real_source = pickle.load(f)
+
+    testdata = real_target
+    testdata.extend(real_source)
+
+    dm = dtw_ndim.distance_matrix(testdata, window=50, block=((0, 30000), (30000, 60000)), show_progress=True)
+
+    print(dm)
 
 if __name__ == '__main__':
     os.chdir("./..")
     init_tf_gpus()
-    dataloader = Dataloader("5000d", features=["ecg", "gsr"],
-                            label=["arousal"],
-                            normalized=True, continuous_labels=True)
-    data = dataloader("inspect", 1, leave_out=8, augmented=True)
+    #wasserstein_distances()
+    dtwdistance()
+    #dataloader = Dataloader("5000d", features=["ecg", "gsr"],
+    #                        label=["arousal"],
+    #                        normalized=True, continuous_labels=True)
+    #data = dataloader("inspect", 1, leave_out=4, augmented=False)
     #datagenerator = DatasetGenerator(batch_size=1,
     #                                 path="../Logs/loso-wgan-class-subject/subject-4-out",
     #                                 subject_conditioned=True,
@@ -378,16 +486,17 @@ if __name__ == '__main__':
     #disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-4-out/model_dis")
 
 
-    datagenerator = DatasetGenerator(batch_size=1,
-                            path="../Logs/loso-wgan-class-subject/subject-18-out",
-                            subject_conditioned=True,
-                            categorical_sampling=False,
-                            no_subject_output=False,
-                            argmaxed_label=True
-                           )
-    disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-18-out/model_dis")
+    #datagenerator = DatasetGenerator(batch_size=1,
+    #                        path="../Logs/loso-wgan-class-subject/subject-18-out",
+    #                        subject_conditioned=True,
+    #                        categorical_sampling=True,
+    #                        no_subject_output=True,
+    #                        argmaxed_label=True
+    #                       )
+    #gen = datagenerator()
+    #disc = tf.keras.models.load_model("../Logs/loso-wgan-class-subject/subject-18-out/model_dis")
 
-    #visualize_tsna_denselayer(gen, disc, data)
+    #visualize_tsna_denselayer(datagenerator, disc, data)
 
     #labels = collect_labels(data)
     #extended_labels = collect_extended_labels(data, "extended_labels_CASE", force_recollect=True)
@@ -398,7 +507,7 @@ if __name__ == '__main__':
     #video_viz(extended_labels)
 
     #subject_seed = map_subject_to_pdf(data, disc)
-    plot_signals(data, generated=False, disc=disc, subject_seed=None)
+    #plot_signals(data, generated=False, disc=disc, subject_seed=None)
     #interactive_signal_plot(datagenerator, disc)
     #positional_ecoding_viz()
 
