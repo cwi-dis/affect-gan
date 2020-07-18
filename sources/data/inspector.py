@@ -12,6 +12,7 @@ import pickle
 from collections import defaultdict
 from sklearn.manifold import TSNE
 from dtaidistance import dtw_ndim
+from tslearn.metrics import cdist_dtw
 
 from data.dataloader import Dataloader
 from data.datagenerator import DatasetGenerator
@@ -457,12 +458,9 @@ def dtwdistance(batch_size=1, recompute_signal_dump=False):
     with open("../Dataset/dtw_realsource.p", "rb") as f:
         real_source = pickle.load(f)
 
-    testdata = real_target
-    testdata.extend(real_source)
+    dm = cdist_dtw(real_target, real_source, global_constraint="sakoe_chiba", sakoe_chiba_radius=50, verbose=5)
 
-    dm = dtw_ndim.distance_matrix(testdata, window=50, block=((0, 30000), (30000, 60000)), show_progress=True)
-
-    print(dm)
+    pickle.dump(dm, open("../Dataset/dtw_real_real.p", "wb"))
 
 if __name__ == '__main__':
     os.chdir("./..")
