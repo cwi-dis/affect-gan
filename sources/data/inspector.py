@@ -391,7 +391,7 @@ def wasserstein_distances(batch_size=64):
         critic = tf.keras.models.load_model(gan + "/model_dis")
 
         acc = None
-        for sig, _, _ in real_data:
+        for sig, _, _ in real_data.take(5):
             __, wd, __, __ = critic(sig)
 
             if acc != None:
@@ -436,7 +436,7 @@ def wasserstein_distances(batch_size=64):
 
 
 
-def dtwdistance(batch_size=1, recompute_signal_dump=False):
+def dtwdistance(batch_size=100, recompute_signal_dump=False):
     #gan_path = "../Logs/loso-wgan-class-subject/subject-18-out/"
     #critic = tf.keras.models.load_model(gan_path + "model_dis")
 
@@ -480,15 +480,45 @@ def dtwdistance(batch_size=1, recompute_signal_dump=False):
     with open("../Dataset/dtw_realsource.p", "rb") as f:
         real_source = pickle.load(f)
 
-    dm = cdist_dtw(real_target, real_source, global_constraint="sakoe_chiba", sakoe_chiba_radius=50, verbose=5)
+    gan_path = "../Logs/FullGANs/"
+    gan_dirs = glob.glob("%s*" % gan_path)
 
-    pickle.dump(dm, open("../Dataset/dtw_real_real.p", "wb"))
+    for gan in gan_dirs:
+        model_name = os.path.basename(gan)
+        model_comps = model_name.split("-")
+
+        subject_conditioned = model_comps[0] == "AS"
+
+        for categorical_sampling in [True, False]:
+            model_id = model_name + "-" + str(categorical_sampling)
+            print(model_id)
+            fake_dataset = DatasetGenerator(batch_size=batch_size,
+                                            path=gan,
+                                            subject_conditioned=subject_conditioned,
+                                            categorical_sampling=categorical_sampling,
+                                            no_subject_output=True,
+                                            argmaxed_label=False
+                                            )
+            fake_data = fake_dataset()
+
+            f_acc = None
+            for sig, _ in fake_data.take(30):
+                if f_acc != None:
+                    f_acc = tf.concat([f_acc, sig], axis=0)
+                else:
+                    f_acc = sig
+
+            f_acc = f_acc.numpy()
+
+            dm = cdist_dtw(real_target, f_acc, global_constraint="sakoe_chiba", sakoe_chiba_radius=50, verbose=11, n_jobs=-1)
+
+            pickle.dump(dm, open("../Dataset/dtw_real_%s.p" % model_id, "wb"))
 
 if __name__ == '__main__':
     os.chdir("./..")
     init_tf_gpus()
-    wasserstein_distances()
-    #dtwdistance()
+    #wasserstein_distances()
+    dtwdistance()
     #dataloader = Dataloader("5000d", features=["ecg", "gsr"],
     #                        label=["arousal"],
     #                        normalized=True, continuous_labels=True)
