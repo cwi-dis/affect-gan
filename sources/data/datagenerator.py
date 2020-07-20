@@ -25,10 +25,10 @@ class _DataGenerator:
             seed = tf.random.normal(shape=[self.batch_size, self.noise_dim])
             if self.categorical_sampling:
                 generator_class_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=2, dtype=tf.int32), depth=2)
-                generator_subject_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=29, dtype=tf.int32), depth=29)
+                generator_subject_inputs = tf.one_hot(tf.random.uniform([self.batch_size], maxval=30, dtype=tf.int32), depth=30)
             else:
                 generator_class_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 2], stddev=1))
-                generator_subject_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 29], stddev=5))
+                generator_subject_inputs = tf.keras.activations.softmax(tf.random.normal([self.batch_size, 30], stddev=5))
 
             # arousal seed
             seed = tf.concat([seed, generator_class_inputs], axis=-1)
@@ -70,7 +70,7 @@ class DatasetGenerator:
         datagenerator = tf.data.Dataset.from_generator(
             generator= self.generator,
             output_types=(tf.float32, tf.float32, tf.float32),
-            output_shapes=((self.batch_size, 500, None), (self.batch_size, 2), (self.batch_size, 29))
+            output_shapes=((self.batch_size, 500, None), (self.batch_size, 2), (self.batch_size, 30))
         )
 
         if self.argmaxed_label:
