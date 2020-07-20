@@ -1,6 +1,7 @@
 import numpy as np
 import os
 import io
+import glob
 import pandas as pd
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -373,46 +374,67 @@ def map_subject_to_pdf(data, discriminator):
     return pdf
 
 def wasserstein_distances(batch_size=64):
-    gan_path = "../Logs/loso-wgan-class-subject/subject-18-out/"
-    critic = tf.keras.models.load_model(gan_path + "model_dis")
-
     real_dataset = Dataloader("5000d", features=["ecg", "gsr"],
-                            label=["arousal"],
-                            normalized=True, continuous_labels=True)
+                              label=["arousal"],
+                              normalized=True, continuous_labels=True)
     real_data = real_dataset("inspect", batch_size=batch_size)
 
+    gan_path = "../Logs/FullGANs/"
+    gan_dirs = glob.glob("%s*" % gan_path)
 
-    acc = None
-    for sig, _, _ in real_data.take(5):
-        __, wd, __, __ = critic(sig)
+    exp = defaultdict(dict)
 
-        if acc != None:
-            acc = tf.concat([acc, wd], axis=0)
-        else:
-            acc = wd
+    for gan in gan_dirs:
+        model_name = os.path.basename(gan)
+        model_comps = model_name.split("-")
 
-    num_batches = 1 + len(acc) // batch_size
-    real_wd = tf.reduce_mean(acc)
+        critic = tf.keras.models.load_model(gan + "/model_dis")
 
-    fake_dataset = DatasetGenerator(batch_size=batch_size,
-                                     path=gan_path,
-                                     subject_conditioned=True,
-                                     categorical_sampling=True,
-                                     no_subject_output=True,
-                                     argmaxed_label=False
-                                     )
-    fake_data = fake_dataset()
+        acc = None
+        for sig, _, _ in real_data:
+            __, wd, __, __ = critic(sig)
 
-    acc = None
-    for sig, _ in fake_data.take(num_batches):
-        __, wd, __, __ = critic(sig)
-        if acc != None:
-            acc = tf.concat([acc, wd], axis=0)
-        else:
-            acc = wd
+            if acc != None:
+                acc = tf.concat([acc, wd], axis=0)
+            else:
+                acc = wd
 
-    fake_wd = tf.reduce_mean(acc)
-    print(real_wd, fake_wd, real_wd - fake_wd)
+        num_batches = 1 + len(acc) // batch_size
+        real_wd = tf.reduce_mean(acc)
+
+        subject_conditioned = model_comps[0] == "AS"
+
+        for categorical_sampling in [True, False]:
+            model_id = model_name + "-" + str(categorical_sampling)
+            print(model_id)
+            fake_dataset = DatasetGenerator(batch_size=batch_size,
+                                            path=gan,
+                                            subject_conditioned=subject_conditioned,
+                                            categorical_sampling=categorical_sampling,
+                                            no_subject_output=True,
+                                            argmaxed_label=False
+                                            )
+            fake_data = fake_dataset()
+
+            f_acc = None
+            for sig, _ in fake_data.take(num_batches):
+                __, wd, __, __ = critic(sig)
+                if f_acc != None:
+                    f_acc = tf.concat([f_acc, wd], axis=0)
+                else:
+                    f_acc = wd
+
+            fake_wd = tf.reduce_mean(f_acc)
+
+            print(model_id, real_wd, fake_wd, real_wd - fake_wd)
+
+            exp[model_id]["real_wd"] = real_wd.numpy()
+            exp[model_id]["fake_wd"] = fake_wd.numpy()
+            exp[model_id]["wd"] = real_wd.numpy() - fake_wd.numpy()
+
+    pickle.dump(exp, open("../Dataset/wdist.p", "wb"))
+
+
 
 def dtwdistance(batch_size=1, recompute_signal_dump=False):
     #gan_path = "../Logs/loso-wgan-class-subject/subject-18-out/"
@@ -440,8 +462,8 @@ def dtwdistance(batch_size=1, recompute_signal_dump=False):
         for subject in range(1, 31):
             subj_sigs = real_data[subject]
             np.random.shuffle(subj_sigs)
-            train = subj_sigs[:1000]
-            test = subj_sigs[1000:2000]
+            train = subj_sigs[:100]
+            test = subj_sigs[100:200]
 
             if len(big_train) == 0:
                 big_train = train
@@ -465,8 +487,8 @@ def dtwdistance(batch_size=1, recompute_signal_dump=False):
 if __name__ == '__main__':
     os.chdir("./..")
     init_tf_gpus()
-    #wasserstein_distances()
-    dtwdistance()
+    wasserstein_distances()
+    #dtwdistance()
     #dataloader = Dataloader("5000d", features=["ecg", "gsr"],
     #                        label=["arousal"],
     #                        normalized=True, continuous_labels=True)
