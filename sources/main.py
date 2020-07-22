@@ -4,7 +4,7 @@ from __future__ import print_function
 
 import os
 import tensorflow as tf
-import tensorflow_addons as tfa
+#import tensorflow_addons as tfa
 from datetime import datetime
 import config
 import multiprocessing
@@ -300,8 +300,8 @@ def single_run(model_name):
 
 def run_gan(model_name):
     run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
-    logdir = os.path.join("../Logs", model_name + run_id)
-    leave_out = 13 
+    logdir = os.path.join("../Logs", "loso-" + model_name + run_id)
+    leave_out = 31
     hparams = config.OPT_PARAMS["gan"]
     features = config.FEATURES
     dataloader = Dataloader(
@@ -311,7 +311,7 @@ def run_gan(model_name):
     dataset = dataloader("gan", hparams[config.HP_GAN_BATCHSIZE], leave_out=leave_out)
     trainer = GAN_Trainer(
         mode=model_name,
-        batch_size=hparams[config.HP_GAN_BATCHSIZE],
+        batch_size=64,
         hparams=hparams,
         logdir=logdir,
         num_classes=2,
@@ -319,7 +319,7 @@ def run_gan(model_name):
         leave_out=leave_out,
         class_conditional=True,
         subject_conditional=True,
-        save_image_every_n_steps=1500,
+        save_image_every_n_steps=200,
         n_critic=5,
         train_steps=200000
     )
@@ -464,6 +464,48 @@ def run_loso_cv(model_name, mixed=False, start_from=0):
 
         #del eval_set
 
+def hp_gan_run(model_name="TAGAN"):
+    run_id = datetime.now().strftime("%Y%m%d-%H%M%S")
+    logdir = os.path.join("../Logs", "hpsweep-" + model_name + run_id)
+    labels = config.FEATURES
+
+    dataloader = Dataloader(
+        "5000d", labels,
+        normalized=True,
+        continuous_labels=False
+    )
+    out_subject = 31
+    dataset = dataloader("gan", 64, leave_out=out_subject)
+
+    for heads in config.HP_HEADS.domain.values:
+        for posenc in config.HP_POSENC.domain.values:
+            hparams = {
+                config.HP_HEADS: heads,
+                config.HP_POSENC: posenc
+            }
+
+            run_name = "%d-heads.p_enc-%s" % (heads, str(posenc))
+            run_logdir = os.path.join(logdir, run_name)
+            print('--- Starting trial: %s' % run_name)
+            print({h.name: hparams[h] for h in hparams})
+
+            trainer = GAN_Trainer(
+                mode=model_name,
+                batch_size=64,
+                hparams=hparams,
+                logdir=run_logdir,
+                num_classes=2,
+                n_signals=len(labels),
+                leave_out=out_subject,
+                class_conditional=True,
+                subject_conditional=True,
+                save_image_every_n_steps=200,
+                n_critic=5,
+                train_steps=200000
+            )
+
+            trainer.train(dataset=dataset)
+
 
 def main():
     init_tf_gpus()
@@ -472,10 +514,11 @@ def main():
     logdir = os.path.join("../Logs", run_id)
 
     # single_run(model_name="AttentionNET2")
-    run_loso_cv(model_name="SimpleLSTM")
+    #run_loso_cv(model_name="SimpleLSTM")
     #run_gan(model_name="wgan-gp")
     #train_loso_gans(model_name="wgan-gp")
     #hp_sweep_run(logdir, model_name="BaseNET")
+    hp_gan_run()
 
 
 def summary():
@@ -489,16 +532,16 @@ def summary():
 
     # ResNET(num_classes=1).model().summary()
     # SimpleLSTM(hparams).model().summary()
-    #BaseNET2(hparams).model().summary()
-    # ConvLSTM(hparams).model().summary()
+    BaseNET2(hparams).model().summary()
+    #ConvLSTM(hparams).model().summary()
     # ChannelCNN(hparams, 5).model().summary()
     # DeepCNN(hparams).model().summary()
     # LateFuseCNN(hparams, 5).model().summary()
     #AttentionNET(hparams).model().summary()
-    Generator(n_signals=2).model().summary()
-    Discriminator(True, True).model().summary()
+    #Generator(n_signals=2).model().summary()
+    #Discriminator(True, True).model().summary()
 
 
 if __name__ == '__main__':
-    #summary()
-    main()
+    summary()
+    #main()

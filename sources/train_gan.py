@@ -4,7 +4,7 @@ from util.CustomLosses import discriminator_loss, generator_loss, wgangp_critic_
 from util.CustomMetrics import discriminator_accuracy
 from data.inspector import plot_generated_signals, plot_to_image
 
-from models.TCGAN import Generator, Discriminator
+from models.TAGANdual import Generator, Discriminator
 
 class GAN_Trainer():
 
@@ -29,15 +29,15 @@ class GAN_Trainer():
         self.train_steps = train_steps
         self.noise_dim = 129
         self.num_classes = num_classes
-        self.num_subjects = 29
+        self.num_subjects = 30
         self.leave_out = leave_out
         self.class_conditional = class_conditional
         self.subject_conditional = subject_conditional
         self.save_image_every_n_steps = save_image_every_n_steps
         self.n_signals = n_signals
 
-        self.discriminator = Discriminator(self.class_conditional, self.subject_conditional, hparams)
-        self.generator = Generator(n_signals=n_signals)
+        self.discriminator = Discriminator(self.class_conditional, self.subject_conditional)
+        self.generator = Generator(n_signals=n_signals, hparams=hparams)
         self.classification_loss_factor = 0.25 if (self.class_conditional and self.subject_conditional) else 0.5
         dis_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.0008, 50000, 0.75)
         gen_lr_decay = tf.keras.optimizers.schedules.InverseTimeDecay(0.001, 10000, 0.75)
@@ -94,18 +94,18 @@ class GAN_Trainer():
                     tf.print("Class Loss: Critic: %3f, Generator: %3f" % (classification_loss, gen_classification_loss))
                 if self.subject_conditional:
                     tf.print("Subject Loss: Critic: %3f, Generator: %3f" % (subject_loss, gen_subject_loss))
-                gen_signals_0 = self.generator(test_seed_0, training=False)
-                gen_signals_1 = self.generator(test_seed_1, training=False)
-                fig = plot_generated_signals(gen_signals_0, gen_signals_1)
-                img = plot_to_image(fig)
-                with self.summary_writer.as_default():
-                    tf.summary.image("Generated Signals", img, step=train_step)
+                #gen_signals_0 = self.generator(test_seed_0, training=False)
+                #gen_signals_1 = self.generator(test_seed_1, training=False)
+                #fig = plot_generated_signals(gen_signals_0, gen_signals_1)
+                #img = plot_to_image(fig)
+                #with self.summary_writer.as_default():
+                #    tf.summary.image("Generated Signals", img, step=train_step)
 
-            if train_step % 50000 == 0:
-                if train_step == 100000:
-                    self.n_critic = 5
-                self.discriminator.save(os.path.join(self.discriminator_path, "%d"%train_step))
-                self.generator.save(os.path.join(self.generator_path, "%d"%train_step))
+            #if train_step % 50000 == 0:
+            #    if train_step == 100000:
+            #        self.n_critic = 5
+            #    self.discriminator.save(os.path.join(self.discriminator_path, "%d"%train_step))
+            #    self.generator.save(os.path.join(self.generator_path, "%d"%train_step))
 
             train_step += 1
             if train_step > self.train_steps:

@@ -7,7 +7,7 @@ from models.Blocks import *
 
 class Generator(tf.keras.Model):
 
-    def __init__(self, n_signals, *args, **kwargs):
+    def __init__(self, n_signals, hparams, *args, **kwargs):
         super(Generator, self).__init__(*args, **kwargs)
         self.n_multiplier = 2
         self.expand = layers.Dense(units=125 * 50, use_bias=False)
@@ -16,9 +16,9 @@ class Generator(tf.keras.Model):
             name="att0",
             channels_out=50,
             kernel_size=6,
-            filters_per_head=15,
-            num_attention_heads=3,
-            use_positional_encoding=False)
+            filters_per_head=50 // hparams[config.HP_HEADS],
+            num_attention_heads=hparams[config.HP_HEADS],
+            use_positional_encoding=hparams[config.HP_POSENC])
         self.up_1 = UpResLayer(channels_out=25, kernel_size=8, dropout_rate=0.2, normalization=None)
         self.act = layers.LeakyReLU(alpha=0.2)
         self.final_conv = layers.Conv1D(filters=n_signals, kernel_size=10, padding="same")

@@ -8,6 +8,10 @@ TRAIN_DATA = hp.HParam("Train Data Type", hp.Discrete(["real_noise", "fake_cls_c
 FEATURES = ["ecg", "gsr"]
 OUT_SUBJECT = hp.HParam("Evaluated Subject", hp.Discrete([4, 6, 11, 18, 22, 25]))
 
+# AS-TAGAN hparams
+HP_HEADS = hp.HParam("num_heads", hp.Discrete([1, 2, 3, 5]))
+HP_POSENC = hp.HParam("positional_encoding", hp.Discrete([True, False]))
+
 # BaseNET hparams
 HP_FILTERS = hp.HParam("filters", hp.Discrete([4]))
 HP_DROPOUT = hp.HParam("dropout", hp.Discrete([0.5, 0.75]))
