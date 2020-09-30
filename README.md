@@ -1,5 +1,6 @@
 # affect-gan
-A framework for studying the application of Generative Models (AC-WGAN-GP) to physiological sensor data. 
+A framework for studying the application of Generative Models (AC-WGAN-GP) to physiological sensor data.
+
 Built using Tensorflow 2.2 and Python.
 
 ![Interpolation of synthetic ECG and GSR data along the Arousal and Subject ID dimensions.](https://github.com/cwi-dis/affect-gan/blob/master/demo.gif)
